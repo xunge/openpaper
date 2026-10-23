@@ -8,6 +8,12 @@ FROM node:24-slim
 
 WORKDIR /app
 
+# A domestic registry by default for the same reason the Python images use one:
+# the public registry is unreachable from some deployment networks. Override
+# with --build-arg NPM_REGISTRY=https://registry.npmjs.org.
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+RUN yarn config set registry "$NPM_REGISTRY"
+
 # Split from the source mount so the install layer is cached until the lockfile
 # changes. On a lockfile change: `scripts/dev rebuild client`.
 COPY package.json yarn.lock ./

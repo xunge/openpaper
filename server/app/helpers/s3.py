@@ -12,6 +12,7 @@ from app.database.crud.paper_crud import PaperUpdate, paper_crud
 from app.database.crud.projects.project_paper_crud import project_paper_crud
 from app.database.models import Paper, User
 from app.schemas.user import CurrentUser
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from sqlalchemy.orm import Session
 
@@ -24,6 +25,15 @@ AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
 CLOUDFLARE_BUCKET_NAME = os.environ.get("CLOUDFLARE_BUCKET_NAME")
 
+# Self-hosting overrides. Upstream talks to AWS S3 and serves files through a
+# Cloudflare CDN host, which is why the public URL is built as
+# `https://{CLOUDFLARE_BUCKET_NAME}/{key}`. Setting S3_ENDPOINT_URL points the
+# boto3 client at any S3-compatible store (MinIO, R2, Ceph) instead, and
+# S3_PUBLIC_URL replaces the CDN host so the URL the browser receives points at
+# the bucket itself. Both unset keeps the upstream behaviour exactly.
+S3_ENDPOINT_URL = os.environ.get("S3_ENDPOINT_URL")
+S3_PUBLIC_URL = os.environ.get("S3_PUBLIC_URL")
+
 UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
 
 
@@ -32,14 +42,28 @@ class S3Service:
 
     def __init__(self):
         """Initialize S3 client"""
-        self.s3_client = boto3.client(
-            "s3",  # type: ignore
-            aws_access_key_id=AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-            region_name=AWS_REGION,
-        )
+        client_kwargs: dict = {
+            "aws_access_key_id": AWS_ACCESS_KEY_ID,
+            "aws_secret_access_key": AWS_SECRET_ACCESS_KEY,
+            "region_name": AWS_REGION,
+        }
+        if S3_ENDPOINT_URL:
+            # Path-style addressing plus SigV4: MinIO serves buckets as
+            # /bucket/key, and its presigned URLs are signed for that form.
+            client_kwargs["endpoint_url"] = S3_ENDPOINT_URL
+            client_kwargs["config"] = Config(
+                signature_version="s3v4", s3={"addressing_style": "path"}
+            )
+
+        self.s3_client = boto3.client("s3", **client_kwargs)  # type: ignore
         self.bucket_name = S3_BUCKET_NAME
         self.cloudflare_bucket_name = CLOUDFLARE_BUCKET_NAME
+
+    def _public_url(self, object_key: str) -> str:
+        """Public URL for an uploaded object."""
+        if S3_PUBLIC_URL:
+            return f"{S3_PUBLIC_URL.rstrip('/')}/{object_key}"
+        return f"https://{self.cloudflare_bucket_name}/{object_key}"
 
     def _validate_pdf_url(self, url: str) -> bool:
         """
@@ -89,7 +113,7 @@ class S3Service:
                 )
 
             # Generate the URL for the uploaded file
-            file_url = f"https://{self.cloudflare_bucket_name}/{object_key}"
+            file_url = self._public_url(object_key)
 
             return object_key, file_url
 
@@ -128,7 +152,7 @@ class S3Service:
             )
 
             # Generate the URL for the uploaded file
-            file_url = f"https://{self.cloudflare_bucket_name}/{object_key}"
+            file_url = self._public_url(object_key)
 
             return object_key, file_url
 
@@ -532,7 +556,7 @@ class S3Service:
             )
 
             # Generate the URL for the duplicated file
-            file_url = f"https://{self.cloudflare_bucket_name}/{new_object_key}"
+            file_url = self._public_url(new_object_key)
 
             return new_object_key, file_url
 
@@ -552,11 +576,17 @@ class S3Service:
             tuple: New S3 object key and public URL
         """
         try:
-            # Extract the object key from the URL
-            parsed_url = s3_url.split(f"https://{self.cloudflare_bucket_name}/")
-            if len(parsed_url) != 2:
+            # Extract the object key from the URL. Accept both the upstream CDN
+            # host and, when self-hosting, whatever public base we serve from.
+            prefixes = [f"https://{self.cloudflare_bucket_name}/"]
+            if S3_PUBLIC_URL:
+                prefixes.append(f"{S3_PUBLIC_URL.rstrip('/')}/")
+            for prefix in prefixes:
+                if s3_url.startswith(prefix):
+                    source_object_key = s3_url[len(prefix):]
+                    break
+            else:
                 raise ValueError("Invalid S3 URL format")
-            source_object_key = parsed_url[1]
 
             return self.duplicate_file(source_object_key, new_filename)
 

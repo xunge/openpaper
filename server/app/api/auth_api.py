@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -10,6 +11,11 @@ from typing import Optional, cast
 from app.auth.dependencies import get_admin_user, get_current_user, get_required_user
 from app.auth.email import email_auth_client
 from app.auth.google import GoogleTokenError, google_auth_client
+from app.auth.passwords import (
+    hash_password,
+    validate_new_password,
+    verify_password,
+)
 from app.auth.utils import (
     clear_session_cookie,
     is_verification_code_valid,
@@ -34,6 +40,7 @@ from app.database.models import Session as DBSession
 from app.database.models import User
 from app.database.telemetry import track_event
 from app.helpers.abuse_detection import check_signup_abuse, send_abuse_alert
+from app.helpers.entitlements import grant_self_hosted_entitlements
 from app.helpers.email import (
     CLIENT_DOMAIN,
     add_to_default_audience,
@@ -48,7 +55,8 @@ from app.schemas.zotero import (
 )
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -57,6 +65,13 @@ auth_router = APIRouter()
 
 client_domain = os.getenv("CLIENT_DOMAIN", "http://localhost:3000")
 api_domain = os.getenv("API_DOMAIN", "http://localhost:8000")
+
+# Whether anyone who can reach the API may create an account. On by default
+# because this deployment is meant to be handed to a small group; set
+# ALLOW_LOCAL_REGISTRATION=false to keep the CLI as the only way in.
+allow_local_registration = os.getenv(
+    "ALLOW_LOCAL_REGISTRATION", "true"
+).strip().lower() not in {"false", "0", "no", "off"}
 
 
 class AuthResponse(BaseModel):
@@ -73,6 +88,224 @@ class ProfileUpdateRequest(BaseModel):
     """Request model for profile update."""
 
     name: str
+
+
+class LocalLoginRequest(BaseModel):
+    """Email and password for a locally stored account."""
+
+    email: str
+    password: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+class RegisterRequest(BaseModel):
+    """New local account. The name is optional; the email is the login name."""
+
+    email: EmailStr
+    password: str
+    name: Optional[str] = None
+
+
+# Verified when the account does not exist, so a miss costs the same as a
+# wrong password. Without this the response time discloses which emails have
+# accounts.
+_DUMMY_PASSWORD_HASH = hash_password("not-a-real-password")
+
+
+def _current_user_for(db: Session, db_user: User) -> CurrentUser:
+    """Build the API's user view for a freshly authenticated account."""
+    return CurrentUser(
+        id=db_user.id,  # type: ignore[arg-type]
+        email=str(db_user.email),
+        name=db_user.name,  # type: ignore[arg-type]
+        is_admin=bool(db_user.is_admin),
+        picture=db_user.picture,  # type: ignore[arg-type]
+        is_email_verified=bool(db_user.is_email_verified),
+        is_active=subscription_crud.is_user_active(db, db_user),
+        is_blocked=bool(db_user.is_blocked),
+    )
+
+
+@auth_router.post("/login", response_model=AuthResponse)
+async def local_login(
+    payload: LocalLoginRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """Sign in with a password stored in this deployment's database.
+
+    Exists because the two hosted sign-in paths both need the public internet:
+    Google needs a registered public redirect URI, and the emailed code needs a
+    mail provider. On an internal network neither can complete.
+    """
+    email = payload.email.strip().lower()
+    db_user = user_crud.get_by_email(db=db, email=email)
+
+    stored_hash = (
+        str(db_user.password_hash)
+        if db_user is not None and db_user.password_hash
+        else _DUMMY_PASSWORD_HASH
+    )
+    password_matches = verify_password(payload.password, stored_hash)
+
+    if db_user is None or not password_matches or not bool(db_user.is_active):
+        logger.info(
+            "Local sign-in rejected",
+            extra={"email": email, "user_known": db_user is not None},
+        )
+        # A fixed delay blunts scripted guessing without a lockout table that a
+        # restart would forget.
+        await asyncio.sleep(0.5)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password.",
+        )
+
+    session = user_crud.create_session(
+        db=db,
+        user_id=db_user.id,  # type: ignore[arg-type]
+        user_agent=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+    )
+    set_session_cookie(
+        response,
+        token=str(session.token),
+        expires_at=session.expires_at,  # type: ignore[arg-type]
+    )
+
+    logger.info("Local sign-in succeeded", extra={"email": email, "user_id": str(db_user.id)})
+    return AuthResponse(
+        success=True,
+        message="Signed in",
+        user=_current_user_for(db, db_user),
+    )
+
+
+@auth_router.post("/register", response_model=AuthResponse, status_code=201)
+async def register_local_account(
+    payload: RegisterRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    """Create a local account and sign it in.
+
+    The hosted product creates accounts only through Google or an emailed code;
+    both are unusable here, so without this a new person needs shell access to
+    the server just to get a login.
+    """
+    if not allow_local_registration:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registration is disabled on this deployment.",
+        )
+
+    email = str(payload.email).strip().lower()
+
+    invalid = validate_new_password(payload.password)
+    if invalid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=invalid
+        )
+
+    # Checked up front for a clean message, and again via the unique constraint
+    # below so two simultaneous signups can't both win.
+    if user_crud.get_by_email(db=db, email=email) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email already exists.",
+        )
+
+    db_user = User(
+        email=email,
+        name=(payload.name or email.split("@")[0]).strip(),
+        # Normally supplied by an OAuth provider; a local account is its own
+        # identity provider, so the email doubles as the provider id.
+        auth_provider="local",
+        provider_user_id=f"local:{email}",
+        # There is no outbound mail to verify against. Treating the address as
+        # verified is a deliberate trade: whoever creates the account on the
+        # box already has access to it.
+        is_email_verified=True,
+        is_active=True,
+        is_admin=False,
+        password_hash=hash_password(payload.password),
+    )
+    db.add(db_user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with this email already exists.",
+        )
+    db.refresh(db_user)
+
+    # Without this a fresh account lands on BASIC with no upgrade path, because
+    # this deployment has no billing.
+    grant_self_hosted_entitlements(db, db_user.id)  # type: ignore[arg-type]
+
+    session = user_crud.create_session(
+        db=db,
+        user_id=db_user.id,  # type: ignore[arg-type]
+        user_agent=request.headers.get("user-agent"),
+        ip_address=request.client.host if request.client else None,
+    )
+    set_session_cookie(
+        response,
+        token=str(session.token),
+        expires_at=session.expires_at,  # type: ignore[arg-type]
+    )
+
+    logger.info(
+        "Local account registered",
+        extra={"email": email, "user_id": str(db_user.id)},
+    )
+    return AuthResponse(
+        success=True,
+        message="Account created",
+        user=_current_user_for(db, db_user),
+        newly_created=True,
+    )
+
+
+@auth_router.post("/password", response_model=AuthResponse)
+async def change_local_password(
+    payload: ChangePasswordRequest,
+    current_user: CurrentUser = Depends(get_required_user),
+    db: Session = Depends(get_db),
+):
+    """Rotate the signed-in account's password."""
+    db_user = user_crud.get(db=db, id=current_user.id)
+    if db_user is None or not db_user.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account has no local password to change.",
+        )
+
+    if not verify_password(payload.current_password, str(db_user.password_hash)):
+        await asyncio.sleep(0.5)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect.",
+        )
+
+    invalid = validate_new_password(payload.new_password)
+    if invalid:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=invalid)
+
+    db_user.password_hash = hash_password(payload.new_password)  # type: ignore[assignment]
+    db.add(db_user)
+    db.commit()
+
+    logger.info("Local password changed", extra={"user_id": str(db_user.id)})
+    return AuthResponse(success=True, message="Password updated")
 
 
 @auth_router.get("/me", response_model=AuthResponse)
@@ -195,6 +428,65 @@ def _signed_in_redirect(session: DBSession, welcome: bool) -> RedirectResponse:
     )
     # Set a header that the frontend can use to detect successful auth
     response.headers["X-Auth-Success"] = "true"
+    return response
+
+
+@auth_router.get("/session", response_class=RedirectResponse)
+async def sign_in_with_session_token(
+    token: str = Query(...),
+    next_path: str = Query("/", alias="next"),
+    db: Session = Depends(get_db),
+):
+    """Sign a browser in by exchanging an existing session token for the cookie.
+
+    A self-hosted install can't complete Google OAuth: the redirect URI has to be
+    registered against a public host. The documented way in is minting a token on
+    the box, but the last step was pasting `document.cookie = ...` into the
+    devtools console, and that is exactly where people get stuck — the page
+    loads, every API call 401s, and nothing says the cookie was never set.
+
+    This is an exchange, not a bypass: the token has to already exist in
+    `sessions` and be unexpired, which `get_by_token` enforces. Being a GET makes
+    it a clickable link, so the token does land in browser history and the access
+    log — hence the masked logging and the warning in DEPLOYMENT-LOCAL.md.
+    """
+    db_session = user_crud.get_by_token(db=db, token=token)
+    if not db_session:
+        logger.info("Session sign-in link used with an unknown or expired token")
+        return RedirectResponse(
+            url=f"{client_domain}/login?error=invalid_session",
+            status_code=status.HTTP_302_FOUND,
+        )
+
+    db_user = user_crud.get(db=db, id=db_session.user_id)
+    if not db_user or not db_user.is_active:
+        logger.warning("Session sign-in link used for a missing or inactive user")
+        return RedirectResponse(
+            url=f"{client_domain}/login?error=invalid_session",
+            status_code=status.HTTP_302_FOUND,
+        )
+
+    # Relative, single-slash paths only: `//evil.example` would otherwise be a
+    # perfectly valid absolute redirect.
+    target = (
+        next_path
+        if next_path.startswith("/") and not next_path.startswith("//")
+        else "/"
+    )
+
+    logger.info(
+        "Signed in via session link",
+        extra={"token_prefix": token[:8], "target": target},
+    )
+
+    response = RedirectResponse(
+        url=f"{client_domain}{target}", status_code=status.HTTP_302_FOUND
+    )
+    set_session_cookie(
+        response,
+        token=str(db_session.token),
+        expires_at=db_session.expires_at,  # type: ignore[arg-type]
+    )
     return response
 
 

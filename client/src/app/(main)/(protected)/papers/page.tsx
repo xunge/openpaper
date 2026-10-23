@@ -251,7 +251,11 @@ function PapersPageContent() {
                         <div>
                             <div className="flex justify-between text-sm text-muted-foreground">
                                 <span>Storage: {formatFileSize(subscription.usage.knowledge_base_size)} used</span>
-                                <span>{formatFileSize(subscription.limits.knowledge_base_size)} total</span>
+                                <span>
+                                    {subscription.unlimited
+                                        ? "Unlimited"
+                                        : `${formatFileSize(subscription.limits.knowledge_base_size)} total`}
+                                </span>
                             </div>
                             <Progress value={storageUsagePercentage} className="h-2 mt-1" />
                         </div>
@@ -260,7 +264,11 @@ function PapersPageContent() {
                         <div>
                             <div className="flex justify-between text-sm text-muted-foreground">
                                 <span>Papers: {subscription.usage.paper_uploads} used</span>
-                                <span>{subscription.limits.paper_uploads} total</span>
+                                <span>
+                                    {subscription.unlimited
+                                        ? "Unlimited"
+                                        : `${subscription.limits.paper_uploads} total`}
+                                </span>
                             </div>
                             <Progress value={paperUploadUsagePercentage} className="h-2 mt-1" />
                         </div>

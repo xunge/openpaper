@@ -338,7 +338,7 @@ class ChartPlanning(DataTableOperations):
             system_prompt=CHART_SCOPE_SYSTEM_PROMPT,
             model_type=ModelType.FAST,
             schema=ChartScope.model_json_schema(),
-            provider=LLMProvider.GEMINI,
+            provider=LLMProvider.DEEPSEEK,
         )
         if not response or not response.text:
             return ChartScope(covers="all_papers")
@@ -416,7 +416,7 @@ class ChartPlanning(DataTableOperations):
             system_prompt=CHART_PLAN_SYSTEM_PROMPT,
             model_type=ModelType.FAST,
             schema=ChartPlanCandidates.model_json_schema(),
-            provider=LLMProvider.GEMINI,
+            provider=LLMProvider.DEEPSEEK,
         )
         if not response or not response.text:
             return ChartProposal()

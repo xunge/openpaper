@@ -130,6 +130,10 @@ class User(Base):
     is_admin = Column(Boolean, default=False)
     is_blocked = Column(Boolean, default=False, nullable=False)
 
+    # Local password login (see app/auth/passwords.py). Null for accounts that
+    # only ever use Google or emailed codes — the hosted product's two paths.
+    password_hash = Column(String, nullable=True)
+
     # OAuth related fields
     auth_provider = Column(String, nullable=False)
     provider_user_id = Column(String, nullable=False, index=True)

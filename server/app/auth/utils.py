@@ -11,7 +11,10 @@ from fastapi import Request, Response
 load_dotenv()
 
 # Environment variables
-SESSION_COOKIE_DOMAIN = os.getenv("SESSION_COOKIE_DOMAIN", None)
+# An empty value means "host-only". Starlette writes whatever it is given as a
+# Domain attribute, and browsers reject `Domain=` (or an IP literal), so
+# normalise empty to None rather than passing it through.
+SESSION_COOKIE_DOMAIN = os.getenv("SESSION_COOKIE_DOMAIN") or None
 SECURE_COOKIES = os.getenv("SECURE_COOKIES", "false").lower() == "true"
 
 

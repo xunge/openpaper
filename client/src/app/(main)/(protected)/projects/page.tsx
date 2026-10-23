@@ -206,7 +206,11 @@ function ProjectsPage() {
 						<div>
 							<div className="flex justify-between text-sm text-muted-foreground">
 								<span>Projects: {subscription.usage.projects} used</span>
-								<span>{subscription.limits.projects} total</span>
+								<span>
+									{subscription.unlimited
+										? "Unlimited"
+										: `${subscription.limits.projects} total`}
+								</span>
 							</div>
 							<Progress value={getProjectUsagePercentage(subscription)} className="h-2 mt-1" />
 						</div>

@@ -6,8 +6,28 @@ from posthog import Posthog
 POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY", '')
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
+class _NoopPosthog:
+    """Stand-in for the PostHog client when no API key is configured.
+
+    Matches the no-op used by the server so a self-hosted deployment without
+    PostHog logs one line about analytics being off instead of SDK warnings
+    about an empty key and missing feature-flag secrets.
+    """
+
+    debug = False
+
+    def __getattr__(self, name):
+        def _noop(*args, **kwargs):
+            return None
+
+        return _noop
+
+
 # Unfortunately we have to use sync_mode here because PostHog's async mode is not compatible with our Celery setup. See also: https://github.com/PostHog/posthog-python/issues/79
-posthog = Posthog(POSTHOG_API_KEY, host="https://us.i.posthog.com", sync_mode=True)
+if POSTHOG_API_KEY:
+    posthog = Posthog(POSTHOG_API_KEY, host="https://us.i.posthog.com", sync_mode=True)
+else:
+    posthog = _NoopPosthog()
 
 logger = logging.getLogger(__name__)
 

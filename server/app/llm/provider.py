@@ -61,6 +61,9 @@ class LLMProvider(Enum):
     GEMINI = "gemini"
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
+    # Any OpenAI-compatible endpoint (DeepSeek here). Self-hosting targets these
+    # because they need one API key instead of three.
+    DEEPSEEK = "deepseek"
 
 
 class LLMResponse:
@@ -662,6 +665,15 @@ class GeminiProvider(BaseLLMProvider):
 class OpenAIProvider(BaseLLMProvider):
     """OpenAI LLM provider implementation"""
 
+    # Which enum value this client reports as. Subclasses backed by an
+    # OpenAI-compatible endpoint override it so logs, telemetry, and the stored
+    # message row name the provider that actually ran.
+    provider_enum = LLMProvider.OPENAI
+
+    # Whether the endpoint honours OpenAI's `response_format: json_schema`.
+    # DeepSeek exposes only the older `json_object` mode.
+    supports_json_schema = True
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -733,16 +745,34 @@ class OpenAIProvider(BaseLLMProvider):
             if model.startswith("gpt-5"):
                 kwargs.setdefault("reasoning_effort", "none")
 
-        # Apply structured output schema if provided
+        # Apply structured output schema if provided. Endpoints that only speak
+        # `json_object` get that instead, plus a nudge in the system message:
+        # that mode is documented to require the word "json" somewhere in the
+        # prompt, and without strict schema enforcement the model also needs to
+        # be told the shape is not free-form.
         if schema:
-            kwargs["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {
-                    "name": "structured_response",
-                    "strict": True,
-                    "schema": schema,
-                },
-            }
+            if self.supports_json_schema:
+                kwargs["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "structured_response",
+                        "strict": True,
+                        "schema": schema,
+                    },
+                }
+            else:
+                kwargs["response_format"] = {"type": "json_object"}
+                if "json" not in json.dumps(all_messages).lower():
+                    all_messages.insert(
+                        0,
+                        {
+                            "role": "system",
+                            "content": (
+                                "Respond with a single JSON object that matches "
+                                "this schema: " + json.dumps(schema)
+                            ),
+                        },
+                    )
 
         if enable_thinking:
             logger.debug(
@@ -773,7 +803,7 @@ class OpenAIProvider(BaseLLMProvider):
         return LLMResponse(
             text=message.content or "",
             model=model,
-            provider=LLMProvider.OPENAI,
+            provider=self.provider_enum,
             tool_calls=tool_calls,
         )
 
@@ -819,7 +849,7 @@ class OpenAIProvider(BaseLLMProvider):
                 yield StreamChunk(
                     text="",
                     model=model,
-                    provider=LLMProvider.OPENAI,
+                    provider=self.provider_enum,
                     is_restart=True,
                 )
                 continue
@@ -829,7 +859,7 @@ class OpenAIProvider(BaseLLMProvider):
                 yield StreamChunk(
                     text=chunk.choices[0].delta.content,
                     model=model,
-                    provider=LLMProvider.OPENAI,
+                    provider=self.provider_enum,
                     is_done=chunk.choices[0].finish_reason is not None,
                 )
             elif chunk.usage:
@@ -1016,6 +1046,46 @@ class OpenAIProvider(BaseLLMProvider):
 
     def get_fast_model(self) -> str:
         return self._fast_model
+
+
+class DeepSeekProvider(OpenAIProvider):
+    """DeepSeek, spoken to over its OpenAI-compatible endpoint.
+
+    DeepSeek implements enough of the chat-completions API that the OpenAI
+    provider's message marshalling applies unchanged. What differs: it has its
+    own base URL and model names, it takes no native PDF input (callers already
+    pass `text_fallback` for text-only providers), and its structured output
+    support is the older `json_object` mode.
+    """
+
+    provider_enum = LLMProvider.DEEPSEEK
+    supports_json_schema = False
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        default_model: Optional[str] = None,
+        fast_model: Optional[str] = None,
+    ):
+        api_key = api_key or os.getenv("DEEPSEEK_API_KEY")
+        if not api_key:
+            raise ValueError("DEEPSEEK_API_KEY environment variable is required")
+
+        default_model = default_model or os.getenv(
+            "DEEPSEEK_DEFAULT_MODEL", "deepseek-chat"
+        )
+        super().__init__(
+            api_key=api_key,
+            base_url=base_url or os.getenv(
+                "DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"
+            ),
+            default_model=default_model,
+            fast_model=fast_model
+            or os.getenv("DEEPSEEK_FAST_MODEL", default_model),
+            # No file content blocks: PDFs reach the model as extracted text.
+            supports_pdf_input=False,
+        )
 
 
 class AnthropicProvider(BaseLLMProvider):

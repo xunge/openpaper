@@ -7,6 +7,7 @@ import uuid
 from typing import Tuple
 
 import boto3 # type: ignore
+from botocore.config import Config # type: ignore
 from botocore.exceptions import ClientError # type: ignore
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,10 @@ AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
 AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
 S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
 CLOUDFLARE_BUCKET_NAME = os.environ.get("CLOUDFLARE_BUCKET_NAME")
+# Self-hosting overrides; see the matching comment in the server's s3 helper.
+# Unset keeps the upstream AWS + Cloudflare behaviour.
+S3_ENDPOINT_URL = os.environ.get("S3_ENDPOINT_URL")
+S3_PUBLIC_URL = os.environ.get("S3_PUBLIC_URL")
 UPLOAD_DIR = os.environ.get("UPLOAD_DIR", "uploads")
 
 
@@ -25,14 +30,26 @@ class S3Service:
 
     def __init__(self):
         """Initialize S3 client"""
-        self.s3_client = boto3.client(
-            "s3",
-            aws_access_key_id=AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-            region_name=AWS_REGION,
-        )
+        client_kwargs: dict = {
+            "aws_access_key_id": AWS_ACCESS_KEY_ID,
+            "aws_secret_access_key": AWS_SECRET_ACCESS_KEY,
+            "region_name": AWS_REGION,
+        }
+        if S3_ENDPOINT_URL:
+            client_kwargs["endpoint_url"] = S3_ENDPOINT_URL
+            client_kwargs["config"] = Config(
+                signature_version="s3v4", s3={"addressing_style": "path"}
+            )
+
+        self.s3_client = boto3.client("s3", **client_kwargs)
         self.bucket_name = S3_BUCKET_NAME
         self.cloudflare_bucket_name = CLOUDFLARE_BUCKET_NAME
+
+    def _public_url(self, object_key: str) -> str:
+        """Public URL for an uploaded object."""
+        if S3_PUBLIC_URL:
+            return f"{S3_PUBLIC_URL.rstrip('/')}/{object_key}"
+        return f"https://{self.cloudflare_bucket_name}/{object_key}"
 
     def download_file_to_bytes(self, object_key: str) -> bytes:
         """Download a file from S3 and return its content as bytes
@@ -77,7 +94,7 @@ class S3Service:
             Body=file_bytes,
             ContentType=content_type,
         )
-        file_url = f"https://{self.cloudflare_bucket_name}/{object_key}"
+        file_url = self._public_url(object_key)
         return object_key, file_url
 
     def upload_any_file(
@@ -111,7 +128,7 @@ class S3Service:
                 )
 
             # Generate the URL for the uploaded file
-            file_url = f"https://{self.cloudflare_bucket_name}/{object_key}"
+            file_url = self._public_url(object_key)
 
             return object_key, file_url
         except ClientError as e:

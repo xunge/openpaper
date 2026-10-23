@@ -88,6 +88,34 @@ services:
       retries: 20
     restart: unless-stopped
 
+  # Self-hosting substitute for the AWS + Cloudflare pair upstream stores PDFs
+  # in. The console is published too so buckets and CORS are inspectable without
+  # a shell in the container. `scripts/dev` creates the bucket and its CORS rule
+  # on first boot; see the minio-bucket note in DEVELOPMENT.md.
+  minio:
+    image: minio/minio:latest
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      # Presigned URLs are minted against the endpoint the *server* uses. Inside
+      # compose that is the service name, which the browser cannot resolve, so
+      # the server is configured with the host address instead and this only
+      # affects server-side redirects.
+      MINIO_BROWSER_REDIRECT_URL: http://${DEV_HOST:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9001}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      # The image ships `mc`, not curl; `mc ready` is the supported probe.
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
   # One-shot, exactly as prod does it. `server` waits for this to exit 0, so a
   # failed migration surfaces as a failed startup instead of a half-migrated db.
   migrate:
@@ -132,7 +160,11 @@ services:
       # uncontainerized stack on :3000 is also sent to :3100/:8100 — and since
       # the server marks it httponly, JavaScript cannot replace it, so you get
       # 401s you cannot clear from the page. Different host, different jar.
-      SESSION_COOKIE_DOMAIN: ${DEV_HOST:-127.0.0.1}
+      # Cookies ignore ports, and this stack's default host is an IP literal,
+      # which browsers reject as a cookie Domain. Empty means "host-only",
+      # which is what uncontainerized dev gets too. Set it explicitly when
+      # running behind a real domain name.
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-}
       # Browser OAuth against these ports only works if the redirect URIs are
       # registered with the provider. Use `scripts/dev session` instead.
       GOOGLE_REDIRECT_URI: http://${DEV_HOST:-127.0.0.1}:${SERVER_PORT:-8100}/api/auth/google/callback
@@ -215,3 +247,4 @@ services:
 
 volumes:
   pgdata:
+  miniodata:

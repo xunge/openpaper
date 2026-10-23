@@ -9,10 +9,19 @@ import posthog from 'posthog-js'
 import { PostHogProvider as PHProvider } from 'posthog-js/react'
 import { useIsDarkMode } from "@/hooks/useDarkMode"
 
+// Analytics is optional, and a self-hosted install normally has no PostHog
+// project at all. Initialising with an undefined key does not just stay quiet:
+// the SDK logs a misconfiguration error on every page load and still installs
+// its client. So both the init and the pageview capture below are skipped when
+// the key is absent — the app behaves exactly as before, minus the noise.
+const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY
+
 // Note: This provider does not work wherever adblock is enabled.
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
-        posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY as string, {
+        if (!POSTHOG_KEY) return
+
+        posthog.init(POSTHOG_KEY, {
             api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
             person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
             capture_pageview: false // Disable automatic pageview capture, as we capture manually
@@ -35,6 +44,8 @@ function PostHogPageView() {
 
     // Track pageviews
     useEffect(() => {
+        if (!POSTHOG_KEY) return
+
         if (pathname && posthog) {
             let url = window.origin + pathname
             if (searchParams.toString()) {

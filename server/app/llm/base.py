@@ -9,6 +9,7 @@ from app.database.telemetry import track_event
 from app.llm.provider import (
     AnthropicProvider,
     BaseLLMProvider,
+    DeepSeekProvider,
     FileContent,
     GeminiProvider,
     LLMProvider,
@@ -38,17 +39,49 @@ def _fallback_provider_from_env() -> Optional[LLMProvider]:
     return LLMProvider(value.lower()) if value else None
 
 
+# The env var that makes a provider usable. Upstream initializes every
+# provider so the chat picker can list all of them, which is right for a hosted
+# service holding three keys and wrong for a self-hosted install holding one:
+# a missing key used to be a startup failure. Providers without a key are now
+# simply absent, and the ones that exist are the ones offered.
+PROVIDER_KEY_ENV: Dict[LLMProvider, str] = {
+    LLMProvider.GEMINI: "GEMINI_API_KEY",
+    LLMProvider.OPENAI: "OPENAI_API_KEY",
+    LLMProvider.ANTHROPIC: "ANTHROPIC_API_KEY",
+    LLMProvider.DEEPSEEK: "DEEPSEEK_API_KEY",
+}
+
+
+def _default_provider_from_env() -> LLMProvider:
+    """`DEFAULT_LLM_PROVIDER` if set, else the first provider that has a key."""
+    value = os.getenv("DEFAULT_LLM_PROVIDER", "").strip()
+    if value:
+        return LLMProvider(value.lower())
+    for provider in LLMProvider:
+        if os.getenv(PROVIDER_KEY_ENV[provider]):
+            return provider
+    return LLMProvider.GEMINI
+
+
 class BaseLLMClient:
     """Unified LLM client that supports multiple providers"""
 
-    def __init__(self, default_provider: LLMProvider = LLMProvider.GEMINI):
-        self.default_provider = default_provider
+    def __init__(self, default_provider: Optional[LLMProvider] = None):
+        self.default_provider = default_provider or _default_provider_from_env()
         self.fallback_provider = _fallback_provider_from_env()
         self._providers: Dict[LLMProvider, BaseLLMProvider] = {}
 
-        # Initialize all providers to ensure they are ready for use
         for provider in LLMProvider:
-            self._initialize_provider(provider)
+            if os.getenv(PROVIDER_KEY_ENV[provider]):
+                self._initialize_provider(provider)
+
+        if self.default_provider not in self._providers:
+            raise ValueError(
+                "No LLM provider is configured for the default provider "
+                f"'{self.default_provider.value}'. Set "
+                f"{PROVIDER_KEY_ENV[self.default_provider]}, or pick another "
+                "with DEFAULT_LLM_PROVIDER."
+            )
 
     def get_chat_model_options(
         self, exclude: Optional[List[LLMProvider]] = None
@@ -78,6 +111,8 @@ class BaseLLMClient:
                 self._providers[provider] = OpenAIProvider()
             elif provider == LLMProvider.ANTHROPIC:
                 self._providers[provider] = AnthropicProvider()
+            elif provider == LLMProvider.DEEPSEEK:
+                self._providers[provider] = DeepSeekProvider()
             else:
                 raise ValueError(f"Unsupported LLM provider: {provider}")
 

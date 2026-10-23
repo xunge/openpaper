@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import re
-import io
 import asyncio
 import random
 import httpx
@@ -17,14 +16,20 @@ from src.observability import configure_langfuse
 
 configure_langfuse()
 
-from openinference.instrumentation.google_genai import GoogleGenAIInstrumentor
-
-GoogleGenAIInstrumentor().instrument()
-
-from google import genai
-from google.genai import types
-from google.genai.errors import APIError, ClientError, ServerError
 from typing import Any, Dict, List, Optional, Type, TypeVar, Callable
+
+# This worker used the Google GenAI SDK directly: native PDF parts, explicit
+# context caching, and `response_schema`. DeepSeek is OpenAI-compatible but
+# offers none of those, so the client below talks chat-completions instead and
+# keeps the parts that are provider-independent (prompts, retries, Pydantic
+# validation, the parse-then-repair loop).
+from openai import (
+    APIConnectionError,
+    APIError,
+    APITimeoutError,
+    AsyncOpenAI,
+    RateLimitError,
+)
 
 from pydantic import BaseModel, ValidationError, create_model, Field, ConfigDict
 
@@ -46,13 +51,12 @@ logger = logging.getLogger(__name__)
 
 
 def _format_api_error(e: Exception) -> Any:
-    """Pull the concise 'error' payload out of a genai API error for logging.
+    """Pull the concise error payload out of an API exception for logging.
 
-    google-genai's APIError stores the raw response JSON on `.details` (see
-    errors.py) and stringifies as "<code> <status>. <details>", so the full
-    payload is what bloats the logs. When `.details` is a dict, return its
-    'error' value; otherwise (e.g. httpx.TimeoutException, or no 'error' key)
-    fall back to the whole exception.
+    Some SDK exceptions stringify as the entire response body, which overwhelms
+    the logs. When the exception exposes a dict on `.details`/`.body`, return its
+    'error' entry; otherwise (a timeout, or no such field) fall back to the whole
+    exception.
     """
     details = getattr(e, "details", None)
     if isinstance(details, dict):
@@ -75,16 +79,21 @@ def _is_retryable(e: Exception) -> bool:
     """
     if isinstance(e, httpx.TimeoutException):
         return True
-    if isinstance(e, ServerError):
+    if isinstance(e, (APIConnectionError, APITimeoutError)):
+        return True
+    if isinstance(e, RateLimitError):
         return True
     if isinstance(e, APIError):
-        return getattr(e, "code", None) in RETRYABLE_STATUS_CODES
+        status = getattr(e, "status_code", None)
+        if status is None:
+            return True
+        return status in RETRYABLE_STATUS_CODES or status >= 500
     return False
 
 
 # Constants
-DEFAULT_CHAT_MODEL = "gemini-3.8-flash"
-FAST_CHAT_MODEL = "gemini-3.5-flash-lite"
+DEFAULT_CHAT_MODEL = os.getenv("DEEPSEEK_DEFAULT_MODEL", "deepseek-chat")
+FAST_CHAT_MODEL = os.getenv("DEEPSEEK_FAST_MODEL", DEFAULT_CHAT_MODEL)
 CACHE_TTL_SECONDS = 3600
 
 # Gemini rejects caches below 1024 tokens. Below this many characters the content
@@ -150,134 +159,116 @@ class AsyncLLMClient:
     ):
         self.api_key = api_key
         self.default_model: str = default_model or DEFAULT_CHAT_MODEL
+        # The OpenAI SDK needs an explicit base URL; unlike the GenAI SDK
+        # there is no built-in notion of "the DeepSeek endpoint".
+        self.base_url: str = os.getenv(
+            "DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"
+        )
 
-    def _create_client(self, timeout: int = DEFAULT_TIMEOUT) -> genai.Client:
+    def _create_client(self, timeout: int = DEFAULT_TIMEOUT) -> AsyncOpenAI:
         """Create a fresh client instance for thread-safe concurrent calls."""
         if not self.api_key:
             raise ValueError("API key is not set")
-        return genai.Client(
+        return AsyncOpenAI(
             api_key=self.api_key,
-            http_options=types.HttpOptions(timeout=timeout),
+            base_url=self.base_url,
+            # The callers below pass milliseconds; the SDK wants seconds.
+            timeout=timeout / 1000,
+            # Retries live in the loops below, which can also re-ask with a
+            # corrective instruction; letting the SDK retry underneath them
+            # would multiply the worst-case wall clock.
+            max_retries=0,
         )
 
-    async def _close_client(self, client: genai.Client) -> None:
+    async def _close_client(self, client: AsyncOpenAI) -> None:
         """Close the async transport before the task's event loop goes away.
 
-        The SDK's AsyncClient.__del__ schedules aclose() at GC time, which in
-        a Celery worker lands on a *later* task's loop and dies with "Event
-        loop is closed". Closing explicitly keeps cleanup on the loop that
-        owns the connections.
+        The SDK schedules aclose() at GC time, which in a Celery worker lands on
+        a *later* task's loop and dies with "Event loop is closed". Closing
+        explicitly keeps cleanup on the loop that owns the connections.
         """
         try:
-            await client.aio.aclose()
+            await client.close()
         except Exception as e:
-            logger.debug(f"Error closing genai client: {e}")
+            logger.debug(f"Error closing LLM client: {e}")
 
     async def count_tokens(self, text: str, model: Optional[str] = None) -> int:
-        """Exact input token count for `text`, as `model` will tokenize it.
+        """Approximate input token count for `text`.
 
-        countTokens is a separate, free endpoint with its own quota — it costs
-        no generation tokens. Use it rather than a chars-per-token estimate
-        whenever a request is near the input window: dense paper text (tables,
-        math, reference lists, CJK) packs far more tokens per character than
-        English prose, so a character heuristic under-counts and the request
-        comes back as a 400 INVALID_ARGUMENT that no retry can fix.
+        The Gemini endpoint this replaced advertised an exact countTokens call;
+        DeepSeek has no equivalent, so this is a character estimate. Three
+        characters per token is pessimistic for prose and about right for dense
+        paper text (tables, math, CJK) — the direction callers want, since it
+        makes them truncate slightly sooner rather than overflow the window.
         """
-        client = self._create_client()
-        try:
-            response = await client.aio.models.count_tokens(
-                model=model or self.default_model,
-                contents=types.Content(
-                    role='user',
-                    parts=[types.Part.from_text(text=text)],
-                ),
-            )
-        finally:
-            await self._close_client(client)
+        if not text:
+            return 0
+        return max(1, len(text) // 3)
 
-        total_tokens = getattr(response, "total_tokens", None)
-        if total_tokens is None:
-            raise ValueError("count_tokens returned no total_tokens")
-        return total_tokens
+    async def create_cache(self, cache_content: str, client: AsyncOpenAI, model: Optional[str] = None) -> Optional[str]:
+        """No-op: DeepSeek caches prompt prefixes automatically.
 
-    async def create_cache(self, cache_content: str, client: genai.Client, model: Optional[str] = None) -> str:
-        """Create a cache entry for the given content.
-
-        Args:
-            cache_content (str): The content to cache.
-            client: The genai client to use.
-            model: Optional model override. Defaults to self.default_model.
-
-        Returns:
-            str: The cache key for the stored content.
+        Upstream created an explicit Gemini cache here so the paper text and the
+        system instructions were billed once across four extraction calls. That
+        API has no DeepSeek equivalent, and asking for one would fail the whole
+        extraction, so this returns None. Callers treat None as "inline the
+        content in the prompt", which is exactly the fallback they already had
+        for papers below the cache floor.
         """
-        cached_content = await client.aio.caches.create(
-            model=model or self.default_model,
-            config=types.CreateCachedContentConfig(
-                contents=types.Content(
-                    role='user',
-                    parts=[
-                        types.Part.from_text(text=cache_content),
-                        types.Part.from_text(text=SYSTEM_INSTRUCTIONS_CACHE)
-                    ]
-                ),
-                display_name="Paper Metadata Cache",
-                ttl='3600s'
-            )
+        logger.debug(
+            "Skipping explicit cache creation: DeepSeek caches prompt prefixes automatically"
         )
-
-        if cached_content and cached_content.name:
-            logger.info(f"Cache created successfully: {cached_content.name}")
-        else:
-            logger.error("Failed to create cache entry")
-            raise ValueError("Cache creation failed")
-
-        return cached_content.name
+        return None
 
     async def create_file_cache(
         self,
         file_path: str,
-        client: genai.Client,
+        client: AsyncOpenAI,
         system_instructions: Optional[str] = None,
-    ):
-        """Create a cache entry for the given file.
+    ) -> Optional[str]:
+        """No-op, for the same reason as `create_cache`."""
+        logger.debug("Skipping file cache creation: unsupported for DeepSeek")
+        return None
 
-        Args:
-            file_path (str): The path to the file to cache.
-            client: The genai client to use.
+    def _build_messages(
+        self, prompt: str, file_path: Optional[str] = None
+    ) -> List[Dict[str, str]]:
+        """System instructions plus the user turn, paper text inlined.
 
-        Returns:
-            str: The cache key for the stored file.
+        Gemini used to carry `SYSTEM_INSTRUCTIONS_CACHE` inside the cache entry
+        it created; with no cache the instructions have to travel with every
+        request or the extraction loses them. A PDF given by path is reduced to
+        extracted text on the way in, because this provider accepts no file
+        parts.
         """
-        # Read the file content
-        with open(file_path, 'rb') as f:
-            file_content = f.read()
+        messages: List[Dict[str, str]] = [
+            {"role": "system", "content": SYSTEM_INSTRUCTIONS_CACHE}
+        ]
 
-        doc_io = io.BytesIO(file_content)
-        document = await client.aio.files.upload(
-            file=doc_io,
-            config=types.UploadFileConfig(
-                mime_type='application/pdf',
+        content = prompt
+        if file_path:
+            # Imported here: src.parser pulls in the S3 service, and this module
+            # is imported by tasks that must not drag that in at module load.
+            from src.parser import extract_text_from_pdf
+
+            document_text = extract_text_from_pdf(file_path)
+            content = (
+                f'<document filename="{os.path.basename(file_path)}">\n'
+                f"{document_text}\n</document>\n\n{prompt}"
             )
+
+        messages.append({"role": "user", "content": content})
+        return messages
+
+    @staticmethod
+    def _schema_instruction(schema: Type[BaseModel]) -> str:
+        """The schema, spelled out for endpoints without strict schema mode."""
+        return (
+            "\n\nRespond with a single JSON object matching this schema — "
+            "no prose, no markdown code fences, and properly escape any quotes "
+            "inside string values:\n"
+            + json.dumps(schema.model_json_schema())
         )
-
-        cached_content = await client.aio.caches.create(
-            model=self.default_model,
-            config=types.CreateCachedContentConfig(
-                contents=document,
-                display_name="Paper Metadata Cache",
-                ttl='3600s',
-                system_instruction=system_instructions or SYSTEM_INSTRUCTIONS_CACHE
-            ),
-        )
-
-        if cached_content and cached_content.name:
-            logger.info(f"File cache created successfully: {cached_content.name}")
-        else:
-            logger.error("Failed to create cache entry")
-            raise ValueError("Cache creation failed")
-
-        return cached_content.name
 
     async def generate_content(
         self,
@@ -290,7 +281,7 @@ class AsyncLLMClient:
         file_path: Optional[str] = None,
         max_retries: int = 3,
         base_delay: float = 1.0,
-        client: Optional[genai.Client] = None,
+        client: Optional[AsyncOpenAI] = None,
     ) -> str:
         """
         Generate content using the LLM with automatic retry and exponential backoff.
@@ -311,45 +302,34 @@ class AsyncLLMClient:
         if not model:
             model = self.default_model
 
-        parts = []
         if image_bytes:
-            parts.append(types.Part.from_bytes(data=image_bytes, mime_type=image_mime_type or 'image/png'))
+            logger.warning(
+                "Image input is not supported by this LLM backend; the image is "
+                "omitted from the request"
+            )
 
-        if file_path:
-            with open(file_path, "rb") as f:
-                file_data = f.read()
-            parts.append(types.Part.from_bytes(data=file_data, mime_type='application/pdf'))
+        messages = self._build_messages(prompt, file_path=file_path)
 
-
-        parts.append(types.Part.from_text(text=prompt))
-
-        config = types.GenerateContentConfig(
-            cached_content=cache_key
-        )
-
+        kwargs: Dict[str, Any] = {}
         if schema:
-            config.response_mime_type = 'application/json'
-            config.response_schema = schema.model_json_schema()
+            kwargs["response_format"] = {"type": "json_object"}
+            messages[-1]["content"] += self._schema_instruction(schema)
 
         last_exception: Optional[Exception] = None
 
         for attempt in range(max_retries + 1):
             try:
-                response = await client.aio.models.generate_content(
-                    model=model,
-                    contents=types.Content(
-                        role='user',
-                        parts=parts
-                    ),
-                    config=config
+                response = await client.chat.completions.create(
+                    model=model, messages=messages, **kwargs
                 )
 
-                if response and response.text:
-                    return response.text
+                text = response.choices[0].message.content if response.choices else None
+                if text:
+                    return text
 
                 raise ValueError("No content generated from LLM response")
 
-            except (ServerError, ClientError, APIError, httpx.TimeoutException) as e:
+            except (APIError, APIConnectionError, APITimeoutError, httpx.TimeoutException) as e:
                 last_exception = e
                 if not _is_retryable(e):
                     logger.error(f"Non-retryable LLM API error for generate_content: {_format_api_error(e)}")
@@ -372,7 +352,7 @@ class AsyncLLMClient:
         self,
         prompt: str,
         schema: Type[T],
-        client: genai.Client,
+        client: AsyncOpenAI,
         model: Optional[str] = None,
         file_path: Optional[str] = None,
         cache_key: Optional[str] = None,
@@ -382,9 +362,10 @@ class AsyncLLMClient:
         """
         Generate content constrained to a Pydantic schema and return a validated instance.
 
-        Prefers the SDK's parsed object (response.parsed); falls back to parsing the raw
-        response text. Retries on transport errors as well as parse/validation failures,
-        adding a corrective instruction on retry. Logs the raw response if all attempts fail.
+        The schema is stated in the prompt and the request asks for `json_object`;
+        this backend has no strict-schema mode, so validation is the caller's and
+        happens here. Parse failures are retried with a corrective instruction
+        exactly as transport failures are.
         """
         if not client:
             raise ValueError("Client is required for generate_structured")
@@ -392,53 +373,47 @@ class AsyncLLMClient:
         if not model:
             model = self.default_model
 
-        base_parts = []
-        if file_path:
-            with open(file_path, "rb") as f:
-                file_data = f.read()
-            base_parts.append(types.Part.from_bytes(data=file_data, mime_type='application/pdf'))
-        base_parts.append(types.Part.from_text(text=prompt))
+        base_messages = self._build_messages(prompt, file_path=file_path)
+        base_messages[-1]["content"] += self._schema_instruction(schema)
 
-        # Passing the Pydantic class (not model_json_schema()) lets the SDK populate response.parsed.
-        config = types.GenerateContentConfig(
-            cached_content=cache_key,
-            response_mime_type='application/json',
-            response_schema=schema,
-        )
+        kwargs: Dict[str, Any] = {"response_format": {"type": "json_object"}}
 
         last_exception: Optional[Exception] = None
         last_raw: Optional[str] = None
 
         for attempt in range(max_retries + 1):
-            parts = list(base_parts)
+            messages = list(base_messages)
             if attempt > 0 and last_raw is not None:
-                parts.append(types.Part.from_text(
-                    text=(
-                        "Your previous response could not be parsed as valid JSON. "
-                        "Respond with ONLY a single JSON object matching the schema — "
-                        "no prose, no markdown code fences, and properly escape any quotes inside string values."
-                    )
-                ))
-
-            try:
-                response = await client.aio.models.generate_content(
-                    model=model,
-                    contents=types.Content(role='user', parts=parts),
-                    config=config,
+                # The model saw its own malformed output; show it the rejection so
+                # the retry is a correction rather than a re-roll of the dice.
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": (
+                            "Your previous response could not be parsed as valid JSON. "
+                            "Respond with ONLY a single JSON object matching the schema — "
+                            "no prose, no markdown code fences, and properly escape any "
+                            "quotes inside string values. Previous response:\n"
+                            + last_raw[:4000]
+                        ),
+                    }
                 )
 
-                parsed = getattr(response, "parsed", None)
-                if isinstance(parsed, schema):
-                    return parsed
+            try:
+                response = await client.chat.completions.create(
+                    model=model, messages=messages, **kwargs
+                )
 
-                last_raw = response.text if response else None
+                last_raw = (
+                    response.choices[0].message.content if response.choices else None
+                )
                 if not last_raw:
                     raise ValueError("No content generated from LLM response")
 
                 response_json = JSONParser.validate_and_extract_json(last_raw)
                 return schema.model_validate(response_json)
 
-            except (ServerError, ClientError, APIError, httpx.TimeoutException) as e:
+            except (APIError, APIConnectionError, APITimeoutError, httpx.TimeoutException) as e:
                 last_exception = e
                 if not _is_retryable(e):
                     logger.error(
@@ -498,7 +473,7 @@ class PaperOperations(AsyncLLMClient):
         paper_content: str,
         schema: Type[BaseModel],
         status_callback: Callable[[str], None],
-        client: genai.Client,
+        client: AsyncOpenAI,
         cache_key: Optional[str] = None,
         llm_model: Optional[str] = None,
     ) -> T:
@@ -509,7 +484,7 @@ class PaperOperations(AsyncLLMClient):
             model: The Pydantic model for the data to extract.
             paper_content: The paper content.
             status_callback: Optional function to update task status.
-            client: The genai client to use.
+            client: The OpenAI-compatible client to use.
             llm_model: Optional LLM model override.
 
         Returns:
@@ -567,7 +542,7 @@ class PaperOperations(AsyncLLMClient):
         self,
         paper_content: str,
         status_callback: Callable[[str], None],
-        client: genai.Client,
+        client: AsyncOpenAI,
         cache_key: Optional[str] = None,
         llm_model: Optional[str] = None,
     ) -> TitleAuthorsAbstract:
@@ -587,7 +562,7 @@ class PaperOperations(AsyncLLMClient):
         self,
         paper_content: str,
         status_callback: Callable[[str], None],
-        client: genai.Client,
+        client: AsyncOpenAI,
         cache_key: Optional[str] = None,
         llm_model: Optional[str] = None,
     ) -> InstitutionsKeywords:
@@ -606,7 +581,7 @@ class PaperOperations(AsyncLLMClient):
         self,
         paper_content: str,
         status_callback: Callable[[str], None],
-        client: genai.Client,
+        client: AsyncOpenAI,
         cache_key: Optional[str] = None,
         llm_model: Optional[str] = None,
     ) -> SummaryAndCitations:
@@ -626,7 +601,7 @@ class PaperOperations(AsyncLLMClient):
         self,
         paper_content: str,
         status_callback: Callable[[str], None],
-        client: genai.Client,
+        client: AsyncOpenAI,
         cache_key: Optional[str] = None,
         llm_model: Optional[str] = None,
     ) -> Highlights:
@@ -929,11 +904,12 @@ class PaperOperations(AsyncLLMClient):
             await self._close_client(client)
 
 
-# Create a single instance to use throughout the application
-api_key = os.getenv("GOOGLE_API_KEY")
+# Create a single instance to use throughout the application. The key is the
+# DeepSeek one now; GOOGLE_API_KEY was this worker's Gemini credential.
+api_key = os.getenv("DEEPSEEK_API_KEY")
 
 if not api_key:
-    raise ValueError("GOOGLE_API_KEY environment variable is not set")
+    raise ValueError("DEEPSEEK_API_KEY environment variable is not set")
 
 llm_client = PaperOperations(api_key=api_key, default_model=DEFAULT_CHAT_MODEL)
 fast_llm_client = PaperOperations(api_key=api_key, default_model=FAST_CHAT_MODEL)

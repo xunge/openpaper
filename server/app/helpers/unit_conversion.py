@@ -37,16 +37,18 @@ from e2b_code_interpreter import Sandbox
 
 logger = logging.getLogger(__name__)
 
-# A requirement of the feature, not a runtime branch. There is no local
-# execution path — a chart whose papers disagree on units cannot be drawn
-# without the sandbox — so a server without a key would accept chart requests
-# and fail them one by one, minutes apart, at the last step. Better to refuse
-# to start.
+# There is no local execution path — a chart whose papers disagree on units
+# cannot be drawn without the sandbox. Upstream refuses to start without a key
+# precisely so the failure is not discovered one chart at a time, minutes apart,
+# at the last step. Self-hosting without an E2B account is a supported case
+# though: the feature is simply unavailable, and `run_unit_conversions` raises a
+# ConversionError the caller already renders as excluded points.
 E2B_API_KEY = os.getenv("E2B_DEV_API_KEY") or os.getenv("E2B_API_KEY")
 if not E2B_API_KEY:
-    raise ValueError(
-        "E2B_DEV_API_KEY or E2B_API_KEY environment variable is not set. "
-        "Model-authored unit conversions only run in the sandbox."
+    logger.warning(
+        "E2B_DEV_API_KEY / E2B_API_KEY not set — chart unit conversion and "
+        "computed data-table columns are disabled. Reading, annotations, and "
+        "chat are unaffected."
     )
 
 CONVERSIONS_PATH = "/home/user/conversions.json"
@@ -158,6 +160,12 @@ def run_unit_conversions(
     """
     if not requests:
         return {}, {}
+
+    if not E2B_API_KEY:
+        raise ConversionError(
+            "unit conversion needs an E2B sandbox key (E2B_API_KEY); this "
+            "deployment has none configured"
+        )
 
     payload = [request._asdict() for request in requests]
     sandbox = Sandbox.create(api_key=E2B_API_KEY, timeout=120)

@@ -697,6 +697,12 @@ export interface SubscriptionUsage {
 
 export interface SubscriptionData {
     plan: 'basic' | 'researcher';
+    /**
+     * Set by deployments that do not sell plans (UNLIMITED_USAGE on the server).
+     * Every limit is raised, so the UI says "Unlimited" instead of printing the
+     * sentinel value.
+     */
+    unlimited?: boolean;
     limits: SubscriptionLimits;
     usage: SubscriptionUsage;
 }

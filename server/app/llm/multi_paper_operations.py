@@ -359,7 +359,7 @@ class MultiPaperOperations(EvidenceOperations):
         async for result in self.gather_evidence(
             question=f"{summary_request}",
             current_user=current_user,
-            llm_provider=LLMProvider.GEMINI,
+            llm_provider=LLMProvider.DEEPSEEK,
             project_id=project_id,
             db=db,
         ):
@@ -403,7 +403,7 @@ class MultiPaperOperations(EvidenceOperations):
         response = self.generate_content(
             contents=message_content,
             model_type=ModelType.DEFAULT,
-            provider=LLMProvider.GEMINI,
+            provider=LLMProvider.DEEPSEEK,
             schema=AudioOverviewForLLM,
         )
 

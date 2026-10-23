@@ -201,7 +201,7 @@ class MetadataRecoveryAgent(BaseLLMClient):
                     function_declarations=function_declarations,
                     tool_call_results=tool_call_results or None,
                     model_type=ModelType.DEFAULT,
-                    provider=LLMProvider.GEMINI,
+                    provider=LLMProvider.DEEPSEEK,
                     enable_thinking=True,
                 )
             except Exception:
@@ -318,7 +318,7 @@ class MetadataRecoveryAgent(BaseLLMClient):
                 contents=[TextContent(text=prompt)],
                 schema=CITATION_EXTRACTION_SCHEMA,
                 model_type=ModelType.DEFAULT,
-                provider=LLMProvider.GEMINI,
+                provider=LLMProvider.DEEPSEEK,
                 enable_thinking=False,
             )
             findings = json.loads(resp.text)

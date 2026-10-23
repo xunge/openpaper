@@ -7,6 +7,7 @@ based on their subscription plan.
 """
 
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, Optional
@@ -34,6 +35,22 @@ AUDIO_OVERVIEWS_KEY = "audio_overviews_weekly"
 PROJECTS_KEY = "projects"
 DISCOVER_SEARCHES_KEY = "discover_searches_weekly"
 PROJECT_PAPERS_KEY = "project_papers"
+
+# Self-hosted deployments do not sell plans, so these caps have nothing to
+# drive: nobody can upgrade, and nobody is charged. Turning this on raises every
+# cap to UNLIMITED_VALUE, which is what the enforcement checks below compare
+# against.
+UNLIMITED_USAGE = os.getenv("UNLIMITED_USAGE", "false").strip().lower() in {
+    "true",
+    "1",
+    "yes",
+    "on",
+}
+
+# Stands in for "no limit". A finite number rather than float("inf") because the
+# usage payload is JSON and Infinity is not valid JSON — serialising it makes
+# every usage request a 500 in strict parsers.
+UNLIMITED_VALUE = 1_000_000_000
 
 # Define subscription plan limits
 SUBSCRIPTION_LIMITS = {
@@ -87,6 +104,8 @@ def get_user_subscription_plan(db: Session, user: CurrentUser) -> SubscriptionPl
 
 def get_plan_limits(plan: SubscriptionPlan) -> Dict:
     """Get the limits for a specific subscription plan."""
+    if UNLIMITED_USAGE:
+        return {key: UNLIMITED_VALUE for key in SUBSCRIPTION_LIMITS[SubscriptionPlan.BASIC]}
     return SUBSCRIPTION_LIMITS.get(plan, SUBSCRIPTION_LIMITS[SubscriptionPlan.BASIC])
 
 
@@ -648,6 +667,8 @@ def get_user_usage_info(db: Session, user: CurrentUser) -> Dict:
 
     return {
         "plan": plan.value,
+        # Lets the UI render "Unlimited" instead of a nine-digit number.
+        "unlimited": UNLIMITED_USAGE,
         "limits": {
             **limits,
         },

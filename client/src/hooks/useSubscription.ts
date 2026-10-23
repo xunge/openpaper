@@ -36,6 +36,7 @@ export const useSubscription = (): UseSubscriptionReturn => {
 // Helper functions for common subscription checks
 export const getStorageUsagePercentage = (subscription: SubscriptionData | null): number => {
     if (!subscription) return 0;
+	if (subscription.unlimited) return 0;
     const total = subscription.limits.knowledge_base_size;
     if (total === 0) return 0;
     return (subscription.usage.knowledge_base_size / total) * 100;
@@ -51,6 +52,7 @@ export const isStorageAtLimit = (subscription: SubscriptionData | null): boolean
 
 export const getPaperUploadPercentage = (subscription: SubscriptionData | null): number => {
     if (!subscription) return 0;
+	if (subscription.unlimited) return 0;
     const total = subscription.limits.paper_uploads;
     if (total === 0) return 0;
     return (subscription.usage.paper_uploads / total) * 100;
@@ -77,6 +79,7 @@ export const formatFileSize = (sizeInKb: number): string => {
 // Chat credit helper functions
 export const getChatCreditUsagePercentage = (subscription: SubscriptionData | null): number => {
     if (!subscription) return 0;
+	if (subscription.unlimited) return 0;
     const total = subscription.limits.chat_credits_weekly;
     if (total === 0) return 0;
     return (subscription.usage.chat_credits_used / total) * 100;
@@ -93,6 +96,7 @@ export const isChatCreditAtLimit = (subscription: SubscriptionData | null): bool
 // Audio overview credit helper functions
 export const getAudioOverviewUsagePercentage = (subscription: SubscriptionData | null): number => {
     if (!subscription) return 0;
+	if (subscription.unlimited) return 0;
     const total = subscription.limits.audio_overviews_weekly;
     if (total === 0) return 0;
     return (subscription.usage.audio_overviews_used / total) * 100;
@@ -109,6 +113,7 @@ export const isAudioOverviewAtLimit = (subscription: SubscriptionData | null): b
 // Project usage helper functions
 export const getProjectUsagePercentage = (subscription: SubscriptionData | null): number => {
     if (!subscription) return 0;
+	if (subscription.unlimited) return 0;
     const total = subscription.limits.projects;
     if (total === 0) return 0;
     return (subscription.usage.projects / total) * 100;
@@ -128,6 +133,7 @@ export const getProjectPaperHardLimit = (subscription: SubscriptionData | null):
 
 export const getProjectPaperUsagePercentage = (subscription: SubscriptionData | null, paperCount: number): number => {
     if (!subscription) return 0;
+	if (subscription.unlimited) return 0;
     const total = subscription.limits.project_papers;
     if (total === 0) return 0;
     return (paperCount / total) * 100;
@@ -144,6 +150,7 @@ export const isProjectPaperAtLimit = (subscription: SubscriptionData | null, pap
 // Data table usage helper functions
 export const getDataTableUsagePercentage = (subscription: SubscriptionData | null): number => {
     if (!subscription) return 0;
+	if (subscription.unlimited) return 0;
     const total = subscription.limits.data_tables_weekly;
     if (total === 0) return 0;
     return (subscription.usage.data_tables_used / total) * 100;
@@ -160,6 +167,7 @@ export const isDataTableAtLimit = (subscription: SubscriptionData | null): boole
 // Discover search usage helper functions
 export const getDiscoverSearchUsagePercentage = (subscription: SubscriptionData | null): number => {
     if (!subscription) return 0;
+	if (subscription.unlimited) return 0;
     const total = subscription.limits.discover_searches_weekly;
     if (total === 0) return 0;
     return (subscription.usage.discover_searches_used / total) * 100;

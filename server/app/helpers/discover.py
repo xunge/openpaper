@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
-llm_client = BaseLLMClient(default_provider=LLMProvider.GEMINI)
+llm_client = BaseLLMClient(default_provider=LLMProvider.DEEPSEEK)
 
 DECOMPOSE_PROMPT = """You are a research assistant helping find academic papers. Given a research question, generate 2-5 search subqueries.
 

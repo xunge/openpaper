@@ -1,5 +1,6 @@
 import io
 import logging
+import os
 from datetime import datetime
 from typing import Tuple
 
@@ -8,7 +9,9 @@ from pypdf import PdfReader
 
 logger = logging.getLogger(__name__)
 
-MAX_UPLOAD_SIZE_MB = 30
+# Per-file cap, not a plan quota. 30 MB is tight enough to reject plenty of
+# scanned theses and older two-column papers, so it is configurable.
+MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", "30"))
 DOCUMENT_PAGE_LIMIT = 800
 
 

@@ -14,18 +14,40 @@ logger = logging.getLogger(__name__)
 POSTHOG_API_KEY = os.getenv("POSTHOG_API_KEY", None)
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 
-posthog = Posthog(
-    POSTHOG_API_KEY,
-    host="https://us.i.posthog.com",
-    enable_exception_autocapture=True,
-)
+class _NoopPosthog:
+    """Stand-in for the PostHog client when no API key is configured.
 
-posthog_sync = Posthog(
-    POSTHOG_API_KEY,
-    host="https://us.i.posthog.com",
-    sync_mode=True,
-    enable_exception_autocapture=True,
-)
+    Building the real client without a key logs "api_key is empty after trimming
+    whitespace" at ERROR level on every boot, while sending nothing. A no-op
+    keeps the call sites identical and the logs honest.
+    """
+
+    debug = False
+
+    def __getattr__(self, name: str):
+        def _noop(*args, **kwargs):
+            return None
+
+        return _noop
+
+
+if POSTHOG_API_KEY:
+    posthog = Posthog(
+        POSTHOG_API_KEY,
+        host="https://us.i.posthog.com",
+        enable_exception_autocapture=True,
+    )
+
+    posthog_sync = Posthog(
+        POSTHOG_API_KEY,
+        host="https://us.i.posthog.com",
+        sync_mode=True,
+        enable_exception_autocapture=True,
+    )
+else:
+    logger.info("POSTHOG_API_KEY is not set — product analytics is disabled.")
+    posthog = _NoopPosthog()  # type: ignore[assignment]
+    posthog_sync = _NoopPosthog()  # type: ignore[assignment]
 
 if DEBUG:
     posthog.debug = True

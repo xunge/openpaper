@@ -490,7 +490,7 @@ class ChartExtracting(DataTableOperations):
                 ),
                 model_type=ModelType.FAST,
                 schema=extraction_schema,
-                provider=LLMProvider.GEMINI,
+                provider=LLMProvider.DEEPSEEK,
             )
             if not response or not response.text:
                 return []

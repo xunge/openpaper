@@ -5,6 +5,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
+
 [project]
 name = "open-paper-jobs"
 version = "0.1.0"
@@ -32,6 +36,7 @@ dependencies = [
     "posthog>=6.1.0",
     "langfuse>=4.7.0",
     "openinference-instrumentation-google-genai>=0.1.10",
+    "openai>=1.99",
 ]
 
 [project.scripts]

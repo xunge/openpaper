@@ -193,7 +193,7 @@ def _generate_script(
             table_path=TABLE_PATH, output_path=OUTPUT_PATH
         ),
         model_type=ModelType.DEFAULT,
-        provider=LLMProvider.GEMINI,
+        provider=LLMProvider.DEEPSEEK,
     )
     if not response or not response.text:
         return None
