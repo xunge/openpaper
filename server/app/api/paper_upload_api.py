@@ -136,10 +136,20 @@ async def get_upload_status(
     return JSONResponse(status_code=200, content=response_content)
 
 
+def _request_language(request: Request) -> str:
+    """Which language the extraction prose should use for this upload."""
+    return (
+        "zh"
+        if (request.headers.get("accept-language") or "").lower().startswith("zh")
+        else "en"
+    )
+
+
 @paper_upload_router.post("/from-url/")
 async def upload_pdf_from_url(
     request: UploadFromUrlSchema,
     background_tasks: BackgroundTasks,
+    http_request: Request,
     current_user: CurrentUser = Depends(get_required_user),
     db: Session = Depends(get_db),
     project_id: Optional[str] = None,
@@ -196,6 +206,7 @@ async def upload_pdf_from_url(
         current_user=current_user,
         db=db,
         project_id=casted_project_id,
+        language=_request_language(http_request),
     )
 
     return JSONResponse(
@@ -271,6 +282,7 @@ async def upload_pdf(
         filename=str(filename),
         paper_upload_job=paper_upload_job,
         current_user=current_user,
+        language=_request_language(request),
         db=db,
         project_id=casted_project_id,
     )
@@ -322,6 +334,7 @@ async def upload_raw_file_microservice(
     current_user: CurrentUser,
     db: Session,
     project_id: Optional[UUID] = None,
+    language: str = "en",
 ) -> None:
     """
     Helper function to upload a raw file using the microservice.
@@ -342,6 +355,9 @@ async def upload_raw_file_microservice(
             user=current_user,
             project_id=project_id,
             original_filename=filename,
+            # Drives the extraction prompts: an upload made from the Chinese UI
+            # produces a Chinese summary instead of an English one.
+            language=language,
         )
 
         # Update job with task_id

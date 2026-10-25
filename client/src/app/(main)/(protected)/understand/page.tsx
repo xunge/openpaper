@@ -23,6 +23,7 @@ import {
     Reference,
 } from '@/lib/schema';
 import { useAuth } from '@/lib/auth';
+import { useI18n } from '@/lib/i18n';
 
 interface ChatRequestBody {
     user_query: string;
@@ -32,6 +33,8 @@ interface ChatRequestBody {
     mentioned_highlight_ids?: string[];
 }
 
+// Kept as English source strings: this is module scope, where the translation
+// hook is not available. The active entry is translated where it is shown.
 const chatLoadingMessages = [
     "Thinking about your question...",
     "Analyzing your knowledge base...",
@@ -46,6 +49,7 @@ const chatLoadingMessages = [
 import { ConversationView } from "@/components/ConversationView";
 
 function UnderstandPageContent() {
+    const { t } = useI18n();
     const searchParams = useSearchParams();
     const { user, loading: authLoading } = useAuth();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -65,7 +69,7 @@ function UnderstandPageContent() {
     useEffect(() => {
         if (papersError) {
             console.error("Error fetching papers:", papersError);
-            toast.error("Failed to fetch papers.");
+            toast.error(t("Failed to fetch papers."));
         }
     }, [papersError]);
 
@@ -130,7 +134,7 @@ function UnderstandPageContent() {
             }
         } catch (error) {
             console.error("Error fetching messages:", error);
-            toast.error("Failed to load conversation history.");
+            toast.error(t("Failed to load conversation history."));
         } finally {
             setIsSessionLoading(false); // New line
         }
@@ -177,7 +181,7 @@ function UnderstandPageContent() {
             return;
         }
 
-        const currentMessage = chatLoadingMessages[currentLoadingMessageIndex];
+        const currentMessage = t(chatLoadingMessages[currentLoadingMessageIndex]);
         let charIndex = 0;
         setDisplayedText('');
         setIsTyping(true);
@@ -259,7 +263,7 @@ function UnderstandPageContent() {
                 window.history.pushState(null, '', `/understand?id=${currentConversationId}`);
             } catch (error) {
                 console.error('Error creating conversation:', error);
-                toast.error("Failed to start a new conversation.");
+                toast.error(t("Failed to start a new conversation."));
                 setMessages(prev => prev.slice(0, -1));
                 setCurrentMessage(userMessage.content);
                 setIsStreaming(false);
@@ -384,7 +388,7 @@ function UnderstandPageContent() {
 
         } catch (error) {
             console.error('Error during streaming:', error);
-            toast.error("An error occurred while processing your request.");
+            toast.error(t("An error occurred while processing your request."));
             setMessages(prev => prev.slice(0, -1));
             setCurrentMessage(userMessage.content);
             setError('An error occurred while processing your request.');
@@ -466,8 +470,9 @@ function UnderstandPageContent() {
 }
 
 export default function UnderstandPage() {
+    const { t } = useI18n();
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div>{t("Loading...")}</div>}>
             <UnderstandPageContent />
         </Suspense>
     );

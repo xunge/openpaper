@@ -8,6 +8,7 @@ import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { fetchFromApi } from "@/lib/api";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 interface QuickActionCardProps {
     icon: React.ReactNode;
@@ -61,6 +62,7 @@ interface QuickActionsProps {
 }
 
 export function QuickActions({ onUploadComplete, onProjectCreated, onUploadStart, onUrlImportStart, isUploadBlocked, onUploadBlocked }: QuickActionsProps) {
+    const { t } = useI18n();
     const router = useRouter();
     const [isUploadModalOpen, setUploadModalOpen] = useState(false);
     const [isCreateProjectOpen, setCreateProjectOpen] = useState(false);
@@ -114,21 +116,21 @@ export function QuickActions({ onUploadComplete, onProjectCreated, onUploadStart
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
                 <QuickActionCard
                     icon={<Upload className="h-5 w-5" />}
-                    title="Upload Paper"
-                    description="Start your next study"
+                    title={t("Upload Paper")}
+                    description={t("Start your next study")}
                     onClick={handleUploadClick}
                     variant="primary"
                 />
                 <QuickActionCard
                     icon={<FolderPlus className="h-5 w-5" />}
-                    title="New Project"
-                    description="Organize your research"
+                    title={t("New Project")}
+                    description={t("Organize your research")}
                     onClick={() => setCreateProjectOpen(true)}
                 />
                 <QuickActionCard
                     icon={<Globe2 className="h-5 w-5" />}
-                    title="Discover Research"
-                    description="Find relevant research from academic sources"
+                    title={t("Discover Research")}
+                    description={t("Find relevant research from academic sources")}
                     onClick={handleFindPapers}
                 />
             </div>

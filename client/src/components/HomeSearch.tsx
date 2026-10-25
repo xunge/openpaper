@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -35,6 +36,7 @@ type SelectableItem =
     | { type: "ask" };
 
 export function HomeSearch() {
+	const { t } = useI18n();
     const [query, setQuery] = useState("");
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -231,7 +233,7 @@ export function HomeSearch() {
                 <Input
                     ref={inputRef}
                     type="text"
-                    placeholder="Search papers, projects, or ask a question..."
+                    placeholder={t("Search papers, projects, or ask a question...")}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     onFocus={() => setIsOpen(true)}
@@ -251,7 +253,7 @@ export function HomeSearch() {
                     {isLoading ? (
                         <div className="flex items-center gap-2 px-4 py-3 text-muted-foreground">
                             <Loader2 className="h-4 w-4 animate-spin" />
-                            <span className="text-sm">Searching...</span>
+                            <span className="text-sm">{t("Searching...")}</span>
                         </div>
                     ) : hasResults ? (
                         <div ref={resultsRef} className="max-h-[400px] overflow-y-auto">
@@ -308,7 +310,7 @@ export function HomeSearch() {
                                                 >
                                                     <FileText className="h-4 w-4 text-blue-500 flex-shrink-0" />
                                                     <div className="min-w-0 flex-1">
-                                                        <p className="font-medium truncate">{paper.title || "Untitled Paper"}</p>
+                                                        <p className="font-medium truncate">{paper.title || t("Untitled Paper")}</p>
                                                         {paper.authors && paper.authors.length > 0 && (
                                                             <p className="text-sm text-muted-foreground truncate">
                                                                 {paper.authors.slice(0, 2).join(", ")}
@@ -427,7 +429,7 @@ export function HomeSearch() {
                                         >
                                             <Search className="h-4 w-4 text-primary flex-shrink-0" />
                                             <div className="min-w-0 flex-1">
-                                                <p className="font-medium">Ask your knowledge base</p>
+                                                <p className="font-medium">{t("Ask your knowledge base")}</p>
                                                 <p className="text-sm text-muted-foreground truncate">
                                                     &quot;{query}&quot;
                                                 </p>
@@ -452,7 +454,7 @@ export function HomeSearch() {
                             >
                                 <Search className="h-5 w-5 text-primary flex-shrink-0" />
                                 <div className="min-w-0 flex-1">
-                                    <p className="font-medium text-foreground">Ask your knowledge base</p>
+                                    <p className="font-medium text-foreground">{t("Ask your knowledge base")}</p>
                                     <p className="text-sm text-muted-foreground truncate">
                                         &quot;{query}&quot;
                                     </p>

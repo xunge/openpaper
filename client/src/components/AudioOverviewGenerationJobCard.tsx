@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { Clock, Loader2, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { AudioOverviewJob } from "@/lib/schema";
@@ -60,6 +61,7 @@ const getStatusColor = (status: string) => {
 };
 
 export default function AudioOverviewGenerationJobCard({ job }: AudioOverviewGenerationJobCardProps) {
+	const { t } = useI18n();
 
     return (
         <div className="w-full rounded-lg border bg-card p-3 text-card-foreground">
@@ -69,7 +71,7 @@ export default function AudioOverviewGenerationJobCard({ job }: AudioOverviewGen
                 </div>
                 <div className="flex-1 min-w-0">
                     <h3 className="text-sm font-semibold mb-1">
-                        Creating Audio Overview
+                        {t("Creating Audio Overview")}
                     </h3>
                     <p className={`text-xs font-medium mb-1 ${getStatusColor(job.status)}`}>
                         {job.status_message || getStatusText(job.status)}

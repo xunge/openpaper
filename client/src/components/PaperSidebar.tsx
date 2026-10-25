@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n";
+
 import { Button } from '@/components/ui/button';
 import {
     Tooltip,
@@ -33,7 +36,8 @@ function NavButton({ item, rightSideFunction, setRightSideFunction }: {
     rightSideFunction: string;
     setRightSideFunction: (value: string) => void;
 }) {
-    const tooltipLabel = item.label ?? item.name;
+    const { t } = useI18n();
+    const tooltipLabel = t(item.label ?? item.name);
     return (
         <Tooltip key={item.name}>
             <TooltipTrigger asChild>

@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -80,6 +81,7 @@ function PaperCardSkeleton() {
 }
 
 export function RecentPapersGrid({ papers: propPapers, limit = 6 }: RecentPapersGridProps) {
+	const { t } = useI18n();
     const [papers, setPapers] = useState<PaperItem[]>(propPapers || []);
     const [isLoading, setIsLoading] = useState(!propPapers);
 
@@ -129,13 +131,13 @@ export function RecentPapersGrid({ papers: propPapers, limit = 6 }: RecentPapers
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <FileText className="h-5 w-5 text-blue-500" />
-                    <h2 className="text-lg font-semibold">Recent Papers</h2>
+                    <h2 className="text-lg font-semibold">{t("Recent Papers")}</h2>
                 </div>
                 <Link
                     href="/papers"
                     className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
                 >
-                    View library
+                    {t("View library")}
                     <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
             </div>

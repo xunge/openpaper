@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { MutableRefObject } from "react";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,7 @@ export function PdfToolbar({
 	isReadMode = false,
 	onToggleReadMode,
 }: PdfToolbarProps) {
+	const { t } = useI18n();
 	const currentColorConfig =
 		HIGHLIGHT_COLOR_SWATCHES.find((c) => c.color === highlightColor) || HIGHLIGHT_COLOR_SWATCHES[2];
 	return (
@@ -149,7 +151,7 @@ export function PdfToolbar({
 							<Input
 								ref={searchInputRef}
 								type="text"
-								placeholder="Search..."
+								placeholder={t("Search...")}
 								value={searchText}
 								onChange={handleSearchChange}
 								className="h-8 w-40 pl-7 pr-7 text-xs"
@@ -168,9 +170,7 @@ export function PdfToolbar({
 							)}
 						</div>
 						{isSearching ? (
-							<span className="text-xs text-muted-foreground">
-								Searching...
-							</span>
+							<span className="text-xs text-muted-foreground">{t("Searching...")}</span>
 						) : matchPages.length > 0 ? (
 							<div className="flex items-center gap-1">
 								<span className="text-xs text-muted-foreground">
@@ -182,7 +182,7 @@ export function PdfToolbar({
 									size="sm"
 									className="h-7 w-7 p-0"
 									onClick={goToPreviousMatch}
-									title="Previous match"
+									title={t("Previous match")}
 								>
 									<ChevronUp size={14} />
 								</Button>
@@ -192,15 +192,13 @@ export function PdfToolbar({
 									size="sm"
 									className="h-7 w-7 p-0"
 									onClick={goToNextMatch}
-									title="Next match"
+									title={t("Next match")}
 								>
 									<ChevronDown size={14} />
 								</Button>
 							</div>
 						) : searchText && lastSearchTermRef.current === searchText ? (
-							<span className="text-xs text-muted-foreground">
-								No results
-							</span>
+							<span className="text-xs text-muted-foreground">{t("No results")}</span>
 						) : null}
 					</form>
 				) : (
@@ -212,7 +210,7 @@ export function PdfToolbar({
 						size="sm"
 						variant="ghost"
 						className="h-8 w-8 p-0"
-						title="Search (Cmd+F)"
+						title={t("Search (Cmd+F)")}
 					>
 						<Search size={16} />
 					</Button>
@@ -230,7 +228,7 @@ export function PdfToolbar({
 							size="sm"
 							variant="ghost"
 							className="h-7 px-2 gap-1.5"
-							title="Highlight color"
+							title={t("Highlight color")}
 						>
 							<Highlighter size={16} />
 							<div className={`w-3.5 h-3.5 rounded-sm ${currentColorConfig.bg}`} />
@@ -264,16 +262,16 @@ export function PdfToolbar({
 								: "text-muted-foreground hover:bg-muted dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
 						}`}
 						onClick={onToggleAnnotationCards}
-						title={
+						title={t(
 							showAnnotationCards
 								? "Hide inline annotations"
 								: "Show inline annotations"
-						}
-						aria-label={
+						)}
+						aria-label={t(
 							showAnnotationCards
 								? "Hide inline annotations"
 								: "Show inline annotations"
-						}
+						)}
 					>
 						{showAnnotationCards ? <ToggleRight className="size-5" /> : <ToggleLeft className="size-5" />}
 					</Button>
@@ -341,8 +339,8 @@ export function PdfToolbar({
 						variant="ghost"
 						className="h-8 w-8 p-0"
 						onClick={onToggleReadMode}
-						title={isReadMode ? "Exit focus mode" : "Focus mode"}
-						aria-label={isReadMode ? "Exit focus mode" : "Focus mode"}
+						title={t(isReadMode ? "Exit focus mode" : "Focus mode")}
+						aria-label={t(isReadMode ? "Exit focus mode" : "Focus mode")}
 					>
 						{isReadMode ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
 					</Button>
@@ -359,13 +357,9 @@ export function PdfToolbar({
 					</DropdownMenuTrigger>
 					<DropdownMenuContent align="end" className="min-w-40">
 						<DropdownMenuItem onClick={zoomIn}>
-							<ZoomIn size={14} className="mr-2" />
-							Zoom in
-						</DropdownMenuItem>
+							<ZoomIn size={14} className="mr-2" />{t("Zoom in")}</DropdownMenuItem>
 						<DropdownMenuItem onClick={zoomOut}>
-							<ZoomOut size={14} className="mr-2" />
-							Zoom out
-						</DropdownMenuItem>
+							<ZoomOut size={14} className="mr-2" />{t("Zoom out")}</DropdownMenuItem>
 						{paperStatus && (
 							<>
 								<DropdownMenuItem onClick={() => handleStatusChange("todo")}>

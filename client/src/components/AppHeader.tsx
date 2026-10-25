@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 // The app-shell header. Hidden inside a project workspace — the workspace's
 // own breadcrumb bar carries the sidebar trigger there, keeping chrome to a
@@ -27,6 +28,7 @@ export function AppHeader() {
                 />
                 <span className="text-sm font-semibold">Open Paper</span>
             </Link>
+            <LanguageToggle />
         </header>
     );
 }

@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n";
+
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { BasicUser } from '@/lib/auth';
@@ -32,6 +35,7 @@ export default function Annotation({
     updateAnnotation,
     readonly = false
 }: AnnotationProps) {
+	const { t } = useI18n();
     const [isEditing, setIsEditing] = useState(false);
     const [editedContent, setEditedContent] = useState(annotation.content);
     const [isHovered, setIsHovered] = useState(false);
@@ -88,7 +92,7 @@ export default function Annotation({
                         className="w-full min-h-[60px] text-sm focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-foreground focus-visible:border-foreground"
                         onClick={(e) => e.stopPropagation()}
                         autoFocus
-                        placeholder="Write your annotation..."
+                        placeholder={t("Write your annotation...")}
                     />
 
                     <div className="flex items-center justify-end gap-1 mt-1">

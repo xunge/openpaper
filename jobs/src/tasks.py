@@ -14,6 +14,7 @@ from src.schemas import DataTableSchema
 from src.data_table_processor import construct_data_table
 from src.pdf_processor import process_pdf_file
 from src.celery_app import celery_app, ZOTERO_SYNC_INTERVAL_SECONDS
+from src.llm_client import fast_llm_client, llm_client
 from src.s3_service import s3_service
 from src.utils import time_it
 
@@ -92,6 +93,7 @@ def upload_and_process_file(
     s3_object_key: str,
     webhook_url: str,
     skip_metadata_extraction: bool = False,
+    language: str = "en",
     **processing_kwargs
 ) -> Dict[str, Any]:
     """
@@ -120,6 +122,11 @@ def upload_and_process_file(
 
     try:
         logger.info(f"Starting PDF processing for task {task_id}")
+        # Extraction prose follows the uploader's UI language. Workers are
+        # preforked, so this instance state cannot leak between concurrent tasks;
+        # it is reset below anyway in case a pool reuses the process.
+        llm_client.set_language(language)
+        fast_llm_client.set_language(language)
         write_to_status("Downloading PDF from S3")
 
         # Download PDF from S3
@@ -193,6 +200,11 @@ def upload_and_process_file(
 
         # Re-raise the exception to mark task as failed in Celery
         raise exc
+    finally:
+        # A pooled worker process serves the next upload too; leaving the
+        # language set would make an English uploader get a Chinese summary.
+        llm_client.set_language("en")
+        fast_llm_client.set_language("en")
 
 @celery_app.task(bind=True, name="process_data_table", soft_time_limit=900, time_limit=960)
 def construct_data_table_task(

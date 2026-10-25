@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { useState } from "react";
 import {
@@ -21,6 +22,7 @@ interface CreateProjectDialogProps {
 }
 
 export function CreateProjectDialog({ open, onOpenChange, onSubmit }: CreateProjectDialogProps) {
+	const { t } = useI18n();
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
 
@@ -32,10 +34,8 @@ export function CreateProjectDialog({ open, onOpenChange, onSubmit }: CreateProj
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Create a new project</DialogTitle>
-                    <DialogDescription>
-                        Enter a title and description for your new project.
-                    </DialogDescription>
+                    <DialogTitle>{t("Create a new project")}</DialogTitle>
+                    <DialogDescription>{t("Enter a title and description for your new project.")}</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                     <div className="space-y-2">
@@ -44,24 +44,24 @@ export function CreateProjectDialog({ open, onOpenChange, onSubmit }: CreateProj
                             id="title"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Project title"
+                            placeholder={t("Project title")}
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
+                        <Label htmlFor="description">{t("Description")}</Label>
                         <Textarea
                             id="description"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Project description"
+                            placeholder={t("Project description")}
                         />
                     </div>
                 </div>
                 <DialogFooter>
                     <Button variant="ghost" onClick={() => onOpenChange(false)}>
-                        Cancel
+                        {t("Cancel")}
                     </Button>
-                    <Button onClick={handleSubmit}>Create</Button>
+                    <Button onClick={handleSubmit}>{t("Create")}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

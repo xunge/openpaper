@@ -44,6 +44,7 @@ from app.api.subscription import subscription_router
 from app.api.webhook_api import webhook_router
 from app.api.zotero_import_api import zotero_router
 from app.database.admin import setup_admin
+from app.llm.base import response_language
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -54,6 +55,21 @@ app = FastAPI(
     description="A web application for uploading and annotating papers.",
     version="1.0.0",
 )
+
+@app.middleware("http")
+async def set_response_language(request, call_next):
+    """Pick the answer language from the browser's Accept-Language header.
+
+    The frontend sends `zh-CN` or `en` explicitly (it follows the user's toggle,
+    not the OS locale), so a missing header simply means English.
+    """
+    header = (request.headers.get("accept-language") or "").lower()
+    token = response_language.set("zh" if header.startswith("zh") else "en")
+    try:
+        return await call_next(request)
+    finally:
+        response_language.reset(token)
+
 
 client_domain = os.getenv("CLIENT_DOMAIN", "http://localhost:3000")
 

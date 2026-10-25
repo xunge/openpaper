@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from contextvars import ContextVar
 from enum import Enum
 from typing import Any, AsyncIterator, Dict, List, Optional, Union
 
@@ -24,6 +25,53 @@ from langfuse import get_client, observe
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+
+# Which language the person on the other end is reading in. A ContextVar rather
+# than a parameter: the prompt that needs it is assembled layers below the HTTP
+# handler (conversation turns, citation recovery, chart planning), so threading a
+# flag through every call site to append one sentence would be all cost and no
+# benefit. The HTTP middleware in main.py sets it per request.
+response_language: ContextVar[str] = ContextVar("response_language", default="en")
+
+_LANGUAGE_DIRECTIVES = {
+    "zh": (
+        "\n\n【回答语言】用户正在使用简体中文界面，请始终用简体中文回答，"
+        "包括解释、总结、步骤说明和列表项。论文标题、作者名、引用原文、"
+        "专业术语、公式和代码保持原文，不要翻译。"
+    ),
+}
+
+
+# Brand names the naive capitaliser below would mangle.
+_MODEL_BRAND_NAMES = {
+    "deepseek": "DeepSeek",
+    "gpt": "GPT",
+    "claude": "Claude",
+    "gemini": "Gemini",
+    "o": "o",
+}
+
+
+def _prettify_model(model: str) -> str:
+    """`deepseek-v4-pro` -> `DeepSeek V4 Pro` for the picker's label."""
+    parts = []
+    for part in model.split("-"):
+        if part.lower() in _MODEL_BRAND_NAMES:
+            parts.append(_MODEL_BRAND_NAMES[part.lower()])
+        elif part.islower():
+            parts.append(part.capitalize())
+        else:
+            parts.append(part)
+    return " ".join(parts)
+
+
+def with_response_language(system_prompt: Optional[str]) -> Optional[str]:
+    """Append the language directive, if a non-default language is active."""
+    directive = _LANGUAGE_DIRECTIVES.get(response_language.get())
+    if not directive:
+        return system_prompt
+    return f"{system_prompt or ''}{directive}"
 
 
 class ModelType(Enum):
@@ -101,6 +149,39 @@ class BaseLLMClient:
             for provider in self._providers.keys()
             if provider not in excluded
         }
+
+    def get_chat_model_choices(self) -> List[Dict[str, str]]:
+        """Every model the user can pick, across the configured providers.
+
+        The hosted product asks the user to choose a *provider* and lets each
+        use its own default model. A self-hosted install normally has one
+        provider with two models at different price/quality points, so the
+        choice that matters is the model. Providers sharing a model (or a
+        provider whose fast model equals its default) collapse to one entry.
+        """
+        choices: List[Dict[str, str]] = []
+        seen: set[str] = set()
+        for provider, instance in self._providers.items():
+            for tier, model in (
+                ("default", instance.get_default_model()),
+                ("fast", instance.get_fast_model()),
+            ):
+                if not model or model in seen:
+                    continue
+                seen.add(model)
+                choices.append(
+                    {
+                        "id": model,
+                        "label": _prettify_model(model),
+                        "provider": provider.value,
+                        "tier": tier,
+                    }
+                )
+        return choices
+
+    def get_default_chat_model(self) -> str:
+        """The model a request gets when it names none."""
+        return self._get_model_for_type(ModelType.DEFAULT)
 
     def _initialize_provider(self, provider: LLMProvider) -> None:
         """Initialize a provider if not already done"""
@@ -198,7 +279,12 @@ class BaseLLMClient:
             response = self._get_provider(provider).generate_content(
                 model,
                 contents,
-                system_prompt=system_prompt,
+                # Structured-output calls are parsed, not read: a language
+                # instruction there only risks polluting the JSON.
+                system_prompt=(
+                    system_prompt if schema is not None
+                    else with_response_language(system_prompt)
+                ),
                 function_declarations=function_declarations,
                 tool_call_results=tool_call_results,
                 history=history,
@@ -265,6 +351,7 @@ class BaseLLMClient:
         file: FileContent | None = None,
         model_type: ModelType = ModelType.DEFAULT,
         provider: Optional[LLMProvider] = None,
+        model: Optional[str] = None,
         **kwargs,
     ) -> AsyncIterator[StreamChunk]:
         """Send a message and stream the response.
@@ -280,9 +367,17 @@ class BaseLLMClient:
         fallback = self.fallback_provider
         emitted = False
         failure: Exception
+        language_prompt = with_response_language(system_prompt) or ""
         try:
             async for chunk in self._stream(
-                target, message, history, system_prompt, file, model_type, **kwargs
+                target,
+                message,
+                history,
+                language_prompt,
+                file,
+                model_type,
+                model=model,
+                **kwargs,
             ):
                 emitted = True
                 yield chunk
@@ -314,7 +409,14 @@ class BaseLLMClient:
                 is_restart=True,
             )
         async for chunk in self._stream(
-            fallback, message, history, system_prompt, file, model_type, **kwargs
+            fallback,
+            message,
+            history,
+            language_prompt,
+            file,
+            model_type,
+            model=model,
+            **kwargs,
         ):
             yield chunk
 
@@ -326,9 +428,10 @@ class BaseLLMClient:
         system_prompt: str,
         file: FileContent | None,
         model_type: ModelType,
+        model: Optional[str] = None,
         **kwargs,
     ) -> AsyncIterator[StreamChunk]:
-        model = self._get_model_for_type(model_type, provider)
+        model = model or self._get_model_for_type(model_type, provider)
         return self._get_provider(provider).send_message_stream(
             model, message, history, system_prompt, file, **kwargs
         )

@@ -33,6 +33,9 @@ from sqlalchemy.orm import Session
 logger = logging.getLogger(__name__)
 
 
+LANGUAGE_DIRECTIVE_ZH = '\n\n【旁白语言】请用简体中文撰写全部旁白内容（摘要字段、章节说明、过渡句）。论文标题、作者、机构、术语、公式保持原文，不要翻译。'
+
+
 class MultiPaperOperations(EvidenceOperations):
     """Operations related to multi-paper analysis and chat functionality.
 
@@ -51,6 +54,7 @@ class MultiPaperOperations(EvidenceOperations):
         mentioned_highlights: Optional[List[dict]] = None,
         project_title: Optional[str] = None,
         is_mention_scoped: bool = False,
+        model: Optional[str] = None,
         db: Session = Depends(get_db),
     ) -> AsyncGenerator[Union[str, dict], None]:
         """
@@ -171,6 +175,7 @@ class MultiPaperOperations(EvidenceOperations):
                     system_prompt=formatted_system_prompt,
                     history=conversation_history,
                     provider=llm_provider,
+                    model=model,
                 ):
                     await queue.put(chunk)
             finally:
@@ -335,6 +340,7 @@ class MultiPaperOperations(EvidenceOperations):
         additional_instructions: Optional[str] = None,
         length: Optional[Literal["short", "medium", "long"]] = "medium",
         project_id: Optional[str] = None,
+        language: Optional[str] = "en",
         db: Session = Depends(get_db),
     ) -> AudioOverviewForLLM:
         """
@@ -397,6 +403,11 @@ class MultiPaperOperations(EvidenceOperations):
             paper_metadata=paper_metadata,
             additional_instructions=additional_instructions or "",
         )
+
+        # Same reasoning as the single-paper path: structured output skips the
+        # global language directive, but the narration prose has to be localised.
+        if (language or "en").lower().startswith("zh"):
+            formatted_prompt += LANGUAGE_DIRECTIVE_ZH
 
         message_content = [TextContent(text=formatted_prompt)]
 

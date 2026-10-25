@@ -64,6 +64,7 @@ class JobsClient:
         s3_object_key: str,
         job_id: str,
         skip_metadata_extraction: bool = False,
+        language: str = "en",
     ) -> str:
         """
         Submit a PDF processing job to the separate Celery service.
@@ -123,6 +124,9 @@ class JobsClient:
                     "s3_object_key": s3_object_key,
                     "webhook_url": webhook_url,
                     "skip_metadata_extraction": skip_metadata_extraction,
+                    # The worker has no request context, so the language the
+                    # uploader is reading in has to travel with the task.
+                    "language": language,
                 },
                 # Explicit: the server's Celery instance has no task_routes, so we
                 # must pin the queue here. Must match what the worker's `-Q` set
@@ -302,6 +306,7 @@ class JobsClient:
         user: CurrentUser,
         project_id: Optional[UUID] = None,
         original_filename: Optional[str] = None,
+        language: str = "en",
     ) -> str:
         """
         Upload a PDF file to S3 and submit a processing job.
@@ -407,7 +412,9 @@ class JobsClient:
             db_committed = True
 
             # Submit processing job with S3 object key
-            task_id = self.submit_pdf_processing_job(s3_object_key, job_id)
+            task_id = self.submit_pdf_processing_job(
+                s3_object_key, job_id, language=language
+            )
 
             return task_id
 

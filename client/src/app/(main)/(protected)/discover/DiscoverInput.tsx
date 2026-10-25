@@ -1,4 +1,5 @@
-"use client"
+"use client";
+import { useI18n } from "@/lib/i18n";
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -81,6 +82,7 @@ export default function DiscoverInput({
     onYearFilterChange,
     atSearchLimit = false,
 }: DiscoverInputProps) {
+	const { t } = useI18n();
     const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -109,7 +111,7 @@ export default function DiscoverInput({
 
     return (
         <div className="w-full max-w-2xl mx-auto space-y-4">
-            <h1 className="text-2xl font-semibold text-center">Discover Research</h1>
+            <h1 className="text-2xl font-semibold text-center">{t("Discover Research")}</h1>
             <p className="text-sm text-muted-foreground text-center">
                 Enter a research question and we&apos;ll find relevant papers across the web.
             </p>
@@ -217,9 +219,7 @@ export default function DiscoverInput({
                                         onCheckedChange={(checked) => onOpenAccessChange(checked === true)}
                                         className="h-3.5 w-3.5"
                                     />
-                                    <span className={onlyOpenAccess ? "text-foreground" : "text-foreground/70"}>
-                                        Open Access
-                                    </span>
+                                    <span className={onlyOpenAccess ? "text-foreground" : "text-foreground/70"}>{t("Open Access")}</span>
                                 </label>
 
                             </>
@@ -324,9 +324,7 @@ export default function DiscoverInput({
                             size="sm"
                             className="gap-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
                         >
-                            <Search className="h-4 w-4" />
-                            Search
-                        </Button>
+                            <Search className="h-4 w-4" />{t("Search")}</Button>
                     )}
                 </div>
             </div>

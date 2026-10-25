@@ -26,6 +26,7 @@ import { LibraryTable } from "@/components/LibraryTable";
 import { CreateProjectDialog } from "@/components/CreateProjectDialog";
 import { useRouter } from "next/navigation";
 import { UploadModal } from "@/components/UploadModal";
+import { useI18n } from "@/lib/i18n";
 import { usePapers } from "@/hooks/usePapers";
 import { removeActivePaper } from "@/hooks/useActivePapers";
 import PdfUploadTracker from "@/components/PdfUploadTracker";
@@ -91,6 +92,7 @@ const PageSkeleton = () => (
 );
 
 function PapersPageContent() {
+    const { t } = useI18n();
     const { papers, isLoading, mutate } = usePapers();
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const router = useRouter();
@@ -334,9 +336,9 @@ function PapersPageContent() {
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
                 >
-                    <h3 className="text-2xl font-bold text-foreground mb-3">Build Your Research Library</h3>
+                    <h3 className="text-2xl font-bold text-foreground mb-3">{t("Build Your Research Library")}</h3>
                     <p className="text-muted-foreground max-w-md mb-8">
-                        Drop a PDF anywhere or click below to get started.
+                        {t("Drop a PDF anywhere or click below to get started.")}
                     </p>
 
                     <Button
@@ -345,25 +347,25 @@ function PapersPageContent() {
                         onClick={handleUploadClick}
                     >
                         <Upload className="h-4 w-4 mr-2" />
-                        Upload your first paper
+                        {t("Upload your first paper")}
                     </Button>
 
                     {/* Feature highlights */}
                     <div className="flex items-center justify-center gap-8 mt-12 text-blue-500">
                         <div className="flex flex-col items-center gap-1 max-w-24">
                             <Highlighter className="h-5 w-5" />
-                            <span className="text-xs font-medium text-foreground">Annotations</span>
-                            <span className="text-xs text-muted-foreground text-center">Highlight and take notes</span>
+                            <span className="text-xs font-medium text-foreground">{t("Annotations")}</span>
+                            <span className="text-xs text-muted-foreground text-center">{t("Highlight and take notes")}</span>
                         </div>
                         <div className="flex flex-col items-center gap-1 max-w-24">
                             <FolderKanban className="h-5 w-5" />
-                            <span className="text-xs font-medium text-foreground">Projects</span>
-                            <span className="text-xs text-muted-foreground text-center">Organize by topic</span>
+                            <span className="text-xs font-medium text-foreground">{t("Projects")}</span>
+                            <span className="text-xs text-muted-foreground text-center">{t("Organize by topic")}</span>
                         </div>
                         <div className="flex flex-col items-center gap-1 max-w-24">
                             <Quote className="h-5 w-5" />
-                            <span className="text-xs font-medium text-foreground">Citations</span>
-                            <span className="text-xs text-muted-foreground text-center">Export in any format</span>
+                            <span className="text-xs font-medium text-foreground">{t("Citations")}</span>
+                            <span className="text-xs text-muted-foreground text-center">{t("Export in any format")}</span>
                         </div>
                     </div>
                 </div>
@@ -388,9 +390,9 @@ function PapersPageContent() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
                         <Link href="/pricing">
-                            <AlertDialogAction>Upgrade</AlertDialogAction>
+                            <AlertDialogAction>{t("Upgrade")}</AlertDialogAction>
                         </Link>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -413,7 +415,7 @@ function PapersPageContent() {
             <AlertDialog open={isUploadLimitDialogOpen} onOpenChange={setUploadLimitDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Upload Limit Reached</AlertDialogTitle>
+                        <AlertDialogTitle>{t("Upload Limit Reached")}</AlertDialogTitle>
                         <AlertDialogDescription>
                             {uploadLimitMessage}
                         </AlertDialogDescription>
@@ -428,11 +430,11 @@ function PapersPageContent() {
             </AlertDialog>
             <UsageDisplay />
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 flex-shrink-0">
-                <h1 className="text-3xl font-bold tracking-tight">Library</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{t("Library")}</h1>
                 <div className="flex items-center gap-x-4 mt-2 md:mt-0">
                     <Button onClick={handleUploadClick}>
                         <Upload className="h-4 w-4 mr-2" />
-                        Upload
+                        {t("Upload")}
                     </Button>
                 </div>
             </div>

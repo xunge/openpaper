@@ -30,19 +30,8 @@ async def generate_audio_overview(
     project_id: Optional[UUID] = None,
     additional_instructions: Optional[str] = None,
     length: Optional[Literal["short", "medium", "long"]] = "medium",
-    voice: Literal[
-        "alloy",
-        "ash",
-        "ballad",
-        "coral",
-        "echo",
-        "fable",
-        "onyx",
-        "nova",
-        "sage",
-        "shimmer",
-        "verse",
-    ] = "nova",
+    voice: str = "vivian",
+    language: str = "en",
 ) -> None:
     """
     Generate an audio overview for a paper by creating a narrative summary
@@ -99,6 +88,7 @@ async def generate_audio_overview(
                 user=user,
                 length=length,
                 additional_instructions=additional_instructions,
+                language=language,
                 db=db,
             )
         elif project_id:
@@ -124,6 +114,7 @@ async def generate_audio_overview(
                 length=length,
                 current_user=user,
                 additional_instructions=additional_instructions,
+                language=language,
                 db=db,
             )
 
@@ -281,20 +272,9 @@ async def generate_audio_overview_async(
     paper_id: Optional[UUID] = None,
     project_id: Optional[UUID] = None,
     additional_instructions: Optional[str] = None,
-    voice: Literal[
-        "alloy",
-        "ash",
-        "ballad",
-        "coral",
-        "echo",
-        "fable",
-        "onyx",
-        "nova",
-        "sage",
-        "shimmer",
-        "verse",
-    ] = "nova",
+    voice: str = "vivian",
     length: Optional[Literal["short", "medium", "long"]] = "medium",
+    language: str = "en",
     **kwargs,
 ) -> None:
     """
@@ -312,4 +292,5 @@ async def generate_audio_overview_async(
         additional_instructions=additional_instructions,
         voice=voice,
         length=length,
+        language=language,
     )

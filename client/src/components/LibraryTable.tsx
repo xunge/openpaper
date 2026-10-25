@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import {
 	Table,
@@ -49,6 +50,7 @@ export function LibraryTable({
 	onUploadClick,
 	...props
 }: LibraryTableProps) {
+	const { t } = useI18n();
 	const selectable = selectableProp ?? (onSelectFiles ? true : false);
 	const { papers, error: papersFetchError, isLoading, mutate } = usePapers();
 	const { state: sidebarState } = useSidebar();
@@ -261,7 +263,7 @@ export function LibraryTable({
 	if (isLoading) {
 		return (
 			<div className="flex items-center justify-center py-12">
-				<div className="text-muted-foreground">Loading papers...</div>
+				<div className="text-muted-foreground">{t("Loading papers...")}</div>
 			</div>
 		);
 	}
@@ -283,7 +285,7 @@ export function LibraryTable({
 			<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
 				<div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full">
 					<Input
-						placeholder="Filter papers by title, authors, organizations, or tags..."
+						placeholder={t("Filter papers by title, authors, organizations, or tags...")}
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
 						className="w-full md:max-w-xl border-none dark:border-none focus-visible:ring-1 focus-visible:ring-blue-400/30 text-primary"
@@ -437,7 +439,7 @@ export function LibraryTable({
 											onClick={() => requestSort('title')}
 											className="h-auto p-0 font-semibold hover:bg-transparent hover:text-primary"
 										>
-											Title
+											{t("Title")}
 											<ArrowUpDown className="ml-2 h-4 w-4" />
 										</Button>
 									</TableHead>
@@ -446,7 +448,7 @@ export function LibraryTable({
 											variant="ghost"
 											className="h-auto p-0 font-semibold hover:bg-transparent"
 										>
-											Authors
+											{t("Authors")}
 										</Button>
 									</TableHead>
 									<TableHead className="min-w-[12rem]">
@@ -621,7 +623,7 @@ export function LibraryTable({
 										) : (
 											<div className="flex flex-col items-center gap-4 py-8">
 												<div className="text-muted-foreground text-center">
-													<p className="text-lg font-medium mb-2">No papers in your library yet</p>
+													<p className="text-lg font-medium mb-2">{t("No papers in your library yet")}</p>
 													<p className="text-sm">Upload your first research paper to get started. All your papers will appear here for easy access and organization.</p>
 												</div>
 												{onUploadClick && (

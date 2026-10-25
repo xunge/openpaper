@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n";
+
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { File, User as UserIcon } from 'lucide-react';
 
@@ -99,6 +102,7 @@ export function AnnotationsView({
 	addAnnotation,
 	readonly = false,
 }: AnnotationsViewProps) {
+	const { t } = useI18n();
 	const firstAnnotationRefs = useRef<Record<string, HTMLDivElement | null>>({});
 	const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 	const composeBlockRef = useRef<HTMLDivElement | null>(null);
@@ -272,9 +276,7 @@ export function AnnotationsView({
 	if (threads.length === 0 && !composeHighlightId) {
 		return (
 			<div className="flex flex-col gap-4 text-center">
-				<p className="text-secondary-foreground text-sm">
-					There are no annotations for this paper.
-				</p>
+				<p className="text-secondary-foreground text-sm">{t("There are no annotations for this paper.")}</p>
 			</div>
 		);
 	}
@@ -287,9 +289,7 @@ export function AnnotationsView({
 						ref={composeBlockRef}
 						className="sticky top-0 z-10 border-b border-border bg-background px-4 py-3 shadow-sm"
 					>
-						<p className="text-xs font-medium text-muted-foreground mb-2">
-							New note
-						</p>
+						<p className="text-xs font-medium text-muted-foreground mb-2">{t("New note")}</p>
 						{composeTargetHighlight?.raw_text ? (
 							<div
 								className={cn(
@@ -319,8 +319,8 @@ export function AnnotationsView({
 									handleComposeCancel();
 								}
 							}}
-							placeholder="Write a note…"
-							aria-label="New note"
+							placeholder={t("Write a note…")}
+							aria-label={t("New note")}
 							className={inlineReplyTextareaClassName}
 							disabled={isComposeSaving}
 							rows={3}
@@ -457,8 +457,8 @@ export function AnnotationsView({
 														}
 													}}
 													onMouseDown={(e) => e.stopPropagation()}
-													placeholder="Write a reply…"
-													aria-label="Reply"
+													placeholder={t("Write a reply…")}
+													aria-label={t("Reply")}
 													className={inlineReplyTextareaClassName}
 													disabled={isReplySaving}
 													rows={3}
@@ -489,9 +489,7 @@ export function AnnotationsView({
 															void handleReplySave(hid);
 														}}
 														onMouseDown={(e) => e.stopPropagation()}
-													>
-														Reply
-													</Button>
+													>{t("Reply")}</Button>
 												</div>
 											</div>
 										) : (
@@ -503,9 +501,7 @@ export function AnnotationsView({
 													e.stopPropagation();
 													setReplyOpen(true);
 												}}
-											>
-												Reply…
-											</button>
+											>{t("Reply…")}</button>
 										)}
 									</div>
 								)}

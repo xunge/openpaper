@@ -17,7 +17,7 @@ from app.helpers.s3 import s3_service
 from app.schemas.user import CurrentUser
 from app.tasks.audio_overview import generate_audio_overview_async
 from dotenv import load_dotenv
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -33,8 +33,19 @@ paper_audio_router = APIRouter()
 class AudioOverviewCreateRequest(BaseModel):
     additional_instructions: Optional[str] = None
     length: Optional[Literal["short", "medium", "long"]] = "medium"
+    # Qwen3-TTS timbre ids (the local backend). The OpenAI names are kept so an
+    # older client, or a deployment still pointed at Azure, keeps working.
     voice: Optional[
         Literal[
+            "vivian",
+            "serena",
+            "uncle_fu",
+            "dylan",
+            "eric",
+            "ryan",
+            "aiden",
+            "ono_anna",
+            "sohee",
             "alloy",
             "ash",
             "ballad",
@@ -97,7 +108,14 @@ async def create_audio_overview(
         user=current_user,
         audio_overview_job_id=job_id_as_uuid,
         additional_instructions=audio_request.additional_instructions,
-        voice=audio_request.voice or "nova",
+        voice=audio_request.voice or "vivian",
+        # The narration is written by the LLM; it should match the language the
+        # person is reading the UI in, not the language of the paper.
+        language=(
+            "zh"
+            if (request.headers.get("accept-language") or "").lower().startswith("zh")
+            else "en"
+        ),
     )
 
     track_event(
@@ -254,8 +272,12 @@ async def get_mrc_audio_overview_file(
         db, paper_id=uuid.UUID(id), current_user=current_user
     )
 
+    # Nothing generated yet is a normal state, not a failure: the client asks for
+    # the file on mount and would otherwise surface a 404 in the console on every
+    # visit to a paper that has no audio. 204 means "no content", which the
+    # client already handles by falling through to the job-status check.
     if not audio_overview_job:
-        return JSONResponse(status_code=404, content={"message": "Job not found"})
+        return Response(status_code=204)
 
     # Fetch the audio overview from the database
     audio_overview = audio_overview_crud.get_mrc_by_paper_and_user(
@@ -263,9 +285,8 @@ async def get_mrc_audio_overview_file(
     )
 
     if not audio_overview:
-        return JSONResponse(
-            status_code=404, content={"message": "Audio overview not found"}
-        )
+        # A job exists but has not produced audio yet (still running, or failed).
+        return Response(status_code=204)
 
     # Generate a presigned URL for the audio file
     signed_url = s3_service.generate_presigned_url(

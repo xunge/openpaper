@@ -11,6 +11,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { CollapsibleSidebarMenu } from "../CollapsibleSidebarMenu";
 import { navItems } from "./navItems";
+import { useI18n } from "@/lib/i18n";
 import { User } from "@/lib/auth";
 import { Conversation, PaperItem, Project } from "@/lib/schema";
 
@@ -22,6 +23,8 @@ interface SidebarNavProps {
 }
 
 export function SidebarNav({ user, papers, conversations, projects }: SidebarNavProps) {
+    const { t } = useI18n();
+
     return (
         <SidebarGroup>
             <SidebarGroupContent>
@@ -31,13 +34,13 @@ export function SidebarNav({ user, papers, conversations, projects }: SidebarNav
                             return (
                                 <CollapsibleSidebarMenu
                                     key={item.title}
-                                    title={item.title}
+                                    title={t(item.title)}
                                     icon={item.icon}
                                     url={item.url}
                                     items={papers}
                                     getItemUrl={(paper) => `/paper/${paper.id}`}
                                     viewAllUrl="/papers"
-                                    viewAllText="View all papers"
+                                    viewAllText={t("View all papers")}
                                     defaultOpen={true}
                                 />
                             )
@@ -46,13 +49,13 @@ export function SidebarNav({ user, papers, conversations, projects }: SidebarNav
                             return (
                                 <CollapsibleSidebarMenu
                                     key={item.title}
-                                    title={item.title}
+                                    title={t(item.title)}
                                     icon={item.icon}
                                     url={item.url}
                                     items={conversations}
                                     getItemUrl={(convo) => `/understand?id=${convo.id}`}
                                     viewAllUrl="/understand/past"
-                                    viewAllText="View all chats"
+                                    viewAllText={t("View all chats")}
                                     defaultOpen={false}
                                 />
                             )
@@ -61,14 +64,14 @@ export function SidebarNav({ user, papers, conversations, projects }: SidebarNav
                             return (
                                 <CollapsibleSidebarMenu
                                     key={item.title}
-                                    title={item.title}
+                                    title={t(item.title)}
                                     icon={item.icon}
                                     url={item.url}
                                     items={projects}
                                     getItemUrl={(project) => `/projects/${project.id}`}
                                     getItemName={(project) => project.title}
                                     viewAllUrl="/projects"
-                                    viewAllText="View all projects"
+                                    viewAllText={t("View all projects")}
                                     defaultOpen={false}
                                     maxItems={3}
                                 />
@@ -79,7 +82,7 @@ export function SidebarNav({ user, papers, conversations, projects }: SidebarNav
                                 <SidebarMenuButton asChild>
                                     <Link href={item.requiresAuth && !user ? "/login" : item.url}>
                                         <item.icon />
-                                        <span>{item.title}</span>
+                                        <span>{t(item.title)}</span>
                                         {item.isNew && (
                                             <Badge className="ml-auto text-[10px] px-1.5 py-0 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900">
                                                 New

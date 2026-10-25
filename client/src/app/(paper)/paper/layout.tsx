@@ -5,6 +5,8 @@ import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { AuthProvider } from "@/lib/auth";
+import { I18nProvider } from "@/lib/i18n";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 import { Toaster } from "@/components/ui/sonner";
 import { PostHogProvider, ThemeProvider } from "@/lib/providers";
@@ -82,6 +84,7 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
 				<ThemeProvider>
+					<I18nProvider>
 					<AuthProvider>
 						<PostHogProvider>
 							<SidebarProvider>
@@ -90,7 +93,7 @@ export default function RootLayout({
 									<header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
 										<SidebarTrigger className="-ml-1" />
 										<Separator orientation="vertical" className="mr-2 h-4" />
-										<Link href="/" className="flex flex-1 items-center gap-2 hover:opacity-80 transition-opacity">
+										<Link href="/" className="flex min-w-0 flex-1 items-center gap-2 hover:opacity-80 transition-opacity">
 											<Image
 												src="/openpaper.svg"
 												width={24}
@@ -100,10 +103,15 @@ export default function RootLayout({
 											<span className="text-sm font-semibold">Open Paper</span>
 										</Link>
 									{/* Desktop buttons */}
-								<div className="hidden md:flex items-center gap-2">
+								<div className="hidden shrink-0 md:flex items-center gap-2">
 									<ManageProjectsButton />
 									<CitePaperButton />
 									<SharePaperButton />
+								</div>
+								{/* Outside the md-only container: the language switch stays
+								    reachable at every width. */}
+								<div className="shrink-0">
+									<LanguageToggle />
 								</div>
 									{/* Mobile menu */}
 									<MobilePaperMenu />
@@ -115,6 +123,7 @@ export default function RootLayout({
 							</SidebarProvider>
 						</PostHogProvider>
 					</AuthProvider>
+					</I18nProvider>
 				</ThemeProvider>
 				<Toaster
 					position="top-right"

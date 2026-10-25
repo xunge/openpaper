@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useProjects } from "@/hooks/useProjects";
@@ -32,6 +33,7 @@ import { BlogPostToast } from "@/components/BlogPostToast";
 const DEFAULT_PAPER_UPLOAD_ERROR_MESSAGE = "We encountered an error processing your request. Please check the file or URL and try again.";
 
 export default function Home() {
+	const { t } = useI18n();
 	const [isUploading, setIsUploading] = useState(false);
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -486,13 +488,13 @@ export default function Home() {
 					<div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
 						<div className="flex items-center gap-4">
 							<Link href="/blog/manifesto" className="hover:text-foreground transition-colors">
-								Manifesto
+								{t("Manifesto")}
 							</Link>
 							<Link href="/blog" className="hover:text-foreground transition-colors">
-								Blog
+								{t("Blog")}
 							</Link>
 							<Link href="/about" className="hover:text-foreground transition-colors">
-								About
+								{t("About")}
 							</Link>
 							<a
 								href="https://github.com/khoj-ai/openpaper"
@@ -500,7 +502,7 @@ export default function Home() {
 								rel="noopener noreferrer"
 								className="hover:text-foreground transition-colors"
 							>
-								GitHub
+								{t("GitHub")}
 							</a>
 						</div>
 					</div>

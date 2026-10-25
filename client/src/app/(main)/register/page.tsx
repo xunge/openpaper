@@ -17,11 +17,13 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useState } from "react"
 import { fetchFromApi } from "@/lib/api"
+import { useI18n } from "@/lib/i18n"
 
 // Self-service signup for a local account. The account, its password hash, and
 // its session all live in this deployment's Postgres; nothing leaves the box.
 function RegisterContent() {
 	const { user, loading } = useAuth()
+	const { t } = useI18n()
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const returnTo = searchParams.get("returnTo") || "/"
@@ -43,7 +45,7 @@ function RegisterContent() {
 	const handleSubmit = async (event: React.FormEvent) => {
 		event.preventDefault()
 		if (password !== confirm) {
-			setError("The two passwords don't match.")
+			setError(t("The two passwords don't match."))
 			return
 		}
 		setSubmitting(true)
@@ -78,9 +80,9 @@ function RegisterContent() {
 		<div className="flex items-center justify-center h-full p-4">
 			<Card className="w-full max-w-md">
 				<CardHeader className="text-center">
-					<CardTitle className="text-2xl">Create an account</CardTitle>
+					<CardTitle className="text-2xl">{t("Create an account")}</CardTitle>
 					<CardDescription>
-						This account is stored on this server only.
+						{t("This account is stored on this server only.")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -93,7 +95,7 @@ function RegisterContent() {
 						)}
 
 						<Input
-							placeholder="Name (optional)"
+							placeholder={t("Name (optional)")}
 							autoComplete="name"
 							value={name}
 							onChange={(e) => setName(e.target.value)}
@@ -110,7 +112,7 @@ function RegisterContent() {
 						/>
 						<Input
 							type="password"
-							placeholder="Password (at least 8 characters)"
+							placeholder={t("Password (at least 8 characters)")}
 							autoComplete="new-password"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
@@ -119,7 +121,7 @@ function RegisterContent() {
 						/>
 						<Input
 							type="password"
-							placeholder="Confirm password"
+							placeholder={t("Confirm password")}
 							autoComplete="new-password"
 							value={confirm}
 							onChange={(e) => setConfirm(e.target.value)}
@@ -135,15 +137,15 @@ function RegisterContent() {
 							{submitting ? (
 								<Loader2 className="h-4 w-4 animate-spin" />
 							) : (
-								"Create account"
+								t("Create account")
 							)}
 						</Button>
 					</form>
 				</CardContent>
 				<CardFooter className="text-sm text-muted-foreground justify-center">
-					<span>Already have an account?</span>
+					<span>{t("Already have an account?")}</span>
 					<Link href="/login" className="ml-1 text-primary hover:underline">
-						Sign in
+						{t("Sign in")}
 					</Link>
 				</CardFooter>
 			</Card>

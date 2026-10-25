@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/sidebar/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/lib/auth";
+import { I18nProvider } from "@/lib/i18n";
 
 import { Toaster } from "@/components/ui/sonner";
 import { PostHogProvider, ThemeProvider } from "@/lib/providers";
@@ -89,6 +90,7 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
 			>
 				<ThemeProvider>
+					<I18nProvider>
 					<AuthProvider>
 						<PostHogProvider>
 							<SidebarProvider>
@@ -102,6 +104,7 @@ export default function RootLayout({
 							</SidebarProvider>
 						</PostHogProvider>
 					</AuthProvider>
+					</I18nProvider>
 				</ThemeProvider>
 				<Toaster
 					position="top-right"

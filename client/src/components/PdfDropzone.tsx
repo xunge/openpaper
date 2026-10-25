@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ interface PdfDropzoneProps {
 }
 
 export function PdfDropzone({ onFileSelect, onUrlClick, maxSizeMb = 30, disabled = false, maxPapers = MAX_PAPERS_TO_UPLOAD }: PdfDropzoneProps) {
+	const { t } = useI18n();
     const [isDragging, setIsDragging] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -123,9 +125,7 @@ export function PdfDropzone({ onFileSelect, onUrlClick, maxSizeMb = 30, disabled
                     disabled={disabled}
                 />
                 <UploadCloud className={`h-12 w-12 mb-4 ${isDragging && !disabled ? 'text-primary' : 'text-muted-foreground'}`} />
-                <p className="text-center text-lg font-medium">
-                    Click to upload, or drag and drop
-                </p>
+                <p className="text-center text-lg font-medium">{t("Click to upload, or drag and drop")}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                     {maxPapers === 1
                         ? `Upload a paper up to ${maxSizeMb}MB`
@@ -138,9 +138,7 @@ export function PdfDropzone({ onFileSelect, onUrlClick, maxSizeMb = 30, disabled
                 <span className="flex-shrink mx-4 text-muted-foreground text-sm">or</span>
                 <div className="flex-grow border-t border-border"></div>
             </div>
-            <Button variant="outline" onClick={onUrlClick} disabled={disabled}>
-                Import from URL
-            </Button>
+            <Button variant="outline" onClick={onUrlClick} disabled={disabled}>{t("Import from URL")}</Button>
         </div>
     );
 }

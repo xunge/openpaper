@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { BarChart3, Loader2, MessageSquare, Sparkles, Table, Volume2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -113,7 +114,7 @@ function CreateTile({ icon, label, sub, isNew, disabled, onClick }: CreateTilePr
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                     {icon}
                 </div>
-                {isNew && <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300">New</Badge>}
+                {isNew && <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300">{t("New")}</Badge>}
             </div>
             <span className="text-sm font-semibold">{label}</span>
             <span className="text-xs leading-snug text-muted-foreground">{sub}</span>
@@ -125,6 +126,7 @@ function CreateTile({ icon, label, sub, isNew, disabled, onClick }: CreateTilePr
 // Shares the right slot with the reader panel; kept mounted (CSS-hidden) while
 // inactive so in-progress polling and audio playback survive mode switches.
 export function ArtifactsPanel() {
+	const { t } = useI18n();
     const { projectId, project, papers, rightPanel, closeArtifacts, openPaper } = useProjectWorkspace();
     const router = useRouter();
     const { subscription, refetch: refetchSubscription } = useSubscription();

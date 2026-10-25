@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
@@ -13,6 +14,7 @@ import { PaperData } from '@/lib/schema';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export function SharePaperButton() {
+	const { t } = useI18n();
     const pathname = usePathname();
     const [paperId, setPaperId] = useState<string | null>(null);
     const [paperData, setPaperData] = useState<PaperData | null>(null);
@@ -89,7 +91,7 @@ export function SharePaperButton() {
     const triggerButton = (
         <Button variant="ghost" size="sm">
             <ShareIcon className="h-4 w-4 mr-2" />
-            Share
+            {t("Share")}
         </Button>
     );
 
@@ -118,7 +120,7 @@ export function SharePaperButton() {
                                         toast.success("Link copied!");
                                     }}
                                 >
-                                    Copy
+                                    {t("Copy")}
                                 </Button>
                             </div>
                             <Button
@@ -133,7 +135,11 @@ export function SharePaperButton() {
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            <p className="text-sm text-muted-foreground">Make this paper public to share it with others via a unique link. All of your <b>annotations and chats</b> will be visible to anyone with the link.</p>
+                            <p className="text-sm text-muted-foreground">
+                            {t("Make this paper public to share it with others via a unique link. All of your")}{" "}
+                            <b>{t("annotations and chats")}</b>{" "}
+                            {t("will be visible to anyone with the link.")}
+                        </p>
                             <Button
                                 onClick={handleShare}
                                 disabled={isSharing}
@@ -157,7 +163,7 @@ export function SharePaperButton() {
                 </DrawerTrigger>
                 <DrawerContent>
                     <DrawerHeader>
-                        <DrawerTitle>Share Paper</DrawerTitle>
+                        <DrawerTitle>{t("Share Paper")}</DrawerTitle>
                     </DrawerHeader>
                     <div className="px-4 pb-4">
                         {content}

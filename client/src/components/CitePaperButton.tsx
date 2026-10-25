@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -28,6 +29,7 @@ interface CitePaperButtonProps {
 }
 
 export function CitePaperButton({ paper, paperId: providedPaperId, minimalist = false, variant = "ghost", iconOnly = false }: CitePaperButtonProps) {
+	const { t } = useI18n();
     const pathname = usePathname();
     const [derivedPaperId, setDerivedPaperId] = useState<string | null>(null);
     const [paperData, setPaperData] = useState<(PaperData | PaperItem)[] | null>(paper || null);
@@ -105,7 +107,7 @@ export function CitePaperButton({ paper, paperId: providedPaperId, minimalist = 
     ) : (
         <Button variant={variant} size="sm" className={variant === "outline" ? "h-8 px-3 text-xs" : ""}>
             {(!minimalist || variant === "outline") && <Quote className="h-3.5 w-3.5 mr-1.5" />}
-            <span className={minimalist && variant !== "outline" ? "text-sm" : ""}>{isBibliography ? 'Bibliography' : 'Cite'}</span>
+            <span className={minimalist && variant !== "outline" ? "text-sm" : ""}>{isBibliography ? t('Bibliography') : t('Cite')}</span>
         </Button>
     );
 
@@ -118,7 +120,7 @@ export function CitePaperButton({ paper, paperId: providedPaperId, minimalist = 
             ) : (
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Citation Style</label>
+                        <label className="text-sm font-medium">{t("Citation Style")}</label>
                         <Select value={selectedStyle} onValueChange={setSelectedStyle}>
                             <SelectTrigger className="w-full">
                                 <SelectValue placeholder="Select citation style" />
@@ -188,7 +190,7 @@ export function CitePaperButton({ paper, paperId: providedPaperId, minimalist = 
                                     {copied ? (
                                         <>
                                             <Check className="h-4 w-4 mr-2" />
-                                            Copied
+                                            {t("Copied")}
                                         </>
                                     ) : (
                                         <>
@@ -213,7 +215,7 @@ export function CitePaperButton({ paper, paperId: providedPaperId, minimalist = 
                 </DrawerTrigger>
                 <DrawerContent>
                     <DrawerHeader>
-                        <DrawerTitle>{isBibliography ? 'Bibliography' : 'Cite Paper'}</DrawerTitle>
+                        <DrawerTitle>{isBibliography ? t('Bibliography') : t('Cite Paper')}</DrawerTitle>
                     </DrawerHeader>
                     <div className="px-4 pb-4">
                         {content}
@@ -230,7 +232,7 @@ export function CitePaperButton({ paper, paperId: providedPaperId, minimalist = 
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{isBibliography ? 'Bibliography' : 'Cite Paper'}</DialogTitle>
+                    <DialogTitle>{isBibliography ? t('Bibliography') : t('Cite Paper')}</DialogTitle>
                 </DialogHeader>
                 {content}
             </DialogContent>

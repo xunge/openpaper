@@ -1,5 +1,5 @@
-
-"use client"
+"use client";
+import { useI18n } from "@/lib/i18n";
 
 import { z } from "zod";
 import {
@@ -39,6 +39,7 @@ function UrlImportDialog({
     onOpenChange: (open: boolean) => void
     onImport: (url: string) => void
 }) {
+	const { t } = useI18n();
     const [url, setUrl] = useState("");
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -68,10 +69,8 @@ function UrlImportDialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Import from URL</DialogTitle>
-                    <DialogDescription>
-                        Enter the URL of the PDF you want to import.
-                    </DialogDescription>
+                    <DialogTitle>{t("Import from URL")}</DialogTitle>
+                    <DialogDescription>{t("Enter the URL of the PDF you want to import.")}</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <Input
@@ -81,7 +80,7 @@ function UrlImportDialog({
                         onKeyDown={e => e.key === "Enter" && handleSubmit()}
                     />
                     {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
-                    <Button onClick={handleSubmit}>Import</Button>
+                    <Button onClick={handleSubmit}>{t("Import")}</Button>
                 </div>
             </DialogContent>
         </Dialog>
@@ -91,6 +90,7 @@ function UrlImportDialog({
 const DEFAULT_UPLOAD_LIMIT = 10;
 
 export function UploadModal({ open, onOpenChange, uploadLimit = DEFAULT_UPLOAD_LIMIT, onUploadComplete, onUploadStart, onUrlImportStart }: UploadModalProps) {
+	const { t } = useI18n();
     const [jobs, setJobs] = useState<MinimalJob[]>([]);
     const [isUrlDialogOpen, setIsUrlDialogOpen] = useState(false);
     const [importError, setImportError] = useState<string | null>(null);
@@ -167,16 +167,14 @@ export function UploadModal({ open, onOpenChange, uploadLimit = DEFAULT_UPLOAD_L
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="max-w-3xl">
                     <DialogHeader>
-                        <DialogTitle>Upload Papers</DialogTitle>
-                        <DialogDescription>
-                            You can click out of this modal while your papers are uploading.
-                        </DialogDescription>
+                        <DialogTitle>{t("Upload Papers")}</DialogTitle>
+                        <DialogDescription>{t("You can click out of this modal while your papers are uploading.")}</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         {isSubmitting ? (
                             <div className="flex flex-col items-center justify-center h-64 space-y-4">
                                 <LoadingIndicator />
-                                <p className="text-sm text-gray-600 dark:text-gray-400">Processing your papers...</p>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">{t("Processing your papers...")}</p>
                             </div>
                         ) : (
                             <>

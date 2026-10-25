@@ -700,18 +700,18 @@ export default function PaperView() {
     }
 
     return (
-        <div className="flex flex-row w-full h-[calc(100vh-64px)]">
-            <div className="w-full h-full flex items-center justify-center gap-0">
+        <div className="flex min-w-0 flex-row w-full overflow-hidden h-[calc(100vh-64px)]">
+            <div className="flex min-w-0 w-full h-full items-center justify-center gap-0">
                 {/* PDF Viewer Section */}
                 <div
-                    className="border-r-2 dark:border-gray-800 border-gray-200 p-0 h-full"
+                    className="min-w-0 overflow-hidden border-r-2 dark:border-gray-800 border-gray-200 p-0 h-full"
                     style={{
                         width: rightSideFunction === 'Read' ? '100%' : `${leftPanelWidth}%`,
                         transition: isDragging ? 'none' : 'width 300ms ease',
                     }}
                 >
                     {paperData.file_url && (
-                        <div className="w-full h-full">
+                        <div className="h-full w-full min-w-0">
                             <PdfHighlighterViewer
                                 pdfUrl={paperData.file_url}
                                 explicitSearchTerm={explicitSearchTerm}

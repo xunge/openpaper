@@ -106,8 +106,13 @@ async def create_project_audio_overview(
         user=current_user,
         audio_overview_job_id=job_id_as_uuid,
         additional_instructions=audio_request.additional_instructions,
-        voice=audio_request.voice or "nova",
+        voice=audio_request.voice or "vivian",
         length=audio_request.length,
+        language=(
+            "zh"
+            if (request.headers.get("accept-language") or "").lower().startswith("zh")
+            else "en"
+        ),
     )
 
     track_event(

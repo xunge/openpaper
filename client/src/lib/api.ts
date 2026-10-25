@@ -1,7 +1,19 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// The server reads this to decide the language of answers and of the extraction
+// prompts for new uploads. Read from localStorage rather than React context so
+// the helper stays usable from non-component code.
+const languageHeader = (): Record<string, string> => {
+    try {
+        const lang = window.localStorage.getItem('op_language');
+        return { 'Accept-Language': lang === 'zh' ? 'zh-CN' : 'en' };
+    } catch {
+        return { 'Accept-Language': 'en' };
+    }
+};
+
 export async function fetchFromApi(endpoint: string, options: RequestInit = {}) {
-    const headers: HeadersInit = {};
+    const headers: HeadersInit = { ...languageHeader() };
 
     // Only set Content-Type to application/json if we're not sending FormData
     if (!(options.body instanceof FormData)) {
@@ -55,6 +67,7 @@ export async function fetchStreamFromApi(
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers: {
+            ...languageHeader(),
             ...options.headers,
             // For SSE, we want text/event-stream instead of octet-stream
             Accept: 'text/event-stream',

@@ -143,9 +143,15 @@ async def _stream_chat_chunks(
 
 @message_router.get("/models")
 async def get_available_models() -> dict:
+    """Models the chat picker offers.
+
+    A list of model entries rather than the hosted product's provider map: this
+    deployment exposes one provider whose two models differ in speed and depth,
+    and choosing between them is the decision the user actually makes.
+    """
     return {
-        "models": operations.get_chat_model_options(),
-        "default": operations.default_provider.value,
+        "models": operations.get_chat_model_choices(),
+        "default": operations.get_default_chat_model(),
     }
 
 
@@ -154,6 +160,7 @@ class MultiPaperChatRequest(BaseModel):
     user_query: str
     user_references: Optional[List[str]] = None
     llm_provider: Optional[LLMProvider] = None
+    llm_model: Optional[str] = None
     project_id: Optional[str] = None
     # @-mention scoping: when any of these are set, the chat's search space is
     # hard-limited to the union of the mentioned papers, the papers in the
@@ -428,6 +435,7 @@ async def chat_message_multipaper(
                 chat_generator = operations.chat_with_papers(
                     question=request.user_query,
                     llm_provider=request.llm_provider,
+                    model=request.llm_model,
                     user_references=request.user_references,
                     evidence_gathered=evidence_collection,
                     conversation_id=request.conversation_id,
@@ -687,6 +695,8 @@ class ChatMessageRequest(BaseModel):
     user_references: Optional[List[str]] = None
     style: Optional[ResponseStyle] = ResponseStyle.NORMAL
     llm_provider: Optional[LLMProvider] = None
+    # Explicit model id from the picker; None means the provider's default.
+    llm_model: Optional[str] = None
 
 
 @message_router.post("/chat/paper")
@@ -720,6 +730,7 @@ async def chat_message_stream(
                     llm_provider=request.llm_provider,
                     user_references=request.user_references,
                     response_style=request.style,
+                    model=request.llm_model,
                     db=db,
                 )
 

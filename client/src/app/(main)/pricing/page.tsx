@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,7 @@ const monthlyPrice = 12;
 const annualPrice = 8;
 
 export default function PricingPage() {
+	const { t } = useI18n();
     const [isAnnual, setIsAnnual] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState("basic");
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -211,12 +213,8 @@ export default function PricingPage() {
             {/* Header */}
             <div className="text-center space-y-6">
                 <div className="space-y-3">
-                    <h1 className="text-4xl font-light tracking-tight text-slate-900 dark:text-slate-100">
-                        Research Plans
-                    </h1>
-                    <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                        Choose the plan that fits your research workflow.
-                    </p>
+                    <h1 className="text-4xl font-light tracking-tight text-slate-900 dark:text-slate-100">{t("Research Plans")}</h1>
+                    <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">{t("Choose the plan that fits your research workflow.")}</p>
                 </div>
             </div>
 
@@ -277,9 +275,7 @@ export default function PricingPage() {
                         <span className={cn(
                             "text-xs sm:text-sm font-medium transition-colors",
                             !isAnnual ? "text-slate-900 dark:text-slate-100" : "text-slate-500 dark:text-slate-400"
-                        )}>
-                            Monthly
-                        </span>
+                        )}>{t("Monthly")}</span>
                         {isActiveSubscription ? (
                             <Dialog>
                                 <DialogTrigger asChild>
@@ -306,9 +302,7 @@ export default function PricingPage() {
                                     {userSubscription?.scheduled_change ? (
                                         <>
                                             <DialogHeader>
-                                                <DialogTitle className="text-slate-900 dark:text-slate-100">
-                                                    Billing Change Scheduled
-                                                </DialogTitle>
+                                                <DialogTitle className="text-slate-900 dark:text-slate-100">{t("Billing Change Scheduled")}</DialogTitle>
                                                 <DialogDescription className="text-slate-600 dark:text-slate-400">
                                                     Your plan will switch to {userSubscription.scheduled_change.new_interval === "year" ? "annual" : "monthly"} billing
                                                     on {formatDate(userSubscription.scheduled_change.effective_date)}. No changes until then.
@@ -324,18 +318,14 @@ export default function PricingPage() {
                                                     {isIntervalChangeLoading ? "Canceling..." : `Keep ${userSubscription.scheduled_change.new_interval === "year" ? "monthly" : "annual"} billing`}
                                                 </Button>
                                                 <DialogTrigger asChild>
-                                                    <Button className="flex-1 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900">
-                                                        Got it
-                                                    </Button>
+                                                    <Button className="flex-1 bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 dark:hover:bg-slate-200 text-white dark:text-slate-900">{t("Got it")}</Button>
                                                 </DialogTrigger>
                                             </div>
                                         </>
                                     ) : (
                                         <>
                                             <DialogHeader>
-                                                <DialogTitle className="text-slate-900 dark:text-slate-100">
-                                                    Change Billing Cycle
-                                                </DialogTitle>
+                                                <DialogTitle className="text-slate-900 dark:text-slate-100">{t("Change Billing Cycle")}</DialogTitle>
                                                 <DialogDescription className="text-slate-600 dark:text-slate-400">
                                                     Your plan will switch to {isAnnual ? "monthly" : "annual"} billing
                                                     on {userSubscription?.subscription.current_period_end
@@ -387,9 +377,7 @@ export default function PricingPage() {
                             <span className={cn(
                                 "text-xs sm:text-sm font-medium transition-colors",
                                 isAnnual ? "text-slate-900 dark:text-slate-100" : "text-slate-500 dark:text-slate-400"
-                            )}>
-                                Annual
-                            </span>
+                            )}>{t("Annual")}</span>
                             <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-0 text-xs px-2 py-0.5">
                                 {isCurrentlySubscribed && isAnnual ? `Saving $${annualSavings}/year!` : `Save $${annualSavings}/year`}
                             </Badge>
@@ -405,12 +393,8 @@ export default function PricingPage() {
                 <Card className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:shadow-lg transition-shadow duration-200">
                     <CardHeader className="pb-4">
                         <div className="space-y-2">
-                            <CardTitle className="text-xl font-medium text-slate-900 dark:text-slate-100">
-                                Base
-                            </CardTitle>
-                            <CardDescription className="text-slate-600 dark:text-slate-400">
-                                Perfect for getting started with research
-                            </CardDescription>
+                            <CardTitle className="text-xl font-medium text-slate-900 dark:text-slate-100">{t("Base")}</CardTitle>
+                            <CardDescription className="text-slate-600 dark:text-slate-400">{t("Perfect for getting started with research")}</CardDescription>
                         </div>
                         <div className="pt-4">
                             <div className="text-3xl font-light text-slate-900 dark:text-slate-100">
@@ -451,16 +435,12 @@ export default function PricingPage() {
                     <CardHeader className="pb-4">
                         <div className="space-y-2">
                             <div className="flex items-center gap-2">
-                                <CardTitle className="text-xl font-medium text-slate-900 dark:text-slate-100">
-                                    Researcher
-                                </CardTitle>
+                                <CardTitle className="text-xl font-medium text-slate-900 dark:text-slate-100">{t("Researcher")}</CardTitle>
                                 {isActiveSubscription && (
                                     <CheckCircle className="h-5 w-5 text-slate-700 dark:text-slate-300" />
                                 )}
                             </div>
-                            <CardDescription className="text-slate-600 dark:text-slate-400">
-                                For independent researchers and academics
-                            </CardDescription>
+                            <CardDescription className="text-slate-600 dark:text-slate-400">{t("For independent researchers and academics")}</CardDescription>
                         </div>
                         <div className="pt-4">
                             <div className="text-3xl font-light text-slate-900 dark:text-slate-100">
@@ -481,9 +461,7 @@ export default function PricingPage() {
                                     }
                                 </Badge>
                                 {isIntervalChangeLoading && (
-                                    <Badge variant="secondary" className="text-xs">
-                                        Updating...
-                                    </Badge>
+                                    <Badge variant="secondary" className="text-xs">{t("Updating...")}</Badge>
                                 )}
                                 {userSubscription?.scheduled_change && (
                                     <Badge variant="secondary" className="text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 whitespace-normal text-left">
@@ -500,7 +478,7 @@ export default function PricingPage() {
                                 <div className="flex items-start gap-2">
                                     <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                                     <div>
-                                        <span className="font-medium">Subscription Canceled</span>
+                                        <span className="font-medium">{t("Subscription Canceled")}</span>
                                         <p className="text-muted-foreground mt-0.5">
                                             Ends on {userSubscription?.subscription.current_period_end &&
                                                 formatDate(userSubscription.subscription.current_period_end)}. Reactivate anytime before this date.
@@ -515,7 +493,7 @@ export default function PricingPage() {
                                 <div className="flex items-start gap-2">
                                     <Clock className="h-4 w-4 text-amber-700 dark:text-amber-300 mt-0.5 shrink-0" />
                                     <div>
-                                        <span className="font-medium text-amber-900 dark:text-amber-100">Subscription Ending</span>
+                                        <span className="font-medium text-amber-900 dark:text-amber-100">{t("Subscription Ending")}</span>
                                         <p className="text-amber-700 dark:text-amber-300 mt-0.5">
                                             Ends on {userSubscription?.subscription?.current_period_end &&
                                                 formatDate(userSubscription.subscription.current_period_end)}. Reactivate anytime before this date.
@@ -530,10 +508,8 @@ export default function PricingPage() {
                                 <div className="flex items-start gap-2">
                                     <Clock className="h-4 w-4 text-amber-700 dark:text-amber-300 mt-0.5 shrink-0" />
                                     <div>
-                                        <span className="font-medium text-amber-900 dark:text-amber-100">Payment Past Due</span>
-                                        <p className="text-amber-700 dark:text-amber-300 mt-0.5">
-                                            Please update your payment method to continue your subscription.
-                                        </p>
+                                        <span className="font-medium text-amber-900 dark:text-amber-100">{t("Payment Past Due")}</span>
+                                        <p className="text-amber-700 dark:text-amber-300 mt-0.5">{t("Please update your payment method to continue your subscription.")}</p>
                                     </div>
                                 </div>
                             </div>
@@ -544,10 +520,8 @@ export default function PricingPage() {
                                 <div className="flex items-start gap-2">
                                     <Clock className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                                     <div>
-                                        <span className="font-medium">Payment Incomplete</span>
-                                        <p className="text-muted-foreground mt-0.5">
-                                            Please complete the payment process to activate your subscription.
-                                        </p>
+                                        <span className="font-medium">{t("Payment Incomplete")}</span>
+                                        <p className="text-muted-foreground mt-0.5">{t("Please complete the payment process to activate your subscription.")}</p>
                                     </div>
                                 </div>
                             </div>
@@ -588,9 +562,7 @@ export default function PricingPage() {
                                         setIsCheckoutOpen(true);
                                     }
                                 }}
-                            >
-                                Upgrade to Researcher
-                            </Button>
+                            >{t("Upgrade to Researcher")}</Button>
                         )}
                     </CardContent>
                 </Card>
@@ -607,23 +579,15 @@ export default function PricingPage() {
                 {/* Teams Plan */}
                 <Card className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 opacity-60 relative">
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-0">
-                            Coming Soon
-                        </Badge>
+                        <Badge variant="secondary" className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-0">{t("Coming Soon")}</Badge>
                     </div>
                     <CardHeader className="pb-4">
                         <div className="space-y-2">
-                            <CardTitle className="text-xl font-medium text-slate-900 dark:text-slate-100">
-                                Teams
-                            </CardTitle>
-                            <CardDescription className="text-slate-600 dark:text-slate-400">
-                                For research teams and organizations
-                            </CardDescription>
+                            <CardTitle className="text-xl font-medium text-slate-900 dark:text-slate-100">{t("Teams")}</CardTitle>
+                            <CardDescription className="text-slate-600 dark:text-slate-400">{t("For research teams and organizations")}</CardDescription>
                         </div>
                         <div className="pt-4">
-                            <div className="text-3xl font-light text-slate-900 dark:text-slate-100">
-                                TBD
-                                <span className="text-lg font-normal text-slate-500 dark:text-slate-400">/month</span>
+                            <div className="text-3xl font-light text-slate-900 dark:text-slate-100">{t("TBD")}<span className="text-lg font-normal text-slate-500 dark:text-slate-400">/month</span>
                             </div>
                         </div>
                     </CardHeader>
@@ -632,9 +596,7 @@ export default function PricingPage() {
                             className="w-full font-medium border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400"
                             variant="outline"
                             disabled
-                        >
-                            Coming Soon
-                        </Button>
+                        >{t("Coming Soon")}</Button>
                     </CardContent>
                 </Card>
             </div>
@@ -661,9 +623,7 @@ export default function PricingPage() {
                     </a>
                 </p>
                 <div className="space-y-3">
-                    <h3 className="text-xl font-medium text-slate-900 dark:text-slate-100">
-                        Questions about pricing?
-                    </h3>
+                    <h3 className="text-xl font-medium text-slate-900 dark:text-slate-100">{t("Questions about pricing?")}</h3>
                     <p className="text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
                         We&apos;re here to help you find the right plan for your research needs.
                         Our team understands the unique requirements of academic work.
@@ -671,13 +631,11 @@ export default function PricingPage() {
                 </div>
                 <Dialog>
                     <DialogTrigger asChild>
-                        <Button variant="outline" className="border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300">
-                            Contact Support
-                        </Button>
+                        <Button variant="outline" className="border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300">{t("Contact Support")}</Button>
                     </DialogTrigger>
                     <DialogContent className="border-slate-200 dark:border-slate-700">
                         <DialogHeader>
-                            <DialogTitle className="text-slate-900 dark:text-slate-100">Contact Support</DialogTitle>
+                            <DialogTitle className="text-slate-900 dark:text-slate-100">{t("Contact Support")}</DialogTitle>
                             <DialogDescription className="text-slate-600 dark:text-slate-400">
                                 If you have any questions about our pricing or need help choosing a plan, please reach out to us.
                             </DialogDescription>
@@ -697,18 +655,14 @@ export default function PricingPage() {
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Please Log In</DialogTitle>
-                        <DialogDescription>
-                            You need to be logged in to view the pricing details.
-                        </DialogDescription>
+                        <DialogTitle>{t("Please Log In")}</DialogTitle>
+                        <DialogDescription>{t("You need to be logged in to view the pricing details.")}</DialogDescription>
                     </DialogHeader>
                     <div className="flex justify-end space-x-2">
                         <Button variant="outline" onClick={() => setIsModalOpen(false)}>
                             Close
                         </Button>
-                        <Button onClick={() => router.push("/login")}>
-                            Log In
-                        </Button>
+                        <Button onClick={() => router.push("/login")}>{t("Log In")}</Button>
                     </div>
                 </DialogContent>
             </Dialog>

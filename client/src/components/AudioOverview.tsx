@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n";
+
 import { fetchFromApi } from '@/lib/api';
 import { Download, Clock, FileAudio, History, ChevronDown, Plus, HelpCircle } from 'lucide-react';
 import {
@@ -39,10 +42,19 @@ interface JobStatus {
 }
 
 // Curated voice options - 3 distinct voices to reduce decision fatigue
+// Qwen3-TTS ships nine built-in timbres. The UI used to offer three OpenAI
+// voice names that the TTS service mapped onto these, which hid the other six
+// and made two of the three sound identical.
 const VOICE_OPTIONS = [
-    { id: 'nova', name: 'Nova', description: 'Warm & friendly' },
-    { id: 'onyx', name: 'Onyx', description: 'Deep & authoritative' },
-    { id: 'shimmer', name: 'Shimmer', description: 'Clear & bright' },
+    { id: 'vivian', name: 'Vivian', description: 'Bright young female (Chinese)' },
+    { id: 'serena', name: 'Serena', description: 'Warm, gentle female (Chinese)' },
+    { id: 'uncle_fu', name: 'Uncle Fu', description: 'Low, mellow male (Chinese)' },
+    { id: 'dylan', name: 'Dylan', description: 'Beijing male (Chinese)' },
+    { id: 'eric', name: 'Eric', description: 'Chengdu male (Chinese)' },
+    { id: 'ryan', name: 'Ryan', description: 'Rhythmic male (English)' },
+    { id: 'aiden', name: 'Aiden', description: 'Sunny American male (English)' },
+    { id: 'ono_anna', name: 'Ono Anna', description: 'Playful female (Japanese)' },
+    { id: 'sohee', name: 'Sohee', description: 'Warm female (Korean)' },
 ] as const;
 
 // Length options for audio overview
@@ -104,6 +116,7 @@ const audioOverviewLoadingText = [
 const DEFAULT_INSTRUCTIONS = '';
 
 export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTerm }: AudioOverviewProps) {
+	const { t } = useI18n();
 
     const { subscription, refetch: refetchSubscription } = useSubscription();
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -119,7 +132,7 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
     const [isInitialLoadDone, setIsInitialLoadDone] = useState(false);
     const [selectedFocus, setSelectedFocus] = useState<FocusOption>('summary');
     const [additionalInstructions, setAdditionalInstructions] = useState<string>(DEFAULT_INSTRUCTIONS);
-    const [selectedVoice, setSelectedVoice] = useState<VoiceOption>('nova');
+    const [selectedVoice, setSelectedVoice] = useState<VoiceOption>('vivian');
     const [selectedLength, setSelectedLength] = useState<LengthOption>('medium');
 
     // Ref to track if we've started fetching the completed audio (prevents race condition errors)
@@ -325,6 +338,13 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                 throw new Error('Failed to get job status');
             }
         } catch (err) {
+            // "Job not found" is the state *before* anything has been generated:
+            // there is no job to poll, and nothing has failed. Logging it turned
+            // every visit to a paper without audio into a console error.
+            if (err instanceof Error && err.message === 'Job not found') {
+                setJobStatus(null);
+                return;
+            }
             console.error('Error polling job status:', err);
             // Only show error if we don't already have an audio overview
             // and we're not in the process of fetching the completed audio
@@ -383,7 +403,7 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
                     <FileAudio className="w-5 h-5" />
-                    Audio Overview
+                    {t("Audio Overview")}
                 </h3>
 
                 {/* Previous Audio Overviews Dropdown */}
@@ -397,7 +417,7 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-80">
-                            <DropdownMenuLabel>Select an audio overview to play</DropdownMenuLabel>
+                            <DropdownMenuLabel>{t("Select an audio overview to play")}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             {allAudioOverviews
                                 .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -444,15 +464,18 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
             {/* No audio overview exists or showing generation form */}
             {((!audioOverview && !jobStatus && isInitialLoadDone) || showGenerationForm) && (
                 <div className="py-2">
-                    <div className="bg-blue-50 dark:bg-blue-950 rounded-xl p-4 max-h-[70vh] overflow-y-auto">
+                    {/* No fixed height: the panel's own scroll container handles overflow, and
+                        a 70vh cap here forced the options into a nested scroll area that
+                        hid Custom Instructions below the fold. */}
+                    <div className="bg-blue-50 dark:bg-blue-950 rounded-xl p-4">
                         <p className="text-muted-foreground text-sm mb-4 text-center">
-                            Generate a spoken summary of this paper
+                            {t("Generate a spoken summary of this paper")}
                         </p>
 
                         {/* Summary Focus Options */}
                         <div className="mb-4">
                             <Label className="block text-sm font-medium text-foreground mb-2">
-                                Focus
+                                {t("Focus")}
                             </Label>
                             <div className="grid grid-cols-2 gap-2">
                                 {FOCUS_OPTIONS.map((focus) => (
@@ -462,8 +485,8 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                                         onClick={() => setSelectedFocus(focus.id)}
                                         className={`px-3 py-2 text-sm border rounded-lg font-medium transition-colors flex flex-col items-start h-auto ${selectedFocus === focus.id ? 'border-blue-300 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800' : 'border-border hover:bg-accent'}`}
                                     >
-                                        <span className="font-medium text-xs">{focus.name}</span>
-                                        <span className="text-xs text-muted-foreground">{focus.description}</span>
+                                        <span className="font-medium text-xs">{t(focus.name)}</span>
+                                        <span className="text-xs text-muted-foreground">{t(focus.description)}</span>
                                     </Button>
                                 ))}
                             </div>
@@ -474,7 +497,7 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                             {/* Length Selection */}
                             <div>
                                 <Label className="block text-sm font-medium text-foreground mb-2">
-                                    Length
+                                    {t("Length")}
                                 </Label>
                                 <div className="flex flex-col gap-1">
                                     {LENGTH_OPTIONS.map((length) => (
@@ -484,8 +507,8 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                                             onClick={() => setSelectedLength(length.id)}
                                             className={`px-2 py-1.5 text-sm border rounded-lg font-medium transition-colors flex justify-between items-center ${selectedLength === length.id ? 'border-blue-300 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800' : 'border-border hover:bg-accent'}`}
                                         >
-                                            <span className="font-medium text-xs">{length.name}</span>
-                                            <span className="text-xs text-muted-foreground">{length.description}</span>
+                                            <span className="font-medium text-xs">{t(length.name)}</span>
+                                            <span className="text-xs text-muted-foreground">{t(length.description)}</span>
                                         </Button>
                                     ))}
                                 </div>
@@ -494,7 +517,7 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                             {/* Voice Selection */}
                             <div>
                                 <Label className="block text-sm font-medium text-foreground mb-2">
-                                    Voice
+                                    {t("Voice")}
                                 </Label>
                                 <div className="flex flex-col gap-1">
                                     {VOICE_OPTIONS.map((voice) => (
@@ -504,8 +527,8 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                                             onClick={() => setSelectedVoice(voice.id)}
                                             className={`px-2 py-1.5 text-sm border rounded-lg font-medium transition-colors flex justify-between items-center ${selectedVoice === voice.id ? 'border-blue-300 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800' : 'border-border hover:bg-accent'}`}
                                         >
-                                            <span className="font-medium text-xs">{voice.name}</span>
-                                            <span className="text-xs text-muted-foreground">{voice.description}</span>
+                                            <span className="font-medium text-xs">{t(voice.name)}</span>
+                                            <span className="text-xs text-muted-foreground">{t(voice.description)}</span>
                                         </Button>
                                     ))}
                                 </div>
@@ -516,12 +539,12 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                         <details className="mb-4">
                             <summary className="cursor-pointer text-sm font-medium text-foreground flex items-center gap-1">
                                 <ChevronDown className="w-4 h-4" />
-                                Custom Instructions
+                                {t("Custom Instructions")}
                             </summary>
                             <textarea
                                 value={additionalInstructions}
                                 onChange={(e) => setAdditionalInstructions(e.target.value)}
-                                placeholder="Add specific guidance for your audio overview"
+                                placeholder={t("Add specific guidance for your audio overview")}
                                 className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none mt-2"
                                 rows={3}
                             />
@@ -539,7 +562,7 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                                     }}
                                     className="px-4 py-2 text-secondary-foreground border border-border rounded-lg font-medium hover:bg-accent transition-colors text-sm"
                                 >
-                                    Cancel
+                                    {t("Cancel")}
                                 </button>
                             )}
                             <button
@@ -554,7 +577,7 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                                 disabled={isLoading || isAudioOverviewAtLimit(subscription)}
                                 className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium text-sm shadow-lg hover:shadow-xl transition-all duration-200"
                             >
-                                {isLoading ? 'Creating...' : isAudioOverviewAtLimit(subscription) ? 'Limit Reached' : 'Create'}
+                                {isLoading ? t('Generating...') : isAudioOverviewAtLimit(subscription) ? t('Limit Reached') : t('Generate')}
                             </button>
                         </div>
 
@@ -563,14 +586,14 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                             <div className="text-red-600 dark:text-red-400 text-sm mt-4 p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
                                 <div className="flex items-center gap-2">
                                     <HelpCircle className="w-4 h-4" />
-                                    <span className="font-semibold">Audio Overview Limit Reached</span>
+                                    <span className="font-semibold">{t("Audio Overview Limit Reached")}</span>
                                 </div>
                                 <p className="mt-1">You&apos;ve used all your monthly audio overviews. Credits reset every Monday at 12 AM UTC.</p>
                                 <Link
                                     href="/pricing"
                                     className="text-blue-500 hover:text-blue-700 font-medium"
                                 >
-                                    Upgrade for more audio overviews →
+                                    {t("Upgrade for more audio overviews →")}
                                 </Link>
                             </div>
                         )}
@@ -605,7 +628,7 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                                 onClick={() => setShowGenerationForm(true)}
                                 className="mt-6 bg-blue-500 text-white px-6 py-2 rounded-lg font-medium"
                             >
-                                Try Again
+                                {t("Try Again")}
                             </button>
                         )}
                     </div>
@@ -655,7 +678,7 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                                 className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-500 text-sm font-medium flex items-center gap-1"
                             >
                                 <Download className="w-4 h-4" />
-                                Download
+                                {t("Download")}
                             </a>
                             <button
                                 onClick={() => {
@@ -670,10 +693,10 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                                     ? 'text-gray-400 cursor-not-allowed'
                                     : 'text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-500'
                                     }`}
-                                title={isAudioOverviewAtLimit(subscription) ? 'Audio overview limit reached' : 'Create new audio overview'}
+                                title={t(isAudioOverviewAtLimit(subscription) ? 'Audio overview limit reached' : 'Create new audio overview')}
                             >
                                 <Plus className="w-4 h-4 mr-1" />
-                                {isAudioOverviewAtLimit(subscription) ? 'Limit Reached' : 'New'}
+                                {isAudioOverviewAtLimit(subscription) ? t('Limit Reached') : t('New audio overview')}
                             </button>
                         </div>
                     </div>

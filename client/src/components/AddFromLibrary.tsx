@@ -1,5 +1,5 @@
-
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { PaperItem } from "@/lib/schema";
 import { fetchFromApi } from "@/lib/api";
@@ -16,6 +16,7 @@ interface AddFromLibraryProps {
 }
 
 export default function AddFromLibrary({ projectId, onPapersAdded, projectPaperIds, onUploadClick, remainingPaperSlots, paperHardLimit }: AddFromLibraryProps) {
+	const { t } = useI18n();
 
     const handleAddPapers = (papers: PaperItem[], action: string) => {
         if (action !== "Add") return;

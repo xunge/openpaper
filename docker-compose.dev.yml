@@ -116,6 +116,101 @@ services:
       retries: 30
     restart: unless-stopped
 
+  # Local Qwen3-TTS behind an OpenAI-compatible /v1/audio/speech endpoint.
+  # The GPU comes in through the nvidia container runtime (`gpus: all`), which
+  # injects the driver libraries itself — no device nodes or host lib mounts.
+  tts:
+    build:
+      context: ./docker/tts
+    gpus: all
+    environment:
+      QWEN_TTS_MODEL: /models/Qwen3-TTS-12Hz-1.7B-CustomVoice
+      QWEN_TTS_DEVICE: cuda:0
+      QWEN_TTS_SPEAKER: ${TTS_SPEAKER:-Serena}
+    volumes:
+      - ${TTS_MODELS_DIR:-/home/jiang/models/qwen3-tts}:/models:ro
+    ports:
+      - "${TTS_PORT:-8102}:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
+      interval: 15s
+      timeout: 10s
+      retries: 60
+      start_period: 300s
+    restart: unless-stopped
+
+  # vLLM-Omni serving the same Qwen3-TTS checkpoint. Kept side by side with the
+  # `tts` service so the two can be compared on identical text before the app is
+  # pointed at either one.
+  tts-vllm:
+    # Official vLLM-Omni image (vllm 0.30.0 + vllm_omni 0.30.0). Building the
+    # pair from PyPI is what the earlier attempt did and it never finished
+    # downloading; the image is the supported artifact.
+    image: vllm/vllm-omni:v0.30.0
+    command:
+      - vllm
+      - serve
+      - /models/Qwen3-TTS-12Hz-1.7B-CustomVoice
+      - --omni
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+      # Without this the served id is the container path (/models/...), and the
+      # app would have to embed that path in its own config.
+      - --served-model-name
+      - Qwen3-TTS-12Hz-1.7B-CustomVoice
+      - --gpu-memory-utilization
+      - "0.35"
+      # First start builds the talker's CUDA graphs; give it room.
+      - --stage-init-timeout
+      - "900"
+      # Lets the idle watchdog put the engine to sleep: weights are offloaded to
+      # host RAM and the KV cache dropped, freeing the GPU without a cold start.
+      - --enable-sleep-mode
+    gpus: all
+    environment:
+      VLLM_USE_FLASHINFER_SAMPLER: "0"
+      HF_HUB_OFFLINE: "1"
+      # /sleep and /wake_up are exposed only in server dev mode.
+      VLLM_SERVER_DEV_MODE: "1"
+    volumes:
+      - ${TTS_MODELS_DIR:-/home/jiang/models/qwen3-tts}:/models:ro
+    ports:
+      # Only the proxy needs to reach this port; binding it to loopback keeps
+      # the dev endpoints (/sleep, /resume) off the LAN. Takes effect on the
+      # next recreate — a restart costs a full engine warm-up.
+      - "127.0.0.1:${VLLM_TTS_PORT:-8103}:8000"
+    restart: unless-stopped
+    # Model load takes minutes; the health endpoint answers once the engine is up.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 60
+      start_period: 600s
+
+  # Sits in front of tts-vllm and owns its power state: no traffic for
+  # TTS_IDLE_SECONDS releases the GPU, the next request wakes it again.
+  tts-proxy:
+    build:
+      context: ./docker/tts-proxy
+    environment:
+      TTS_UPSTREAM: http://tts-vllm:8000
+      TTS_IDLE_SECONDS: "${TTS_IDLE_SECONDS:-300}"
+      TTS_STAGES: "0,1"
+    ports:
+      - "${TTS_PROXY_PORT:-8104}:8000"
+    depends_on:
+      - tts-vllm
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
   # One-shot, exactly as prod does it. `server` waits for this to exit 0, so a
   # failed migration surfaces as a failed startup instead of a half-migrated db.
   migrate:

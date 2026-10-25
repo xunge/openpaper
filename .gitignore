@@ -68,3 +68,8 @@ build_*tex.sh
 # deliberately COMMITTED. It is manufactured from the PDFs in
 # server/evals/seed_data/ by `scripts/dev build-fixture`, holds no real user
 # data, and has to be present for a fresh checkout to come up with usable data.
+
+# Downloaded model weights (Qwen3-TTS). ~4.8 GB, fetched by
+# scripts/fetch-tts-models.sh — never commit these.
+tts-models/
+/models/

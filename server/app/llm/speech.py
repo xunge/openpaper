@@ -3,15 +3,22 @@ import re
 import struct
 import tempfile
 import wave
-from typing import List, Literal, Tuple
+from typing import List, Literal, Optional, Tuple
 
 import openai
 from app.helpers.s3 import s3_service
 from langfuse.openai import AzureOpenAI as LangfuseAzureOpenAI
 from langfuse.openai import OpenAI as LangfuseOpenAI
 
-# Maximum characters per chunk for TTS generation
-MAX_CHUNK_SIZE = 10000
+# Maximum characters per chunk for TTS generation.
+#
+# This is a *timeout* budget, not a quality knob. Chunks are synthesised one
+# request at a time, concatenated afterwards, so each one has to finish inside
+# the client's 300s timeout. Qwen3-TTS runs at roughly 0.75x real time on one
+# GPU and speaks ~4.5 characters per second, which puts 10000 characters at
+# ~28 minutes of audio for one call. 800 keeps a chunk near two minutes of
+# audio and ~100s of generation.
+MAX_CHUNK_SIZE = int(os.getenv("TTS_MAX_CHUNK_CHARS", "800"))
 
 
 def clean_markdown_for_speech(text: str) -> str:
@@ -218,6 +225,22 @@ class OpenAISpeaker:
         endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
         version = os.getenv("AZURE_OPENAI_VERSION", "2025-04-01-preview")
 
+        # TTS_BASE_URL points at any server that speaks OpenAI's audio/speech
+        # shape — in this deployment, the local Qwen3-TTS container. It takes
+        # precedence over Azure so a self-hosted install needs no Azure account.
+        self.base_url = os.getenv("TTS_BASE_URL")
+        self.provider = "openai_compatible" if self.base_url else "azure"
+
+        if self.provider == "openai_compatible":
+            self.api_key = os.getenv("TTS_API_KEY", "local")
+            self.client = LangfuseOpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url,
+                timeout=300.0,
+            )
+            self.model = os.getenv("TTS_MODEL", "Qwen3-TTS-12Hz-1.7B-CustomVoice")
+            return
+
         if not self.api_key:
             raise ValueError("AZURE_OPENAI_API_KEY environment variable is required")
         if not endpoint:
@@ -229,24 +252,12 @@ class OpenAISpeaker:
             api_version=version,
             timeout=300.0,
         )
-        self.model = "gpt-4o-mini-tts"
+        self.model = os.getenv("TTS_MODEL", "gpt-4o-mini-tts")
 
     def _generate_single_chunk(
         self,
         text: str,
-        voice: Literal[
-            "alloy",
-            "ash",
-            "ballad",
-            "coral",
-            "echo",
-            "fable",
-            "onyx",
-            "nova",
-            "sage",
-            "shimmer",
-            "verse",
-        ],
+        voice: str,
         output_path: str,
     ) -> None:
         """
@@ -257,12 +268,19 @@ class OpenAISpeaker:
             voice: The voice to use for speech synthesis.
             output_path: Path to save the generated audio file.
         """
+        kwargs = {
+            "model": self.model,
+            "voice": voice,
+            "response_format": "wav",
+            "input": text,
+        }
+        # `instructions` is an Azure extension; a plain OpenAI-compatible server
+        # rejects unknown fields, so it is only sent on the Azure path.
+        if self.provider == "azure":
+            kwargs["instructions"] = "Speak in a cheerful and positive tone."
+
         with self.client.audio.speech.with_streaming_response.create(
-            model=self.model,
-            voice=voice,
-            response_format="wav",
-            input=text,
-            instructions="Speak in a cheerful and positive tone.",
+            **kwargs
         ) as response:
             response.stream_to_file(output_path)
 
@@ -270,19 +288,7 @@ class OpenAISpeaker:
         self,
         title: str,
         text: str,
-        voice: Literal[
-            "alloy",
-            "ash",
-            "ballad",
-            "coral",
-            "echo",
-            "fable",
-            "onyx",
-            "nova",
-            "sage",
-            "shimmer",
-            "verse",
-        ],
+        voice: str,
     ) -> Tuple[str, str]:
         """
         Generate speech audio from text using a text-to-speech model.
@@ -297,6 +303,7 @@ class OpenAISpeaker:
             Tuple[str, str]: The object key and URL to the generated speech audio in s3 storage.
         """
         # Clean markdown formatting for better TTS output
+        voice = normalize_voice(voice)
         cleaned_text = clean_markdown_for_speech(text)
 
         # Split text into chunks if necessary
@@ -362,7 +369,43 @@ class OpenAISpeaker:
                 pass
 
 
-speaker = OpenAISpeaker() if os.getenv("AZURE_OPENAI_API_KEY") else None
+# OpenAI's stock voice names predate the local Qwen3-TTS backend and are still
+# what older clients (and the project-audio default) send. vLLM-Omni validates
+# the voice strictly against the model's nine timbres and rejects anything else,
+# so normalise here rather than depending on the backend to be lenient.
+LEGACY_VOICE_ALIASES = {
+    "alloy": "serena",
+    "ash": "ryan",
+    "ballad": "vivian",
+    "coral": "serena",
+    "echo": "aiden",
+    "fable": "dylan",
+    "nova": "vivian",
+    "onyx": "uncle_fu",
+    "sage": "serena",
+    "shimmer": "vivian",
+    "verse": "ryan",
+}
+
+QWEN_VOICES = {
+    "vivian", "serena", "uncle_fu", "dylan", "eric",
+    "ryan", "aiden", "ono_anna", "sohee",
+}
+
+
+def normalize_voice(voice: Optional[str]) -> str:
+    """Map any accepted voice name onto a Qwen3-TTS timbre id."""
+    key = (voice or "").strip().lower()
+    if key in QWEN_VOICES:
+        return key
+    return LEGACY_VOICE_ALIASES.get(key, "vivian")
+
+
+speaker = (
+    OpenAISpeaker()
+    if (os.getenv("TTS_BASE_URL") or os.getenv("AZURE_OPENAI_API_KEY"))
+    else None
+)
 
 
 """"

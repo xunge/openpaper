@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { useState } from "react";
 import { Check, ChevronDown, Copy, Download, Share2 } from "lucide-react";
@@ -21,6 +22,7 @@ export function ChartExportButtons({ artifact, view, log, display = "full", comp
     display?: ChartDisplay;
     compact?: boolean;
 }) {
+	const { t } = useI18n();
     const { darkMode } = useIsDarkMode();
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -93,7 +95,7 @@ export function ChartExportButtons({ artifact, view, log, display = "full", comp
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => run(() => downloadChartPng(options))}>
                         <Download className="mr-2 h-3.5 w-3.5" />
-                        Download PNG
+                        {t("Download PNG")}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

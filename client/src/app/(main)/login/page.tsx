@@ -17,6 +17,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useState } from "react"
 import { fetchFromApi } from "@/lib/api"
+import { useI18n } from "@/lib/i18n"
 
 // Local password sign-in. The hosted product offers Google OAuth and an emailed
 // one-time code, but both need the public internet (a registered public
@@ -25,6 +26,7 @@ import { fetchFromApi } from "@/lib/api"
 // created with `python -m app.scripts.set_password`.
 function LoginContent() {
 	const { user, loading } = useAuth()
+	const { t } = useI18n()
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const returnTo = searchParams.get("returnTo") || "/"
@@ -84,9 +86,9 @@ function LoginContent() {
 		<div className="flex items-center justify-center h-full p-4">
 			<Card className="w-full max-w-md">
 				<CardHeader className="text-center">
-					<CardTitle className="text-2xl">Sign in to Open Paper</CardTitle>
+					<CardTitle className="text-2xl">{t("Sign in to Open Paper")}</CardTitle>
 					<CardDescription>
-						Use the account configured on this server.
+						{t("Use the account configured on this server.")}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -109,7 +111,7 @@ function LoginContent() {
 						/>
 						<Input
 							type="password"
-							placeholder="Password"
+							placeholder={t("Password")}
 							autoComplete="current-password"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
@@ -125,15 +127,15 @@ function LoginContent() {
 							{submitting ? (
 								<Loader2 className="h-4 w-4 animate-spin" />
 							) : (
-								"Sign in"
+								t("Sign in")
 							)}
 						</Button>
 					</form>
 				</CardContent>
 				<CardFooter className="text-sm text-muted-foreground justify-center">
-					<span>No account yet?</span>
+					<span>{t("No account yet?")}</span>
 					<Link href="/register" className="ml-1 text-primary hover:underline">
-						Create one
+						{t("Create one")}
 					</Link>
 				</CardFooter>
 			</Card>

@@ -1,4 +1,5 @@
-"use client"
+"use client";
+import { useI18n } from "@/lib/i18n";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 function SettingsContent() {
+	const { t } = useI18n();
 	const { user, loading } = useAuth();
 	const [name, setName] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
@@ -71,16 +73,16 @@ function SettingsContent() {
 
 			<div className="space-y-1">
 				<h2 className="text-lg font-medium">Profile</h2>
-				<p className="text-sm text-muted-foreground">Manage your account details.</p>
+				<p className="text-sm text-muted-foreground">{t("Manage your account details.")}</p>
 			</div>
 			<form onSubmit={handleSave} className="space-y-4">
 				<div className="space-y-2">
-					<Label htmlFor="name">Name</Label>
+					<Label htmlFor="name">{t("Name")}</Label>
 					<Input
 						id="name"
 						value={name}
 						onChange={(e) => setName(e.target.value)}
-						placeholder="Your name"
+						placeholder={t("Your name")}
 						disabled={isSaving}
 					/>
 				</div>
@@ -104,10 +106,8 @@ function SettingsContent() {
 
 			<div id="zotero" className="space-y-4 scroll-mt-6">
 				<div className="space-y-1">
-					<h2 className="text-lg font-medium">Integrations</h2>
-					<p className="text-sm text-muted-foreground">
-						Connect external services to your account.
-					</p>
+					<h2 className="text-lg font-medium">{t("Integrations")}</h2>
+					<p className="text-sm text-muted-foreground">{t("Connect external services to your account.")}</p>
 				</div>
 
 				<ZoteroIntegrationCard />
@@ -117,6 +117,7 @@ function SettingsContent() {
 }
 
 export default function SettingsPage() {
+	const { t } = useI18n();
 	return (
 		<Suspense
 			fallback={

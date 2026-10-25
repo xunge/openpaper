@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ export function InlineAnnotationCard({
     onHeightChange,
     onCardFocus,
 }: InlineAnnotationCardProps) {
+	const { t } = useI18n();
     const isNewThread = annotations.length === 0;
     const canWrite = Boolean(addAnnotation);
 
@@ -292,7 +294,7 @@ export function InlineAnnotationCard({
                         </Avatar>
                         <div className="flex flex-col leading-tight flex-1 min-w-0">
                             <span className="text-sm font-medium">{displayName}</span>
-                            <span className="text-xs text-muted-foreground">Just now</span>
+                            <span className="text-xs text-muted-foreground">{t("Just now")}</span>
                         </div>
                         {canWrite && (
                             <Button
@@ -317,8 +319,8 @@ export function InlineAnnotationCard({
                                     autoResizeContained(e.target);
                                 }}
                                 onKeyDown={handleNewKeyDown}
-                                placeholder="Write your notes here…"
-                                aria-label="New annotation"
+                                placeholder={t("Write your notes here…")}
+                                aria-label={t("New annotation")}
                                 className="text-sm text-foreground placeholder:text-muted-foreground resize-none w-full min-h-[4rem] max-h-48 px-3 py-2 overflow-y-auto overflow-x-hidden box-border rounded-md border border-black bg-background focus:outline-none focus:ring-0 focus:border-black dark:border-white dark:focus:border-white"
                                 disabled={isSaving}
                                 rows={3}
@@ -352,7 +354,7 @@ export function InlineAnnotationCard({
                             </div>
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground italic">No annotation yet.</p>
+                        <p className="text-sm text-muted-foreground italic">{t("No annotation yet.")}</p>
                     )}
                 </div>
             ) : (
@@ -439,7 +441,7 @@ export function InlineAnnotationCard({
                                                 autoResizeContained(e.target);
                                             }}
                                             onKeyDown={handleEditKeyDown(ann.id)}
-                                            aria-label="Edit comment"
+                                            aria-label={t("Edit comment")}
                                             className="text-sm text-foreground resize-none w-full min-h-[4rem] max-h-48 px-3 py-2 overflow-y-auto overflow-x-hidden box-border rounded-md border border-black bg-background focus:outline-none focus:ring-0 focus:border-black dark:border-white dark:focus:border-white"
                                             disabled={isSaving}
                                             rows={3}
@@ -503,7 +505,7 @@ export function InlineAnnotationCard({
                                             autoResizeContained(e.target);
                                         }}
                                         onKeyDown={handleReplyKeyDown}
-                                        placeholder="Write a reply…"
+                                        placeholder={t("Write a reply…")}
                                         className="text-sm text-foreground placeholder:text-muted-foreground resize-none w-full min-h-[4rem] max-h-48 px-3 py-2 overflow-y-auto overflow-x-hidden box-border rounded-md border border-black bg-background focus:outline-none focus:ring-0 focus:border-black dark:border-white dark:focus:border-white"
                                         disabled={isSaving}
                                         rows={3}
@@ -529,9 +531,7 @@ export function InlineAnnotationCard({
                                             onClick={(e) => { e.stopPropagation(); handleSaveReply(); }}
                                             onMouseDown={(e) => e.stopPropagation()}
                                             disabled={!replyContent.trim() || isSaving}
-                                        >
-                                            Reply
-                                        </Button>
+                                        >{t("Reply")}</Button>
                                     </div>
                                 </div>
                             ) : (
@@ -544,9 +544,7 @@ export function InlineAnnotationCard({
                                         onCardFocus?.();
                                         setIsReplyOpen(true);
                                     }}
-                                >
-                                    Reply…
-                                </button>
+                                >{t("Reply…")}</button>
                             )}
                         </div>
                     )}

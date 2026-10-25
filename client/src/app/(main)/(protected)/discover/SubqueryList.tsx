@@ -1,4 +1,5 @@
-"use client"
+"use client";
+import { useI18n } from "@/lib/i18n";
 
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -11,6 +12,7 @@ interface SubqueryListProps {
 }
 
 export default function SubqueryList({ subqueries, loading, activeSubquery, completedSubqueries }: SubqueryListProps) {
+	const { t } = useI18n();
     if (loading && subqueries.length === 0) {
         return (
             <div className="flex flex-wrap gap-2">
@@ -27,7 +29,7 @@ export default function SubqueryList({ subqueries, loading, activeSubquery, comp
 
     return (
         <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">Searching for:</p>
+            <p className="text-xs font-medium text-muted-foreground">{t("Searching for:")}</p>
             <div className="flex flex-wrap gap-2">
                 {pendingSubqueries.map((sq, i) => (
                     <Badge

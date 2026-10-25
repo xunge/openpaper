@@ -1,4 +1,5 @@
-"use client"
+"use client";
+import { useI18n } from "@/lib/i18n";
 
 import Link from "next/link"
 import {
@@ -23,6 +24,7 @@ interface DiscoverHistoryProps {
 }
 
 export default function DiscoverHistory({ searches, onSelect, maxVisible = 5 }: DiscoverHistoryProps) {
+	const { t } = useI18n();
     if (searches.length === 0) return null
 
     const visibleSearches = searches.slice(0, maxVisible)

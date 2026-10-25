@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { createPortal } from "react-dom";
 import { useMemo } from "react";
@@ -22,6 +23,7 @@ export function AnnotationHoverCard({
     position,
     user,
 }: AnnotationHoverCardProps) {
+	const { t } = useI18n();
     if (annotations.length === 0) return null;
 
     const sorted = useMemo(

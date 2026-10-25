@@ -32,6 +32,7 @@ import { ChatArtifactCards, chartViewerHrefs } from "@/components/ChatArtifactCa
 import { ChatChartJobs } from "@/components/ChatChartJobs";
 import { MessageTraceViewer } from "@/components/MessageTraceViewer";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 import { TopicBubbles } from "@/components/TopicBubbles";
 import { AnimatedGradientText } from "@/components/magicui/animated-gradient-text";
 import { ChatHistorySkeleton } from "@/components/ChatHistorySkeleton";
@@ -148,6 +149,7 @@ export const ConversationView = ({
 	mentionPapersOnly = false,
 	projectId,
 }: ConversationViewProps) => {
+	const { t } = useI18n();
 	const messagesContainerRef = useRef<HTMLDivElement>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const inputMessageRef = useRef<HTMLTextAreaElement>(null);
@@ -434,7 +436,7 @@ export const ConversationView = ({
 													<BookOpen className="h-6 w-6 text-primary" />
 												</div>
 											</div>
-											<DialogTitle className="text-center">Build Your Knowledge Base</DialogTitle>
+											<DialogTitle className="text-center">{t("Build Your Knowledge Base")}</DialogTitle>
 											<DialogDescription className="text-center space-y-3">
 												<p>
 													Upload your first paper to get started. As your library grows, you&apos;ll be able to ask questions across your entire collection.
@@ -471,7 +473,7 @@ export const ConversationView = ({
 												<div className="mt-1">
 													<button onClick={() => setIsHistoryOpen(!isHistoryOpen)} className="flex items-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
 														{isHistoryOpen ? <ChevronUp className="w-4 h-4 mr-1" /> : <ChevronDown className="w-4 h-4 mr-1" />}
-														<span>Progress</span>
+														<span>{t("Progress")}</span>
 													</button>
 													{isHistoryOpen && (
 														<ul className="mt-2 border-l border-gray-300 dark:border-gray-600">
@@ -582,7 +584,7 @@ export const ConversationView = ({
 							papersOnly={mentionPapersOnly}
 							selection={mentionSelection}
 							onSelectionChange={onMentionSelectionChange}
-							placeholder={isCentered ? "Look for a specific citation. Find a relevant paper. Collate evidence across your library." : "Ask a follow-up"}
+							placeholder={isCentered ? t("Look for a specific citation. Find a relevant paper. Collate evidence across your library.") : t(t("Ask a follow-up"))}
 							disabled={isStreaming || (!isPapersLoading && papers.length === 0) || chatCreditLimitReached || !isOwner}
 							sendDisabled={!currentMessage.trim()}
 							busy={isStreaming}

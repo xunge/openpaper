@@ -52,7 +52,232 @@ docker compose -f docker-compose.dev.yml exec -T server \
 
 不传 `--password` 时会交互式输入两次，避免密码进入 shell 历史和进程列表。
 
-### 注册
+### vLLM-Omni 推理后端
+
+TTS 现在由 **vLLM-Omni** 提供（官方镜像 `vllm/vllm-omni:v0.30.0`，内置 vllm 0.30.0 + vllm_omni 0.30.0）。
+
+| 项 | 值 |
+| --- | --- |
+| 服务 | `tts-vllm`，端口 `8103:8000` |
+| 启动命令 | `vllm serve /models/Qwen3-TTS-12Hz-1.7B-CustomVoice --omni --served-model-name Qwen3-TTS-12Hz-1.7B-CustomVoice` |
+| 接口 | OpenAI 兼容 `POST /v1/audio/speech`（和旧服务一致，应用零改动） |
+| 显存 | 约 36 GB（`--gpu-memory-utilization 0.35`，含 KV cache 预留） |
+| 冷启动 | 约 6 分钟（FlashInfer autotune + CUDA Graph capture，每次重启重来） |
+
+### 性能对比（同一段 1248 字中文）
+
+| 指标 | 旧实现（qwen-tts + HF） | vLLM-Omni | 提升 |
+| --- | --- | --- | --- |
+| 生成耗时 | 416 s | **22 s** | **~19×** |
+| RTF | 1.25 | **0.086** | ~14.5× |
+| GPU 利用率 | 17% | **94%（峰值 100%）** | — |
+| 功耗 | 131 W | **345 W** | — |
+
+端到端「生成音频概述」：**13 分 14 秒 → 66 秒**（同一篇论文，产出 4.1 分钟中文音频）。
+
+### 空闲释放显存（自动睡眠）
+
+GPU 常驻 36 GB 太浪费，尤其是这种"偶尔生成一次"的功能。现在由 **`tts-proxy`** 托管生命周期：
+
+```
+server → tts-proxy:8000 → tts-vllm:8000
+             │
+             ├─ 无请求满 TTS_IDLE_SECONDS（默认 300s）→ POST /v1/omni/sleep
+             └─ 下一个请求 → POST /v1/omni/wakeup + POST /resume → 转发
+```
+
+| 动作 | 耗时 | 显存 |
+| --- | --- | --- |
+| 空闲 5 分钟后自动睡眠 | 0.4 s | 36.8 GB → **2.6 GB** |
+| 睡眠中收到请求，自动唤醒 | ~0.5 s | 恢复到 36.8 GB |
+| 唤醒 + 合成 208 字（应用链路） | 4.1 s | — |
+
+睡眠用 **level=1**（权重卸载到内存，不是丢弃），所以唤醒是主机到显存的内存拷贝，而不是重新加载模型。
+
+### 为什么需要代理
+
+vLLM-Omni 自身没有"空闲即释放"的能力，而且它的睡眠接口有三个坑：
+
+1. 通用的 `POST /sleep` 在 Omni 引擎上会报 `'int' object is not iterable`（bug），必须用 **`POST /v1/omni/sleep`**，body 为 `{"stage_ids": [0,1], "level": 1}`
+2. 睡眠接口需要启动时加 `--enable-sleep-mode`
+3. `wakeup` 之后**必须再调 `POST /resume`**，否则 AR 引擎的调入门禁仍处于暂停，合成请求会一直挂住（这个坑我自己踩过一次，表现为请求 180 秒无响应）
+
+代理把这些细节封装掉了，应用侧只看到普通的 OpenAI 兼容接口。
+
+### 运维入口
+
+```bash
+curl localhost:8104/health              # {"status":"ok","sleeping":true|false}
+curl -X POST localhost:8104/_proxy/sleep   # 立即睡眠
+curl -X POST localhost:8104/_proxy/wake    # 立即唤醒
+```
+
+环境变量：`TTS_IDLE_SECONDS`（根 `.env`，默认 300）、`TTS_PROXY_PORT`（默认 8104）。
+
+> 注意：`tts-vllm` 的 8103 端口已在 compose 里改为只绑定 `127.0.0.1`（因为 `VLLM_SERVER_DEV_MODE=1` 会暴露 `/sleep`、`/resume` 等控制接口）。该改动在下次重建容器时生效——重建意味着一次 6-9 分钟的引擎预热。
+
+### 两个实现细节
+
+**1. 模型名。** vLLM 默认用挂载路径当模型 id（`/models/...`），应用若依赖它会把这个路径写进配置。用 `--served-model-name` 固定成 `Qwen3-TTS-12Hz-1.7B-CustomVoice` 后，切换后端不影响应用配置。
+
+**2. 音色归一化。** vLLM 严格校验音色，只认 9 个 Qwen id；旧客户端/历史请求里的 `coral`、`nova` 等 OpenAI 名字会被 400 拒绝。`app/llm/speech.py` 里加了 `normalize_voice()`，在发请求前把旧名字映射到 Qwen 音色。
+
+### 回退到旧实现
+
+旧服务（`tts`，qwen-tts 直跑）仍保留在 compose 里，只是已停止：
+
+```bash
+# 切回旧实现
+sed -i 's|^TTS_BASE_URL=.*|TTS_BASE_URL=http://tts:8000/v1|' server/.env
+docker compose -f docker-compose.dev.yml up -d tts
+docker compose -f docker-compose.dev.yml up -d --force-recreate server
+```
+
+## 模型权重存放
+
+Qwen3-TTS 权重共 **4.8 GB**，不放在 git 仓库里，也不应该放：
+
+```
+/home/jiang/models/qwen3-tts/            # 仓库之外
+├── Qwen3-TTS-12Hz-1.7B-CustomVoice/     4.2G
+└── Qwen3-TTS-Tokenizer-12Hz/            619M
+```
+
+- compose 通过环境变量读取：`${TTS_MODELS_DIR:-/home/jiang/models/qwen3-tts}:/models:ro`
+- `.gitignore` 已忽略 `tts-models/` 与 `/models/`，`git add -A` 不会把权重带进去
+- 新机器用脚本重新拉取（走 ModelScope，国内直连）：
+
+```bash
+TTS_MODELS_DIR=/home/jiang/models/qwen3-tts bash scripts/fetch-tts-models.sh
+```
+
+脚本是幂等的：权重已存在时直接跳过。
+
+**为什么不用 Git LFS**：4.8 GB 的二进制放进 LFS 会让 clone 变得极慢，而且 LFS 存储按量计费；权重是可从公开模型仓库重建的产物，用"脚本 + gitignore"比"版本化二进制"更合适。
+
+## 本地 TTS（Qwen3-TTS）
+
+音频概述不再依赖 Azure，改用本地容器：
+
+| 组件 | 值 |
+| --- | --- |
+| 服务 | `openpaper-dev-tts`，`docker/tts/`（`python:3.12-slim` + torch + qwen-tts） |
+| 模型 | `Qwen3-TTS-12Hz-1.7B-CustomVoice`（Apache-2.0），9 个内置音色 |
+| 模型路径 | 宿主机 `/home/jiang/projects/openpaper/tts-models`，容器内 `/models` |
+| 接口 | `POST /v1/audio/speech`（OpenAI 兼容），`GET /health`，`GET /v1/voices` |
+| 端口 | `8102`（`TTS_PORT`） |
+| GPU | `gpus: all`（nvidia container runtime），显存约 5 GB |
+
+Open Paper 侧只需要在 `server/.env` 里指向它：
+
+```
+TTS_BASE_URL=http://tts:8000/v1
+TTS_MODEL=Qwen3-TTS-12Hz-1.7B-CustomVoice
+```
+
+`app/llm/speech.py` 里 `TTS_BASE_URL` 存在时走 OpenAI 兼容分支（`LangfuseOpenAI` +
+`base_url`），否则回落到原来的 Azure 分支。前端传来的 OpenAI 音色名（`nova`/`coral`…）
+由服务端映射到 Qwen 音色，应用代码不用改。
+
+### 性能与调优
+
+实测 1.7B 模型在单张 6000 卡上约 **1.25 倍实时**（416 字 → 80 秒音频，耗时 99 秒）。
+
+- `TTS_MAX_CHUNK_CHARS`（默认 800）：分片大小。Open Paper 会按它切分文本、逐片合成、
+  再拼成一个 WAV。**这是超时预算，不是音质参数**：单次请求必须小于客户端的 300 秒超时。
+- 想要更快可以改用 `Qwen3-TTS-12Hz-0.6B-CustomVoice`（约 2-3 倍速度，音质略降），
+  下载后把 `QWEN_TTS_MODEL` 和 `TTS_MODEL` 一起改掉即可。
+- 一篇论文的音频概述脚本约 8000 字，完整生成需要 30 分钟以上，属于长任务——
+  它在后台任务里跑，前端有进度。
+
+### 排障
+
+- 首次调用慢：Triton 要 JIT 编译，需要镜像里有 `gcc`（Dockerfile 已装）。
+- `RuntimeError: Failed to find C compiler`：镜像是从旧版本构建的，重建即可。
+- 合成超时：调小 `TTS_MAX_CHUNK_CHARS`。
+
+## 选择对话模型
+
+论文阅读页的聊天面板右上角（齿轮图标）可以选择模型：
+
+| 选项 | 实际模型 | 特点 |
+| --- | --- | --- |
+| DeepSeek V4 Pro | `deepseek-v4-pro` | 默认，推理更稳，适合长文分析 |
+| DeepSeek Flash | `deepseek-flash` | 更快更便宜，适合快速问答 |
+
+选择通过请求体里的 `llm_model` 传给服务端，服务端在流式调用时用它覆盖默认模型；
+不传则用 `DEEPSEEK_DEFAULT_MODEL`。
+
+模型列表来自 `GET /api/message/models`，由服务端按"已配置 provider 的 default/fast 模型"
+自动生成——换 provider 或改 `DEEPSEEK_*_MODEL` 环境变量后，选项会自动跟着变，不需要改前端。
+
+## 中英双语
+
+顶栏右侧有一个 **中文 / EN** 开关（语言图标），选择存在浏览器 localStorage
+（`op_language`），刷新后保留。
+
+选择中文时同时影响三件事：
+
+| 范围 | 机制 | 说明 |
+| --- | --- | --- |
+| AI 回答 | 前端把 `Accept-Language: zh-CN` 随请求发出；`main.py` 的中间件写入 ContextVar，`app/llm/base.py` 给所有对话类调用追加"用简体中文回答"的指令 | 论文标题、引文原文、术语、公式保持原文 |
+| 新上传论文的摘要/要点 | 上传接口读取同一个请求头，把 `language` 放进 Celery 任务参数；`jobs/src/llm_client.py` 在抽取的 system prompt 上追加中文输出指令 | **只对之后上传的论文生效**，已入库的英文摘要不会自动重译 |
+| 界面文案 | `client/src/lib/i18n.tsx` 的字典 + `useI18n()` 的 `t()` | 未翻译的字符串自动回退英文 |
+
+### 语言开关的位置
+
+- 主应用（首页 / 文献库 / 项目 / 问答 / 发现）：顶栏右侧
+- **论文详情页**：右上角，在"分享"按钮旁边。这个路由组 `(paper)` 有自己独立的
+  layout（不含 `AppHeader`），所以需要单独挂 `I18nProvider` 和 `LanguageToggle`；
+  开关放在 `md` 响应式容器之外，窄屏也可见。
+
+### 已汉化的界面
+
+- 侧栏导航（首页 / 文献库 / 项目 / 问答 / 发现）及折叠菜单的"查看全部…"
+- 顶栏语言开关、账号菜单（设置 / 反馈 / 套餐 / 退出登录 / 新功能）
+- 首页快捷操作卡片（上传论文 / 新建项目 / 发现论文）
+- 登录页、注册页
+- 首页：搜索框占位符、最近论文、查看文献库、页脚（核心理念 / 博客 / 关于 / GitHub）
+- 论文库页：标题、上传按钮、空状态、特色说明、上传上限弹窗、表格列头（标题 / 作者）、
+  筛选框占位符、筛选面板（筛选、排序方式、筛选条件、作者 / 标签 / 状态、
+  发表日期最新/最早、无匹配作者/标签、无标签）
+- 项目页：标题、空状态（整理你的研究 / 副标题 / 创建第一个项目 / 了解更多）、特色说明、
+  搜索框、加载与错误提示、新建项目、筛选无结果、项目上限提示与 toast
+- 问答页：思考过程的进度提示、错误提示、空状态、输入框占位符
+
+- 阅读器：工具条（搜索 / 上一个下一个匹配 / 无结果 / 放大缩小 / 高亮颜色 /
+  行内批注开关）、批注面板（新建笔记、回复、编辑、删除、保存、取消、
+  "这篇论文还没有批注" 及各输入框占位符）
+- 发现页：发现论文、开放获取、查找更多文献、正在检索：
+- 设置页：个人资料、集成、邮箱、姓名
+- 计费页：方案卡片、月付/年付、订阅状态（取消 / 即将结束 / 支付逾期 / 支付未完成）、
+  更改计费周期、联系支持等
+- 弹窗：上传面板（从链接导入、正在处理你的论文）、新建项目（标题 / 描述）
+
+未覆盖：官网落地页（`OpenPaperLanding`，登录前可见）的营销长文案、发现页结果卡片
+的部分元信息、以及少量由属性/对象数组驱动的标签。
+
+### 怎么补充其它页面
+
+字典的 key 就是英文原文，加一行即可：
+
+```ts
+// client/src/lib/i18n.tsx
+const zh: Record<string, string> = {
+    "Some English label": "某个中文标签",
+}
+```
+
+然后在组件里包一层 `t()`：
+
+```tsx
+const { t } = useI18n()
+<span>{t("Some English label")}</span>
+```
+
+没进字典的字符串原样显示，所以可以一个页面一个页面地补，不会出现空白或报错。
+
+## 注册
 
 登录页底部有"Create one"入口，也可以直接访问 http://10.244.128.73:3100/register
 填写邮箱、密码（可选姓名），提交后自动登录。
@@ -91,6 +316,26 @@ DEV_HOST=10.244.128.73 bash scripts/dev session
 ```
 
 token 在 URL 里，会留在浏览器历史和访问日志，仅限受信网络。
+
+## 对象存储策略
+
+MinIO 建桶只用一条命令，**但缩略图需要额外一条匿名只读策略**，否则首页的论文封面全部 403：
+
+```bash
+docker compose -f docker-compose.dev.yml exec -T server \
+  python - < docker/init-minio.py
+```
+
+这个脚本做两件事：
+
+1. 建 `openpaper` 桶
+2. 给 `uploads/*preview*` 开匿名 `GetObject`
+
+原因：`papers.preview_url` 是入库时写死的**未签名 URL**（上游把桶挂在公开 CDN 上，所以从不签名），而 MinIO 的桶默认私有。策略只放开预览图，**PDF 仍然走短时效的 presigned URL**，匿名访问会返回 403。
+
+重建数据卷（`down -v`）后策略会丢失，需要重新跑一次。
+
+已知残留：fixture 里那 11 篇论文的 `preview_url` 指向上游 `https://openpaper.ai/...`，本地没有对应对象，封面和 PDF 都打不开——这与策略无关，自己上传的论文正常。
 
 ## 解除额度限制
 
@@ -167,10 +412,18 @@ jobs-worker jobs-beat jobs-api`。
 | `server/app/helpers/parser.py` | `MAX_UPLOAD_SIZE_MB` 改为环境变量（默认仍是 30） |
 | `client/src/hooks/useSubscription.ts`、`lib/schema.ts`、papers/projects 页 | 支持 `unlimited`：百分比恒为 0，界面显示 Unlimited |
 | `server/app/api/auth_api.py` + `app/helpers/entitlements.py` | 新增 `POST /api/auth/register`（邮箱+密码建号并自动登录），受 `ALLOW_LOCAL_REGISTRATION` 开关控制；注册与 CLI 建号都会签发 researcher 订阅，避免无计费环境下卡在 Basic 档 |
+| `client/src/lib/i18n.tsx`、`components/LanguageToggle.tsx` | 新增语言上下文与开关（localStorage → `Accept-Language`） |
+| `client/src/lib/api.ts` | 所有请求（含 SSE 流）附带 `Accept-Language` |
+| `server/app/main.py`、`app/llm/base.py` | 按请求设置 ContextVar，给对话类 LLM 调用追加语言指令（结构化输出调用除外） |
+| `server/app/api/paper_upload_api.py`、`app/helpers/pdf_jobs.py` | 把语言随上传任务传给 worker |
+| `jobs/src/llm_client.py`、`src/tasks.py` | 抽取 system prompt 追加中文输出指令，任务结束复位 |
 | `client/src/app/(main)/register/page.tsx`、`login/page.tsx` | 新增注册页，登录页增加注册入口 |
 | `server/app/scripts/set_password.py` | 新增：创建账号 / 重设密码的 CLI |
 | `client/src/app/(main)/login/page.tsx` | 登录页改为账号密码表单，移除 Google 与邮箱验证码入口 |
 | `server/app/api/auth_api.py` | 新增 `GET /api/auth/session?token=`：把已存在的 session token 换成 httponly cookie 并跳回前端，替代"控制台贴 cookie"（token 必须已在 `sessions` 表中，属换取而非绕过；`next` 只接受站内相对路径） |
+| `server/app/llm/base.py` | 新增 `get_chat_model_choices()` / `get_default_chat_model()`；`send_message_stream(..., model=)` 支持显式指定模型（流式与降级路径都生效） |
+| `server/app/api/message_api.py`、`app/llm/paper_operations.py`、`multi_paper_operations.py` | 请求新增 `llm_model`，透传到流式调用 |
+| `client/src/components/SidePanelContent.tsx` | 模型选择器从"选 provider"改为"选模型"，发送 `llm_model` |
 | `client/src/lib/providers.tsx` | 没有 `NEXT_PUBLIC_POSTHOG_KEY` 时跳过 `posthog.init` 与 pageview 捕获，不再刷 "initialized without a token" 警告 |
 | `client/src/app/apple-icon.svg` | 由 `icon.svg` 改名：它和 `public/icon.svg` 同时占用 `/icon.svg` 路由，Next 报冲突导致该地址 500 |
 | `server/app/database/telemetry.py`、`jobs/src/telemetry.py` | 无 `POSTHOG_API_KEY` 时改用空实现，启动和周期任务不再输出 PostHog ERROR/WARNING |

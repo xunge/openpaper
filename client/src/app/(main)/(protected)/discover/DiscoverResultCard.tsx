@@ -1,4 +1,5 @@
-"use client"
+"use client";
+import { useI18n } from "@/lib/i18n";
 
 import { ExternalLink } from "lucide-react"
 import { useState, type ReactNode } from "react"
@@ -69,6 +70,7 @@ function formatPublicationType(publicationType?: string | null): string | null {
 }
 
 export default function DiscoverResultCard({ result }: DiscoverResultCardProps) {
+	const { t } = useI18n();
     const publishedYear = result.published_date
         ? new Date(result.published_date).getFullYear()
         : null

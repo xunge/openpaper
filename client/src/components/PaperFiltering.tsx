@@ -1,4 +1,5 @@
 "use client"
+import { useI18n } from "@/lib/i18n";
 
 import {
     DropdownMenu,
@@ -46,9 +47,11 @@ interface PaperFilteringProps {
     showSort?: boolean
 }
 
-export function PaperFiltering({ papers, onFilterChange, onSortChange, filters, sort, showSort = true }: PaperFilteringProps) {
+export function PaperFiltering({
+    papers, onFilterChange, onSortChange, filters, sort, showSort = true }: PaperFilteringProps) {
+    const { t } = useI18n();
     const authors = Array.from(new Set(papers.flatMap(p => p.authors || [])))
-    const tags = Array.from(new Set(papers.flatMap(p => p.tags?.map(t => t.name) || [])))
+    const tags = Array.from(new Set(papers.flatMap(p => p.tags?.map(tag => tag.name) || [])))
 
     const handleSelectFilter = (filter: Filter) => {
         const newFilters = filters.some(f => f.type === filter.type && f.value === filter.value)
@@ -77,21 +80,21 @@ export function PaperFiltering({ papers, onFilterChange, onSortChange, filters, 
                         variant="outline"
                         className="w-[200px] justify-between"
                     >
-                        {showSort ? "Filter & Sort" : "Filter"}
+                        {showSort ? t("Filter & Sort") : t("Filter")}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
                     {showSort &&
                         <>
-                            <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                            <DropdownMenuLabel>{t("Sort by")}</DropdownMenuLabel>
                             <DropdownMenuGroup>
                                 <DropdownMenuItem onSelect={() => handleSelectSort({ type: "publish_date", order: "desc" })}>
-                                    Publish Date (Newest)
+                                    {t("Publish Date (Newest)")}
                                     {isSortActive({ type: "publish_date", order: "desc" }) && <Check className="ml-auto h-4 w-4" />}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleSelectSort({ type: "publish_date", order: "asc" })}>
-                                    Publish Date (Oldest)
+                                    {t("Publish Date (Oldest)")}
                                     {isSortActive({ type: "publish_date", order: "asc" }) && <Check className="ml-auto h-4 w-4" />}
                                 </DropdownMenuItem>
 
@@ -99,19 +102,19 @@ export function PaperFiltering({ papers, onFilterChange, onSortChange, filters, 
                             <DropdownMenuSeparator />
                         </>
                     }
-                    <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t("Filter by")}</DropdownMenuLabel>
                     <DropdownMenuGroup>
                         <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>Authors</DropdownMenuSubTrigger>
+                            <DropdownMenuSubTrigger>{t("Authors")}</DropdownMenuSubTrigger>
                             <DropdownMenuSubContent className="p-0">
                                 <Command>
                                     <CommandInput
-                                        placeholder="Filter author..."
+                                        placeholder={t("Filter author...")}
                                         autoFocus={true}
                                         className="h-9"
                                     />
                                     <CommandList>
-                                        <CommandEmpty>No author found.</CommandEmpty>
+                                        <CommandEmpty>{t("No author found.")}</CommandEmpty>
                                         <CommandGroup>
                                             {authors.map(author => (
                                                 <CommandItem
@@ -129,16 +132,16 @@ export function PaperFiltering({ papers, onFilterChange, onSortChange, filters, 
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
                         <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>Tags</DropdownMenuSubTrigger>
+                            <DropdownMenuSubTrigger>{t("Tags")}</DropdownMenuSubTrigger>
                             <DropdownMenuSubContent className="p-0">
                                 <Command>
                                     <CommandInput
-                                        placeholder="Filter tag..."
+                                        placeholder={t("Filter tag...")}
                                         autoFocus={true}
                                         className="h-9"
                                     />
                                     <CommandList>
-                                        <CommandEmpty>No tags found.</CommandEmpty>
+                                        <CommandEmpty>{t("No tags found.")}</CommandEmpty>
                                         <CommandGroup>
                                             <CommandItem
                                                 value="No tags"
@@ -146,7 +149,7 @@ export function PaperFiltering({ papers, onFilterChange, onSortChange, filters, 
                                                 className="text-muted-foreground"
                                             >
                                                 {isFilterActive({ type: "tag", value: NO_TAGS_FILTER_VALUE }) && <Check className="mr-2 h-4 w-4" />}
-                                                No tags
+                                                {t("No tags")}
                                             </CommandItem>
                                             {tags.map(tag => (
                                                 <CommandItem
@@ -164,7 +167,7 @@ export function PaperFiltering({ papers, onFilterChange, onSortChange, filters, 
                             </DropdownMenuSubContent>
                         </DropdownMenuSub>
                         <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>Status</DropdownMenuSubTrigger>
+                            <DropdownMenuSubTrigger>{t("Status")}</DropdownMenuSubTrigger>
                             <DropdownMenuSubContent className="p-0">
                                 <Command>
                                     <CommandList>

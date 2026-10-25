@@ -102,6 +102,18 @@ CACHE_TTL_SECONDS = 3600
 # text at ~5 chars/token) keeps us safely above the floor before we bother caching.
 CACHE_MIN_CONTENT_CHARS = 5000
 
+# Appended to the extraction system prompt. The prompts themselves stay English:
+# they are instructions about structure and accuracy, and translating them would
+# mean maintaining two copies that drift. What has to change is the language of
+# the prose the model writes back.
+_LANGUAGE_DIRECTIVES = {
+    "zh": (
+        "\n\n【输出语言】请用简体中文填写所有自然语言字段：摘要、研究问题、方法、"
+        "结论、亮点、图表说明等。论文标题、作者姓名、机构名、参考文献、引文原文、"
+        "公式和代码保持原文，不要翻译或音译。"
+    ),
+}
+
 # Pydantic model type variable
 T = TypeVar("T", bound=BaseModel)
 
@@ -164,6 +176,9 @@ class AsyncLLMClient:
         self.base_url: str = os.getenv(
             "DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"
         )
+        # Set per Celery task from the uploader's Accept-Language; "en" keeps
+        # upstream behaviour exactly.
+        self.response_language: str = "en"
 
     def _create_client(self, timeout: int = DEFAULT_TIMEOUT) -> AsyncOpenAI:
         """Create a fresh client instance for thread-safe concurrent calls."""
@@ -191,6 +206,10 @@ class AsyncLLMClient:
             await client.close()
         except Exception as e:
             logger.debug(f"Error closing LLM client: {e}")
+
+    def set_language(self, language: Optional[str]) -> None:
+        """Choose the language the model writes prose in ("en" or "zh")."""
+        self.response_language = "zh" if (language or "").lower().startswith("zh") else "en"
 
     async def count_tokens(self, text: str, model: Optional[str] = None) -> int:
         """Approximate input token count for `text`.
@@ -242,7 +261,11 @@ class AsyncLLMClient:
         parts.
         """
         messages: List[Dict[str, str]] = [
-            {"role": "system", "content": SYSTEM_INSTRUCTIONS_CACHE}
+            {
+                "role": "system",
+                "content": SYSTEM_INSTRUCTIONS_CACHE
+                + _LANGUAGE_DIRECTIVES.get(self.response_language, ""),
+            }
         ]
 
         content = prompt

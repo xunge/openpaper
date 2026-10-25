@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { useSubscription, isProjectNearLimit, isProjectAtLimit, getProjectUsagePercentage } from "@/hooks/useSubscription";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { Progress } from "@/components/ui/progress";
 import LoadingIndicator from "@/components/utils/Loading";
@@ -26,6 +27,7 @@ const FILTER_CONFIG: Record<ProjectFilter, { label: string; icon: React.ElementT
 };
 
 function ProjectsPage() {
+    const { t } = useI18n();
 	const { projects, isLoading, error, refetch: getProjects } = useProjects(true);
 	const { user, loading: userLoading } = useAuth();
 	const { subscription } = useSubscription();
@@ -90,8 +92,8 @@ function ProjectsPage() {
 			let toastShown = false;
 
 			if (atProjectLimit) {
-				toast.error("Project limit reached", {
-					description: "You've used your available project slots. Upgrade for more, or archive existing projects.",
+				toast.error(t("Project limit reached"), {
+					description: t("You've used your available project slots. Upgrade for more, or archive existing projects."),
 					action: {
 						label: "Upgrade",
 						onClick: () => router.push("/pricing"),
@@ -99,8 +101,8 @@ function ProjectsPage() {
 				});
 				toastShown = true;
 			} else if (nearProjectLimit) {
-				toast.warning("Approaching project limit", {
-					description: "You're getting close to your project limit.",
+				toast.warning(t("Approaching project limit"), {
+					description: t("You're getting close to your project limit."),
 					action: {
 						label: "Upgrade",
 						onClick: () => router.push("/pricing"),
@@ -119,10 +121,10 @@ function ProjectsPage() {
 	const EmptyState = () => (
 		<div className="flex flex-col items-center justify-center py-16 px-4 text-center max-w-2xl mx-auto min-h-[60vh]">
 			<h2 className="text-2xl font-bold text-foreground mb-3">
-				Organize Your Research
+				{t("Organize Your Research")}
 			</h2>
 			<p className="text-muted-foreground mb-8 max-w-md">
-				Group papers by topic, get focused AI assistance, and streamline your literature reviews.
+				{t("Group papers by topic, get focused AI assistance, and streamline your literature reviews.")}
 			</p>
 
 			{/* CTA buttons */}
@@ -134,7 +136,7 @@ function ProjectsPage() {
 						disabled
 					>
 						<PlusCircle className="mr-2 h-4 w-4" />
-						Create your first project
+						{t("Create your first project")}
 					</Button>
 				) : (
 					<Button
@@ -144,13 +146,13 @@ function ProjectsPage() {
 					>
 						<Link href="/projects/create">
 							<PlusCircle className="mr-2 h-4 w-4" />
-							Create your first project
+							{t("Create your first project")}
 						</Link>
 					</Button>
 				)}
 				<Button variant="outline" size="lg" asChild>
 					<Link href="/blog/projects">
-						Learn more
+						{t("Learn more")}
 					</Link>
 				</Button>
 			</div>
@@ -159,18 +161,18 @@ function ProjectsPage() {
 			<div className="flex items-center justify-center gap-8 text-blue-500">
 				<div className="flex flex-col items-center gap-1 max-w-24">
 					<Target className="h-5 w-5" />
-					<span className="text-xs font-medium text-foreground">Focus</span>
-					<span className="text-xs text-muted-foreground text-center">Organize by topic or goal</span>
+					<span className="text-xs font-medium text-foreground">{t("Focus")}</span>
+					<span className="text-xs text-muted-foreground text-center">{t("Organize by topic or goal")}</span>
 				</div>
 				<div className="flex flex-col items-center gap-1 max-w-24">
 					<BookOpen className="h-5 w-5" />
-					<span className="text-xs font-medium text-foreground">AI Chat</span>
-					<span className="text-xs text-muted-foreground text-center">Context-aware assistance</span>
+					<span className="text-xs font-medium text-foreground">{t("AI Chat")}</span>
+					<span className="text-xs text-muted-foreground text-center">{t("Context-aware assistance")}</span>
 				</div>
 				<div className="flex flex-col items-center gap-1 max-w-24">
 					<FileText className="h-5 w-5" />
-					<span className="text-xs font-medium text-foreground">Research</span>
-					<span className="text-xs text-muted-foreground text-center">Streamline lit reviews</span>
+					<span className="text-xs font-medium text-foreground">{t("Research")}</span>
+					<span className="text-xs text-muted-foreground text-center">{t("Streamline lit reviews")}</span>
 				</div>
 			</div>
 		</div>
@@ -188,14 +190,14 @@ function ProjectsPage() {
 								<AlertTitle className="text-foreground">Usage summary</AlertTitle>
 								<AlertDescription className="text-muted-foreground">
 									{atProjectLimit
-										? `You've used your available project slots. Upgrade for more, or archive existing projects.`
-										: `You're getting close to your project limit.`}
+										? t("You've used your available project slots. Upgrade for more, or archive existing projects.")
+										: t("You're getting close to your project limit.")}
 								</AlertDescription>
 							</div>
 						</div>
 						<div className="flex items-center gap-x-2">
 							<Button asChild size="sm" variant="outline">
-								<Link href="/pricing">View plans</Link>
+								<Link href="/pricing">{t("View plans")}</Link>
 							</Button>
 							<Button variant="ghost" size="sm" onClick={() => setShowUsageAlert(false)} className="self-start">
 								Dismiss
@@ -219,7 +221,7 @@ function ProjectsPage() {
 			)}
 
 			<div className="flex justify-between items-center mb-4">
-				<h1 className="text-2xl font-bold">Projects</h1>
+				<h1 className="text-2xl font-bold">{t("Projects")}</h1>
 				<div className="flex gap-2">
 					<ProjectInvitations onInvitationAccepted={getProjects} defaultOpen={openInvites} />
 					{projects.length > 0 && (
@@ -247,7 +249,7 @@ function ProjectsPage() {
 						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
 						<Input
 							type="text"
-							placeholder="Search projects..."
+							placeholder={t("Search projects...")}
 							value={searchQuery}
 							onChange={(e) => setSearchQuery(e.target.value)}
 							className="h-8 pl-9"
@@ -291,11 +293,11 @@ function ProjectsPage() {
 			{isLoading ? (
 				<div className="flex items-center justify-center py-12">
 					<LoadingIndicator />
-					<span className="ml-3 text-gray-600">Retrieving your projects...</span>
+					<span className="ml-3 text-gray-600">{t("Retrieving your projects...")}</span>
 				</div>
 			) : error ? (
 				<div className="flex flex-col items-center justify-center py-12">
-					<p className="text-red-500 mb-4">Failed to fetch projects. Please try again.</p>
+					<p className="text-red-500 mb-4">{t("Failed to fetch projects. Please try again.")}</p>
 					<Button onClick={getProjects} variant="outline">
 						Try Again
 					</Button>
@@ -307,11 +309,11 @@ function ProjectsPage() {
 					<div className="w-16 h-16 bg-secondary rounded-full flex items-center justify-center mb-4">
 						<Search className="w-8 h-8 text-muted-foreground" />
 					</div>
-					<h3 className="text-lg font-semibold mb-2">No projects match your filters</h3>
+					<h3 className="text-lg font-semibold mb-2">{t("No projects match your filters")}</h3>
 					<p className="text-muted-foreground mb-4 max-w-md">
 						{searchQuery.trim()
 							? `No projects found matching "${searchQuery}"`
-							: "No projects match the selected filters"}
+							: t("No projects match the selected filters")}
 					</p>
 					<Button variant="outline" onClick={clearAllFilters}>
 						<X className="mr-2 h-4 w-4" />
@@ -325,8 +327,8 @@ function ProjectsPage() {
 						atProjectLimit ? (
 							<div className="flex cursor-not-allowed items-center gap-3 px-3 py-2.5 text-muted-foreground/60">
 								<Plus className="h-4 w-4" aria-hidden />
-								<span className="text-sm font-medium">New Project</span>
-								<span className="text-xs">Upgrade to create more</span>
+								<span className="text-sm font-medium">{t("New Project")}</span>
+								<span className="text-xs">{t("Upgrade to create more")}</span>
 							</div>
 						) : (
 							<Link
@@ -348,10 +350,11 @@ function ProjectsPage() {
 }
 
 export default function Projects() {
+	const { t } = useI18n();
 	return (
 		<Suspense fallback={<div className="flex items-center justify-center py-12">
 			<LoadingIndicator />
-			<span className="ml-3 text-gray-600">Loading...</span>
+			<span className="ml-3 text-gray-600">{t("Loading...")}</span>
 		</div>}>
 			<ProjectsPage />
 		</Suspense>

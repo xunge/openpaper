@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { PaperData, PaperItem } from "@/lib/schema";
 import { Button } from "./ui/button";
@@ -198,7 +199,9 @@ function EditableListField({
     );
 }
 
-export function PaperPreview({ paper, onClose, setPaper }: PaperPreviewProps) {
+export function PaperPreview(
+{ paper, onClose, setPaper }: PaperPreviewProps) {
+    const { t } = useI18n();
     const { highlights } = useHighlighterHighlights(paper.id);
     const [showAllHighlights, setShowAllHighlights] = useState(false);
     const [loadedPaper, setLoadedPaper] = useState<PaperData | null>(null);
@@ -286,7 +289,7 @@ export function PaperPreview({ paper, onClose, setPaper }: PaperPreviewProps) {
                             <a href={loadedPaper.file_url} target="_blank" rel="noopener noreferrer">
                                 <Button size="sm" variant="outline" className="h-8 px-3 text-xs">
                                     <Download className="h-3.5 w-3.5 mr-1.5" />
-                                    Download
+                                    {t("Download")}
                                 </Button>
                             </a>
                         )}

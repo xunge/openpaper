@@ -12,6 +12,7 @@ import {
     User as UserIcon,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import {
     Tooltip,
@@ -47,7 +48,10 @@ export const UserMenuContent = ({
     toggleDarkMode: () => void,
     darkMode: boolean,
     referralEntry: ReferralEntry | null,
-}) => (
+}) => {
+    const { t } = useI18n();
+
+    return (
     <div className="flex flex-col gap-1">
         <div className="flex items-center gap-3 p-3">
             <UserAvatar user={user} className="h-10 w-10 shrink-0" iconSize={24} />
@@ -73,14 +77,14 @@ export const UserMenuContent = ({
         <Link href="/settings" className="w-full">
             <Button variant="ghost" className="w-full justify-start">
                 <Settings size={16} className="mr-2" />
-                Settings
+                {t("Settings")}
             </Button>
         </Link>
         {/* Feedback section */}
         <Link href="https://github.com/khoj-ai/openpaper/issues" target="_blank" className="w-full">
             <Button variant="ghost" className="w-full justify-start">
                 <MessageCircleQuestion size={16} className="mr-2" />
-                Feedback
+                {t("Feedback")}
             </Button>
         </Link>
         <Link href="/pricing" className="w-full">
@@ -89,7 +93,7 @@ export const UserMenuContent = ({
                 className="w-full justify-start"
             >
                 <Route size={16} className="mr-2" />
-                Plans
+                {t("Plans")}
             </Button>
         </Link>
         {referralEntry && (
@@ -120,10 +124,10 @@ export const UserMenuContent = ({
             onClick={handleLogout}
         >
             <LogOut size={16} className="mr-2" />
-            Sign out
+            {t("Sign out")}
         </Button>
         <div className="px-3 py-2">
-            <p className="text-sm text-muted-foreground px-1 mb-1.5">What&apos;s new</p>
+            <p className="text-sm text-muted-foreground px-1 mb-1.5">{t("What's new")}</p>
             <div className="relative ml-2">
                 <Link href="/settings#zotero" className="block">
                     <div className="relative ml-3 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors">
@@ -137,4 +141,5 @@ export const UserMenuContent = ({
             </div>
         </div>
     </div>
-)
+    );
+};

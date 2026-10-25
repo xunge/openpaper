@@ -36,6 +36,9 @@ from app.database.database import get_db
 from app.helpers.s3 import s3_service
 
 
+LANGUAGE_DIRECTIVE_ZH = '\n\n【旁白语言】请用简体中文撰写全部旁白内容（摘要字段、章节说明、过渡句）。论文标题、作者、机构、术语、公式保持原文，不要翻译。'
+
+
 class PaperOperations(BaseLLMClient):
     """Operations related to paper analysis and chat functionality"""
 
@@ -46,6 +49,7 @@ class PaperOperations(BaseLLMClient):
         user: CurrentUser,
         length: Optional[Literal["short", "medium", "long"]] = "medium",
         additional_instructions: Optional[str] = None,
+        language: Optional[str] = "en",
         db: Session = Depends(get_db),
     ) -> AudioOverviewForLLM:
         """
@@ -68,6 +72,14 @@ class PaperOperations(BaseLLMClient):
             additional_instructions=additional_instructions,
             length=word_count_map.get(str(length), word_count_map["medium"]),
         )
+
+        # The narration call is structured (schema=AudioOverviewForLLM), and the
+        # global language directive is deliberately skipped for structured calls
+        # so machine-read fields stay stable. The prose inside that schema is the
+        # exception: it is read aloud to the user, so the language has to be
+        # stated here instead.
+        if (language or "en").lower().startswith("zh"):
+            formatted_prompt += LANGUAGE_DIRECTIVE_ZH
 
         signed_url = s3_service.get_cached_presigned_url(
             db,
@@ -140,6 +152,7 @@ class PaperOperations(BaseLLMClient):
         user_references: Optional[Sequence[str]] = None,
         response_style: Optional[str] = "normal",
         model_type: ModelType = ModelType.DEFAULT,
+        model: Optional[str] = None,
         db: Session = Depends(get_db),
     ) -> AsyncGenerator[Union[str, dict], None]:
         """
@@ -225,6 +238,7 @@ class PaperOperations(BaseLLMClient):
             history=conversation_history,
             provider=llm_provider,
             model_type=model_type,
+            model=model,
         ):
             if chunk.is_restart:
                 # The upstream connection dropped mid-answer and the request was

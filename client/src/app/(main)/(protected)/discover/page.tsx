@@ -1,4 +1,5 @@
-"use client"
+"use client";
+import { useI18n } from "@/lib/i18n";
 
 import { fetchFromApi, fetchStreamFromApi } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -28,6 +29,7 @@ interface SubqueryResults {
 }
 
 function DiscoverPageContent() {
+	const { t } = useI18n();
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -431,9 +433,7 @@ function DiscoverPageContent() {
                     {!loading && (
                         <div className="fixed bottom-6 right-6">
                             <Button onClick={handleReset} className="gap-2 shadow-lg">
-                                <Search className="h-4 w-4" />
-                                Find more literature
-                            </Button>
+                                <Search className="h-4 w-4" />{t("Find more literature")}</Button>
                         </div>
                     )}
                 </>
@@ -443,6 +443,7 @@ function DiscoverPageContent() {
 }
 
 export default function DiscoverPage() {
+	const { t } = useI18n();
     return (
         <Suspense fallback={<div className="w-full px-4 py-6">Loading...</div>}>
             <DiscoverPageContent />

@@ -1,3 +1,6 @@
+"use client";
+import { useI18n } from "@/lib/i18n";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Clock, Crown, X } from "lucide-react";
@@ -72,6 +75,7 @@ export default function PricingTable({
     canResubscribe,
     isCurrentlySubscribed
 }: PricingTableProps) {
+	const { t } = useI18n();
 
     const planOptions = [
         { value: "basic", label: "Basic" },
@@ -117,37 +121,29 @@ export default function PricingTable({
         <>
             {/* Feature Comparison Table */}
             <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-center">Feature Comparison</h2>
+                <h2 className="text-2xl font-bold text-center">{t("Feature Comparison")}</h2>
 
                 {/* Mobile Plan Selector */}
                 <div className="sm:hidden mb-4">
                     <Select value={selectedPlan} onValueChange={setSelectedPlan}>
                         <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select a plan" />
+                            <SelectValue placeholder={t("Select a plan")} />
                         </SelectTrigger>
                         <SelectContent>
                             {planOptions.map((option) => (
                                 <SelectItem key={option.value} value={option.value}>
                                     {option.label}
                                     {option.value === "researcher" && isActiveSubscription && (
-                                        <Badge variant="secondary" className="ml-2 text-xs">
-                                            Current
-                                        </Badge>
+                                        <Badge variant="secondary" className="ml-2 text-xs">{t("Current")}</Badge>
                                     )}
                                     {option.value === "researcher" && canResubscribe && !isActiveSubscription && (
-                                        <Badge variant="outline" className="ml-2 text-xs">
-                                            Reactivate
-                                        </Badge>
+                                        <Badge variant="outline" className="ml-2 text-xs">{t("Reactivate")}</Badge>
                                     )}
                                     {option.value === "researcher" && !isCurrentlySubscribed && (
-                                        <Badge variant="secondary" className="ml-2 text-xs">
-                                            Recommended
-                                        </Badge>
+                                        <Badge variant="secondary" className="ml-2 text-xs">{t("Recommended")}</Badge>
                                     )}
                                     {option.value === "teams" && (
-                                        <Badge variant="outline" className="ml-2 text-xs">
-                                            Coming Soon
-                                        </Badge>
+                                        <Badge variant="outline" className="ml-2 text-xs">{t("Coming Soon")}</Badge>
                                     )}
                                 </SelectItem>
                             ))}
@@ -160,8 +156,8 @@ export default function PricingTable({
                     <table className="w-full">
                         <thead>
                             <tr className="border-b bg-muted/50">
-                                <th className="text-left p-2 sm:p-4 font-semibold">Features</th>
-                                <th className="text-center p-2 sm:p-4 font-semibold min-w-[80px]">Basic</th>
+                                <th className="text-left p-2 sm:p-4 font-semibold">{t("Features")}</th>
+                                <th className="text-center p-2 sm:p-4 font-semibold min-w-[80px]">{t("Basic")}</th>
                                 <th className={cn(
                                     "text-center p-2 sm:p-4 font-semibold min-w-[100px]",
                                     isActiveSubscription && "bg-green-50 dark:bg-green-950"
@@ -173,11 +169,7 @@ export default function PricingTable({
                                     </div>
                                 </th>
                                 <th className="text-center p-2 sm:p-4 font-semibold min-w-[80px] text-muted-foreground">
-                                    <div className="flex flex-col items-center gap-1">
-                                        Teams
-                                        <Badge variant="outline" className="text-xs">
-                                            Coming Soon
-                                        </Badge>
+                                    <div className="flex flex-col items-center gap-1">{t("Teams")}<Badge variant="outline" className="text-xs">{t("Coming Soon")}</Badge>
                                     </div>
                                 </th>
                             </tr>
@@ -195,9 +187,7 @@ export default function PricingTable({
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-sm sm:text-base">{feature.name}</span>
                                                 {isComingSoon && (
-                                                    <Badge variant="outline" className="text-xs w-fit">
-                                                        Coming Soon
-                                                    </Badge>
+                                                    <Badge variant="outline" className="text-xs w-fit">{t("Coming Soon")}</Badge>
                                                 )}
                                             </div>
                                         </td>
@@ -226,10 +216,10 @@ export default function PricingTable({
                         <CardHeader className="pb-4">
                             <CardTitle className="text-lg capitalize">{selectedPlan} Plan</CardTitle>
                             {selectedPlan === "researcher" && (
-                                <Badge className="w-fit bg-blue-600 dark:bg-blue-400">Recommended</Badge>
+                                <Badge className="w-fit bg-blue-600 dark:bg-blue-400">{t("Recommended")}</Badge>
                             )}
                             {selectedPlan === "teams" && (
-                                <Badge variant="secondary" className="w-fit">Coming Soon</Badge>
+                                <Badge variant="secondary" className="w-fit">{t("Coming Soon")}</Badge>
                             )}
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -245,9 +235,7 @@ export default function PricingTable({
                                         <div className="flex flex-col gap-1">
                                             <span className="font-medium text-sm">{feature.name}</span>
                                             {isComingSoon && (
-                                                <Badge variant="outline" className="text-xs w-fit">
-                                                    Coming Soon
-                                                </Badge>
+                                                <Badge variant="outline" className="text-xs w-fit">{t("Coming Soon")}</Badge>
                                             )}
                                         </div>
                                         <div className="text-right">

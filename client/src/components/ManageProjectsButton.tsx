@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import React, { useState } from 'react';
 import { useParams, usePathname } from 'next/navigation';
@@ -10,6 +11,7 @@ import { PaperProjects } from '@/components/PaperProjects';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export function ManageProjectsButton() {
+	const { t } = useI18n();
     const params = useParams();
     const pathname = usePathname();
     const paperId = (params.id && (Array.isArray(params.id) ? params.id[0] : params.id)) as string | null;
@@ -26,7 +28,7 @@ export function ManageProjectsButton() {
     const triggerButton = (
         <Button variant="ghost" size="sm">
             <FolderKanban className="h-4 w-4 mr-2" />
-            <span>Projects</span>
+            <span>{t("Projects")}</span>
         </Button>
     );
 

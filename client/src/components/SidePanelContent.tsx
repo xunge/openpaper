@@ -77,12 +77,21 @@ interface SidePanelContentProps {
     addAnnotation?: (highlightId: string, content: string) => Promise<PaperHighlightAnnotation>;
 }
 
+interface ChatModelChoice {
+    id: string;
+    label: string;
+    tier?: string;
+    provider?: string;
+}
+
 interface ChatRequestBody {
     user_query: string;
     conversation_id: string | null;
     paper_id: string;
     user_references: string[];
-    llm_provider?: string;
+    // Explicit model id; the server falls back to the provider default when
+    // this is absent.
+    llm_model?: string;
 }
 
 export function SidePanelContent({
@@ -121,7 +130,9 @@ export function SidePanelContent({
     const [creditUsage, setCreditUsage] = useState<CreditUsage | null>(null);
     const { subscription, refetch: refetchSubscription } = useSubscription();
     const [selectedModel, setSelectedModel] = useState<string>('');
-    const [availableModels, setAvailableModels] = useState<Record<string, string>>({});
+    const modelLabel = (id: string) =>
+        availableModels.find((choice) => choice.id === id)?.label ?? id;
+    const [availableModels, setAvailableModels] = useState<ChatModelChoice[]>([]);
     const [nextMonday, setNextMonday] = useState(new Date());
     const [pendingStarterQuestion, setPendingStarterQuestion] = useState<string | null>(null);
     const [pageNumberConversationHistory, setPageNumberConversationHistory] = useState(1);
@@ -279,11 +290,19 @@ export function SidePanelContent({
         async function fetchAvailableModels() {
             try {
                 const response = await fetchFromApi(`/api/message/models`);
-                if (response.models && Object.keys(response.models).length > 0) {
-                    setAvailableModels(response.models);
-                    if (response.default && response.models[response.default]) {
-                        setSelectedModel((current) => current || response.default);
-                    }
+                const choices: ChatModelChoice[] = Array.isArray(response.models)
+                    ? response.models
+                    : [];
+                if (choices.length > 0) {
+                    setAvailableModels(choices);
+                    const ids = choices.map((choice) => choice.id);
+                    const fallback =
+                        response.default && ids.includes(response.default)
+                            ? response.default
+                            : choices[0].id;
+                    setSelectedModel((current) =>
+                        current && ids.includes(current) ? current : fallback
+                    );
                 }
             } catch (error) {
                 console.error('Error fetching available models:', error);
@@ -458,7 +477,7 @@ export function SidePanelContent({
         };
 
         if (selectedModel) {
-            requestBody.llm_provider = selectedModel;
+            requestBody.llm_model = selectedModel;
         }
 
         try {
@@ -1133,9 +1152,9 @@ export function SidePanelContent({
                                                                 <Route
                                                                     className="h-4 w-4 text-secondary-foreground"
                                                                 />
-                                                                {selectedModel && availableModels[selectedModel] && (
+                                                                {selectedModel && (
                                                                     <span className="text-xs text-secondary-foreground truncate max-w-[10rem]">
-                                                                        {availableModels[selectedModel]}
+                                                                        {modelLabel(selectedModel)}
                                                                     </span>
                                                                 )}
                                                             </Button>
@@ -1144,7 +1163,7 @@ export function SidePanelContent({
                                                             <DropdownMenuSub>
                                                                 <DropdownMenuSubTrigger className="flex items-center">
                                                                     <Sparkle className="mr-2 h-4 w-4" />
-                                                                    <span className="flex-1">Model {selectedModel ? `(${availableModels[selectedModel]})` : ''}</span>
+                                                                    <span className="flex-1">Model {selectedModel ? `(${modelLabel(selectedModel)})` : ''}</span>
                                                                     {subscription && subscription.plan !== 'researcher' && (
                                                                         <LockIcon className="ml-2 h-3 w-3 text-muted-foreground" />
                                                                     )}
@@ -1152,15 +1171,15 @@ export function SidePanelContent({
                                                                 <DropdownMenuSubContent>
                                                                     {subscription && subscription.plan !== 'researcher' ? (
                                                                         <>
-                                                                            {Object.entries(availableModels).map(([modelKey, modelName]) => (
+                                                                            {availableModels.map((choice) => (
                                                                                 <DropdownMenuItem
-                                                                                    key={modelKey}
+                                                                                    key={choice.id}
                                                                                     onClick={() => {
                                                                                         window.location.href = '/pricing';
                                                                                     }}
                                                                                     className="flex items-center justify-between text-muted-foreground"
                                                                                 >
-                                                                                    <span>{modelName}</span>
+                                                                                    <span>{choice.label}</span>
                                                                                     <LockIcon className="h-3 w-3" />
                                                                                 </DropdownMenuItem>
                                                                             ))}
@@ -1174,17 +1193,17 @@ export function SidePanelContent({
                                                                             </DropdownMenuItem>
                                                                         </>
                                                                     ) : (
-                                                                        Object.entries(availableModels).map(([modelKey, modelName]) => (
+                                                                        availableModels.map((choice) => (
                                                                             <DropdownMenuItem
-                                                                                key={modelKey}
+                                                                                key={choice.id}
                                                                                 onClick={() => {
-                                                                                    setSelectedModel(modelKey);
+                                                                                    setSelectedModel(choice.id);
                                                                                     setRightSideFunction('Chat');
                                                                                 }}
                                                                                 className="flex items-center justify-between"
                                                                             >
-                                                                                <span>{modelName}</span>
-                                                                                {modelKey === selectedModel && (
+                                                                                <span>{choice.label}</span>
+                                                                                {choice.id === selectedModel && (
                                                                                     <Check className="h-4 w-4 text-green-500" />
                                                                                 )}
                                                                             </DropdownMenuItem>
