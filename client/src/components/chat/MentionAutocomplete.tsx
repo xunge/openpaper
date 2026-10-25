@@ -243,7 +243,7 @@ export function useMentionAutocomplete({
 		const timer = setTimeout(async () => {
 			try {
 				const res: SearchResults = await fetchFromApi(
-					`/api/search/local?q=${encodeURIComponent(q)}&limit=5`,
+					`/api/search/local/?q=${encodeURIComponent(q)}&limit=5`,
 					{ signal: controller.signal },
 				);
 				if (controller.signal.aborted) return;

@@ -1,4 +1,5 @@
 "use client"
+import { useI18n } from "@/lib/i18n";
 
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +24,12 @@ export const UsageLimitCard = ({
     subscription: SubscriptionData | null,
     loading: boolean
 }) => {
+    const { t, lang } = useI18n();
+
     if (loading || !subscription) {
         return (
             <div className="p-4 space-y-3">
-                <div className="text-sm font-medium">Loading usage data...</div>
+                <div className="text-sm font-medium">{t("Loading usage data...")}</div>
             </div>
         );
     }
@@ -52,7 +55,7 @@ export const UsageLimitCard = ({
     }) => (
         <div className="space-y-2">
             <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">{label}</span>
+                <span className="text-sm font-medium">{t(label)}</span>
                 <span className="text-sm text-muted-foreground">
                     {formatValue ?
                         `${formatValue(used)} / ${formatValue(total)}` :
@@ -64,7 +67,9 @@ export const UsageLimitCard = ({
                 <Progress value={Math.min(percentage, 100)} className="h-2" />
             </div>
             <div className="text-xs text-muted-foreground">
-                {percentage.toFixed(1)}% used
+                {lang === "zh"
+                    ? `已使用 ${percentage.toFixed(1)}%`
+                    : `${percentage.toFixed(1)}% used`}
             </div>
         </div>
     );
@@ -72,9 +77,9 @@ export const UsageLimitCard = ({
     return (
         <div className="p-4 space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Usage Limits</h3>
+                <h3 className="text-sm font-semibold">{t("Usage Limits")}</h3>
                 <Badge variant={subscription.plan === 'researcher' ? "default" : "secondary"}>
-                    {subscription.plan === 'researcher' ? 'Researcher' : 'Basic'}
+                    {subscription.plan === 'researcher' ? t('Researcher') : t('Basic')}
                 </Badge>
             </div>
 
@@ -133,7 +138,7 @@ export const UsageLimitCard = ({
             <div className="pt-2 border-t">
                 <Link href="/pricing" className="w-full">
                     <Button size="sm" className="w-full">
-                        {subscription.plan === 'researcher' ? 'Manage' : 'Upgrade'}
+                        {subscription.plan === 'researcher' ? t('Manage') : t('Upgrade')}
                     </Button>
                 </Link>
             </div>

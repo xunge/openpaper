@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -129,7 +130,9 @@ function PaperRow({ paper, onNavigate }: { paper: PaperItem; onNavigate?: () => 
 
 // Persistent left navigation for the project workspace: papers on top,
 // chats below. Every project route is reachable from here.
-export function ProjectRail({ onNavigate }: ProjectRailProps) {
+export function ProjectRail({
+	onNavigate }: ProjectRailProps) {
+	const { t } = useI18n();
     const pathname = usePathname();
     const params = useParams();
     const activeConversationId = params.conversationId as string | undefined;
@@ -163,7 +166,7 @@ export function ProjectRail({ onNavigate }: ProjectRailProps) {
         <div className="flex h-full w-64 shrink-0 flex-col bg-muted/20">
             {/* Papers */}
             <div className="flex min-h-0 flex-1 flex-col pt-2">
-                <SectionHeading label="Papers" count={papers.length}>
+                <SectionHeading label={t("Papers")} count={papers.length}>
                     {papers.length > 0 && <CitePaperButton paper={papers} minimalist={true} />}
                     {!isViewer && (
                         <Button
@@ -171,7 +174,7 @@ export function ProjectRail({ onNavigate }: ProjectRailProps) {
                             size="icon"
                             className="h-6 w-6"
                             onClick={() => openAddPapers()}
-                            aria-label="Add papers"
+                            aria-label={t("Add papers")}
                         >
                             <Plus className="h-3.5 w-3.5" />
                         </Button>
@@ -205,14 +208,14 @@ export function ProjectRail({ onNavigate }: ProjectRailProps) {
                         </p>
                     ) : (
                         <div className="px-2 pt-1">
-                            <p className="text-xs text-muted-foreground">No papers yet.</p>
+                            <p className="text-xs text-muted-foreground">{t("No papers yet.")}</p>
                             {!isViewer && (
                                 <Button
                                     variant="link"
                                     className="h-auto p-0 text-xs"
                                     onClick={() => openAddPapers()}
                                 >
-                                    Add your first paper
+                                    {t("Add your first paper")}
                                 </Button>
                             )}
                         </div>
@@ -222,7 +225,7 @@ export function ProjectRail({ onNavigate }: ProjectRailProps) {
 
             {/* Chats */}
             <div className="flex min-h-0 flex-1 flex-col border-t pt-2">
-                <SectionHeading label="Chats" count={conversations.length} />
+                <SectionHeading label={t("Chats")} count={conversations.length} />
                 <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2">
                     {/* Explicit path back to the project home (= the new-chat surface) */}
                     {!isViewer && (
@@ -251,7 +254,7 @@ export function ProjectRail({ onNavigate }: ProjectRailProps) {
                                         : "text-foreground",
                                 )}
                             >
-                                New chat
+                                {t("New chat")}
                             </span>
                         </Link>
                     )}
@@ -308,7 +311,7 @@ export function ProjectRail({ onNavigate }: ProjectRailProps) {
                             </Link>
                         </>
                     ) : (
-                        <p className="px-2 pt-1 text-xs text-muted-foreground">No chats yet.</p>
+                        <p className="px-2 pt-1 text-xs text-muted-foreground">{t("No chats yet.")}</p>
                     )}
                 </div>
             </div>

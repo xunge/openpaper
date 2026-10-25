@@ -9,6 +9,7 @@ import confetti from 'canvas-confetti'
 import LoadingIndicator from '@/components/utils/Loading'
 import Link from 'next/link'
 import { ReferralDialog } from '@/components/ReferralDialog'
+import { useI18n } from "@/lib/i18n";
 
 interface SessionStatusResponse {
     status: string
@@ -18,6 +19,7 @@ interface SessionStatusResponse {
 }
 
 function SubscribedPageContent() {
+	const { t } = useI18n();
     const searchParams = useSearchParams()
     const router = useRouter()
     const sessionId = searchParams.get('session_id')
@@ -280,7 +282,7 @@ function SubscribedPageContent() {
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-green-500/10 text-green-500 mb-3">
                             <Sparkles className="h-6 w-6" />
                         </div>
-                        <p className="text-sm font-medium">Intelligent Artifacts</p>
+                        <p className="text-sm font-medium">{t("Intelligent Artifacts")}</p>
                         <p className="text-xs text-muted-foreground">Collect insights & audio summaries</p>
                     </div>
                 </div>

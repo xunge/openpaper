@@ -50,7 +50,7 @@ export function LibraryTable({
 	onUploadClick,
 	...props
 }: LibraryTableProps) {
-	const { t } = useI18n();
+	const { t, lang } = useI18n();
 	const selectable = selectableProp ?? (onSelectFiles ? true : false);
 	const { papers, error: papersFetchError, isLoading, mutate } = usePapers();
 	const { state: sidebarState } = useSidebar();
@@ -317,7 +317,7 @@ export function LibraryTable({
 									{selectedPapers.size > 0 && (
 										<div className="flex items-center gap-2">
 											<span className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-												{selectedPapers.size} paper{selectedPapers.size !== 1 ? 's' : ''}
+												{lang === "zh" ? `已选 ${selectedPapers.size} 篇` : `${selectedPapers.size} paper${selectedPapers.size !== 1 ? 's' : ''}`}
 											</span>
 											<Button
 												variant="ghost"
@@ -338,7 +338,7 @@ export function LibraryTable({
 												onClick={() => handleAction(action)}
 												className="font-medium bg-blue-500 text-white hover:bg-blue-600 dark:hover:bg-blue-400 cursor-pointer"
 											>
-												{action}
+												{t(action)}
 											</Button>
 										))}
 									</div>
@@ -351,7 +351,7 @@ export function LibraryTable({
 											<DropdownMenuTrigger asChild>
 												<Button variant="outline">
 													<Tag className="h-4 w-4 mr-2" />
-													Tag
+													{t("Tag")}
 												</Button>
 											</DropdownMenuTrigger>
 											<DropdownMenuContent className="w-80">
@@ -368,7 +368,7 @@ export function LibraryTable({
 										<DropdownMenu>
 											<DropdownMenuTrigger asChild>
 												<Button variant="outline">
-													Actions <ChevronDown className="h-4 w-4 ml-2" />
+													{t("Actions")} <ChevronDown className="h-4 w-4 ml-2" />
 												</Button>
 											</DropdownMenuTrigger>
 											<DropdownMenuContent>
@@ -379,7 +379,7 @@ export function LibraryTable({
 														className="text-red-500"
 													>
 														<Trash2 className="h-4 w-4 mr-2" />
-														Delete ({selectedPapers.size})
+														{t("Delete")} ({selectedPapers.size})
 													</DropdownMenuItem>
 												)}
 											</DropdownMenuContent>
@@ -395,7 +395,7 @@ export function LibraryTable({
 			<div className="flex flex-wrap gap-2 mb-4">
 				{filters.map(filter => (
 					<Badge key={`${filter.type}-${filter.value}`} variant="secondary" className="flex items-center gap-1">
-						{filter.type}: {filter.value === NO_TAGS_FILTER_VALUE ? 'No tags' : filter.value}
+						{t(filter.type)}: {filter.value === NO_TAGS_FILTER_VALUE ? t('No tags') : filter.value}
 						<Button
 							variant="ghost"
 							size="sm"
@@ -456,7 +456,7 @@ export function LibraryTable({
 											variant="ghost"
 											className="h-auto p-0 font-semibold hover:bg-transparent"
 										>
-											Organizations
+											{t("Organizations")}
 										</Button>
 									</TableHead>
 									<TableHead className="min-w-[10rem]">
@@ -464,7 +464,7 @@ export function LibraryTable({
 											variant="ghost"
 											className="h-auto p-0 font-semibold hover:bg-transparent hover:text-primary"
 										>
-											Tags
+											{t("Tags")}
 										</Button>
 									</TableHead>
 									<TableHead className="min-w-[8rem]">
@@ -473,7 +473,7 @@ export function LibraryTable({
 											onClick={() => requestSort('created_at')}
 											className="h-auto p-0 font-semibold hover:bg-transparent hover:text-primary"
 										>
-											Added
+											{t("Added")}
 											<ArrowUpDown className="ml-1 h-4 w-4" />
 										</Button>
 									</TableHead>
@@ -483,7 +483,7 @@ export function LibraryTable({
 											onClick={() => requestSort('publish_date')}
 											className="h-auto p-0 font-semibold hover:bg-transparent hover:text-primary"
 										>
-											Published
+											{t("Published")}
 											<ArrowUpDown className="ml-1 h-4 w-4" />
 										</Button>
 									</TableHead>
@@ -619,16 +619,16 @@ export function LibraryTable({
 								<TableRow>
 									<TableCell colSpan={numCols} className="h-32 text-center">
 										{searchTerm || filters.length > 0 ? (
-											"No papers match your search criteria."
+											t("No papers match your search criteria.")
 										) : (
 											<div className="flex flex-col items-center gap-4 py-8">
 												<div className="text-muted-foreground text-center">
 													<p className="text-lg font-medium mb-2">{t("No papers in your library yet")}</p>
-													<p className="text-sm">Upload your first research paper to get started. All your papers will appear here for easy access and organization.</p>
+													<p className="text-sm">{t("Upload your first research paper to get started. All your papers will appear here for easy access and organization.")}</p>
 												</div>
 												{onUploadClick && (
 													<Button variant="default" className="bg-blue-500 hover:bg-blue-600 text-white" onClick={onUploadClick}>
-														Upload Your First Paper
+														{t("Upload Your First Paper")}
 													</Button>
 												)}
 											</div>

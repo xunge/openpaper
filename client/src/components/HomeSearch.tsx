@@ -147,7 +147,7 @@ export function HomeSearch() {
             try {
                 // Search papers
                 const searchResponse: SearchResults = await fetchFromApi(
-                    `/api/search/local?q=${encodeURIComponent(query)}&limit=5`,
+                    `/api/search/local/?q=${encodeURIComponent(query)}&limit=5`,
                     { signal: controller.signal }
                 );
 

@@ -11,6 +11,7 @@ import {
     MessageTrace,
     Reference,
 } from '@/lib/schema';
+import { useI18n } from "@/lib/i18n";
 import { useAuth } from '@/lib/auth';
 import { useProjectWorkspace } from '@/components/project/ProjectWorkspaceProvider';
 import { PaperItem } from "@/lib/schema";
@@ -42,6 +43,7 @@ const chatLoadingMessages = [
 ]
 
 function ProjectConversationPageContent() {
+    const { t } = useI18n();
     const router = useRouter();
     const params = useParams();
     const projectId = params.projectId as string;
@@ -128,9 +130,9 @@ function ProjectConversationPageContent() {
     useEffect(() => {
         const CHAT_CREDIT_TOAST_KEY = "chat_credit_limit_toast_shown";
         if (chatCreditLimitReached && !sessionStorage.getItem(CHAT_CREDIT_TOAST_KEY)) {
-            toast.error("Nice! You've used your chat credits for the week. Upgrade your plan to continue chatting.", {
+            toast.error(t("Nice! You've used your chat credits for the week. Upgrade your plan to continue chatting."), {
                 action: {
-                    label: "Upgrade",
+                    label: t("Upgrade"),
                     onClick: () => window.location.href = "/pricing",
                 },
             });
@@ -234,7 +236,7 @@ function ProjectConversationPageContent() {
             return;
         }
 
-        const currentMessage = chatLoadingMessages[currentLoadingMessageIndex];
+        const currentMessage = t(chatLoadingMessages[currentLoadingMessageIndex]);
         let charIndex = 0;
         setDisplayedText('');
         setIsTyping(true);

@@ -6,6 +6,7 @@ import {
     CreditUsage,
     Reference,
 } from '@/lib/schema';
+import { useI18n } from "@/lib/i18n";
 import { RenderedHighlightPosition } from './PdfHighlighterViewer';
 import {
     X,
@@ -118,6 +119,7 @@ export function SidePanelContent({
     onComposeHighlightDismiss,
     addAnnotation,
 }: SidePanelContentProps) {
+    const { t, lang } = useI18n();
     const { user } = useAuth();
     const [conversationId, setConversationId] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -149,24 +151,44 @@ export function SidePanelContent({
 
     const END_DELIMITER = "END_OF_STREAM";
 
-    const COMPREHENSIVE_OVERVIEW_DISPLAY = "Create a comprehensive overview";
-    const COMPREHENSIVE_OVERVIEW_PROMPT = "Create a comprehensive, thoughtful brief for this paper. Separate each section with clear headings covering: Key Takeaways (the main points in 2-3 bullets), Background (the problem and context), Key Contributions (what's novel about this work), Methods (the approach taken), Results (main findings), Limitations (weaknesses of the study), Open Questions (gaps for future research), and Important Figures/Tables (which visuals to pay attention to). This should serve as a helpful guided reading before I dive into the paper myself.";
+    const COMPREHENSIVE_OVERVIEW_DISPLAY = lang === "zh"
+        ? "生成全面的论文概览"
+        : "Create a comprehensive overview";
+    const COMPREHENSIVE_OVERVIEW_PROMPT = lang === "zh"
+        ? "为这篇论文撰写一份全面、深入的导读。用清晰的标题分节，依次覆盖：核心要点（用 2-3 条要点概括主要结论）、研究背景（问题与上下文）、主要贡献（这项工作的创新之处）、研究方法（采用的技术路线）、研究结果（主要发现）、局限性（研究的不足）、待解问题（未来研究方向），以及重要图表（值得重点关注的图表）。这份导读应帮助我在正式精读之前建立整体理解。"
+        : "Create a comprehensive, thoughtful brief for this paper. Separate each section with clear headings covering: Key Takeaways (the main points in 2-3 bullets), Background (the problem and context), Key Contributions (what's novel about this work), Methods (the approach taken), Results (main findings), Limitations (weaknesses of the study), Open Questions (gaps for future research), and Important Figures/Tables (which visuals to pay attention to). This should serve as a helpful guided reading before I dive into the paper myself.";
 
-    const defaultStarterQuestions = [
-        COMPREHENSIVE_OVERVIEW_DISPLAY,
-        "What is the main research question or hypothesis of this paper?",
-        "What methodology did the authors use?",
-        "What are the key findings and conclusions?",
-        "What are the limitations of this study?",
-        "How does this paper relate to other work in the field?",
-    ];
+    const defaultStarterQuestions = lang === "zh"
+        ? [
+            COMPREHENSIVE_OVERVIEW_DISPLAY,
+            "这篇论文的核心研究问题或假设是什么？",
+            "作者采用了什么研究方法？",
+            "主要发现和结论是什么？",
+            "这项研究有哪些局限性？",
+            "这篇论文与该领域的其他工作有何关联？",
+        ]
+        : [
+            COMPREHENSIVE_OVERVIEW_DISPLAY,
+            "What is the main research question or hypothesis of this paper?",
+            "What methodology did the authors use?",
+            "What are the key findings and conclusions?",
+            "What are the limitations of this study?",
+            "How does this paper relate to other work in the field?",
+        ];
 
     const starterQuestions = useMemo(() => {
-        if (paperData?.starter_questions && paperData.starter_questions.length > 0) {
-            return paperData.starter_questions;
+        const provided = paperData?.starter_questions ?? [];
+        if (provided.length > 0) {
+            // Suggestions are generated at ingest time and stored in English.
+            // Under a Chinese UI they would stay untranslated, so fall back to the
+            // localised defaults unless the stored ones are already Chinese.
+            const looksChinese = provided.some((q: string) => /[\u4e00-\u9fff]/.test(q));
+            if (lang !== "zh" || looksChinese) {
+                return provided;
+            }
         }
         return defaultStarterQuestions;
-    }, [paperData?.starter_questions]);
+    }, [paperData?.starter_questions, lang, defaultStarterQuestions]);
 
 
     const chatLoadingMessages = [
@@ -363,7 +385,7 @@ export function SidePanelContent({
             return;
         }
 
-        const currentMessage = chatLoadingMessages[currentLoadingMessageIndex];
+        const currentMessage = t(chatLoadingMessages[currentLoadingMessageIndex]);
         let charIndex = 0;
         setDisplayedText('');
         setIsTyping(true);
@@ -1129,7 +1151,7 @@ export function SidePanelContent({
                                                 value={currentMessage}
                                                 onChange={handleTextareaChange}
                                                 ref={inputMessageRef}
-                                                placeholder="Ask something about this paper."
+                                                placeholder={t("Ask something about this paper.")}
                                                 className="border-none bg-secondary dark:bg-secondary rounded-md resize-none hover:resize-y p-2 focus-visible:outline-none focus-visible:ring-0 shadow-none min-h-[2rem] max-h-32"
                                                 disabled={isStreaming || (creditUsage?.usagePercentage ?? 0) >= 100}
                                                 onKeyDown={(e) => {

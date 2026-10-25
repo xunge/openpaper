@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { PanelLeftClose, PanelLeftOpen, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -47,6 +48,7 @@ function TitleWithDescription({ description, children }: { description?: string;
 // Compact breadcrumb bar shared by every project route. Navigation lives on
 // the left (mobile rail toggle + breadcrumb); project-level actions on the right.
 export function ProjectHeader() {
+	const { t } = useI18n();
     const {
         projectId,
         project,
@@ -96,7 +98,7 @@ export function ProjectHeader() {
                     {/* Root crumb hidden on mobile — the project name is the anchor there */}
                     <BreadcrumbItem className="hidden md:inline-flex">
                         <BreadcrumbLink asChild>
-                            <Link href="/projects">Projects</Link>
+                            <Link href="/projects">{t("Projects")}</Link>
                         </BreadcrumbLink>
                     </BreadcrumbItem>
                     <BreadcrumbSeparator className="hidden md:block" />
@@ -145,10 +147,10 @@ export function ProjectHeader() {
                         rightPanel === "artifacts" && "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/30",
                     )}
                     onClick={toggleArtifacts}
-                    aria-label="Toggle artifacts panel"
+                    aria-label={t("Toggle artifacts panel")}
                 >
                     <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-                    <span className="hidden md:inline">Artifacts</span>
+                    <span className="hidden md:inline">{t("Artifacts")}</span>
                 </Button>
             </div>
         </div>

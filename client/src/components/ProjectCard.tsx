@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { fetchFromApi } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
+import { useI18n } from "@/lib/i18n";
 
 // A slim single-line project row: title · description · stats · updated · actions.
 // Used by the projects list and the home dashboard preview.
@@ -27,6 +28,7 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 	onProjectUpdate?: () => void;
 	onUnlink?: () => void;
 }) {
+	const { t } = useI18n();
 	const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 	const [showEditAlert, setShowEditAlert] = useState(false);
 	const [showUnlinkAlert, setShowUnlinkAlert] = useState(false);
@@ -197,7 +199,7 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 						<DropdownMenuContent align="end" className="w-32" onClick={(e) => e.stopPropagation()}>
 							{project.role === ProjectRole.Admin && (
 								<DropdownMenuItem onClick={handleEditClick} className="cursor-pointer">
-									Edit
+									{t("Edit")}
 								</DropdownMenuItem>
 							)}
 							{project.role === ProjectRole.Admin && (
@@ -205,7 +207,7 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 									onClick={handleDeleteClick}
 									className="cursor-pointer text-destructive focus:text-destructive"
 								>
-									Delete
+									{t("Delete")}
 								</DropdownMenuItem>
 							)}
 							{project.role !== ProjectRole.Admin && (
@@ -213,7 +215,7 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 									onClick={handleExitClick}
 									className="cursor-pointer text-destructive focus:text-destructive"
 								>
-									Exit
+									{t("Exit")}
 								</DropdownMenuItem>
 							)}
 						</DropdownMenuContent>

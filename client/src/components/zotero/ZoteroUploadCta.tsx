@@ -1,4 +1,5 @@
 "use client"
+import { useI18n } from "@/lib/i18n";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -17,6 +18,7 @@ interface ZoteroUploadCtaProps {
 // dropzone in the upload surfaces. Unconnected users get a dismissible hint;
 // connected users get a pointer to where import/sync is managed.
 export function ZoteroUploadCta({ className }: ZoteroUploadCtaProps) {
+	const { t } = useI18n();
 	const [status, setStatus] = useState<ZoteroStatus | null>(null);
 	const [dismissed, setDismissed] = useState(() => {
 		try {
@@ -56,9 +58,9 @@ export function ZoteroUploadCta({ className }: ZoteroUploadCtaProps) {
 			<p className={cn("flex items-center justify-center gap-2 text-xs text-muted-foreground", className)}>
 				<BookMarked className="h-3.5 w-3.5" aria-hidden />
 				<span>
-					Zotero connected.{" "}
+					{t("Zotero connected.")}{" "}
 					<Link href="/settings#zotero" className="underline underline-offset-2 hover:text-foreground transition-colors">
-						Import and manage syncing in Settings
+						{t("Import and manage syncing in Settings")}
 					</Link>
 				</span>
 			</p>
@@ -76,16 +78,16 @@ export function ZoteroUploadCta({ className }: ZoteroUploadCtaProps) {
 		>
 			<BookMarked className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden />
 			<p className="flex-1">
-				Use Zotero? You can{" "}
+				{t("Use Zotero? You can")}{" "}
 				<Link href="/settings#zotero" className="font-medium underline underline-offset-2">
-					connect your library
+					{t("connect your library")}
 				</Link>{" "}
-				to import papers and keep them in sync.
+				{t("to import papers and keep them in sync.")}
 			</p>
 			<button
 				type="button"
 				onClick={handleDismiss}
-				aria-label="Dismiss Zotero hint"
+				aria-label={t("Dismiss Zotero hint")}
 				className="rounded-sm p-0.5 text-blue-700/70 dark:text-blue-300/70 hover:text-blue-700 dark:hover:text-blue-300 transition-colors"
 			>
 				<X className="h-4 w-4" />

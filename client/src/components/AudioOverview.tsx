@@ -246,7 +246,7 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
         }
 
         try {
-            const response: JobStatus = await fetchFromApi(`/api/paper/audio?id=${paper_id}`, {
+            const response: JobStatus = await fetchFromApi(`/api/paper/audio/?id=${paper_id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -620,7 +620,7 @@ export function AudioOverviewPanel({ paper_id, paper_title, setExplicitSearchTer
                         </div>
                         <p className="text-primary text-lg">
                             {jobStatus.status === 'pending' && 'Preparing your audio overview'}
-                            {jobStatus.status === 'running' && (jobStatus.status_message || loadingText)}
+                            {jobStatus.status === 'running' && (t(jobStatus.status_message ?? '') || t(loadingText))}
                             {jobStatus.status === 'failed' && 'Audio overview generation failed. Please try again.'}
                         </p>
                         {jobStatus.status === 'failed' && (

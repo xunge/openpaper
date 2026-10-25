@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { ArrowRight, BookOpen, Library, MessageCircle, UploadCloud } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -20,6 +21,7 @@ import { useProjectWorkspace } from "@/components/project/ProjectWorkspaceProvid
 // Project home is the new-chat surface: a centered composer over the project's
 // papers. Navigation to existing chats lives in the workspace rail.
 export default function ProjectPage() {
+	const { t, lang } = useI18n();
     const router = useRouter();
     const {
         projectId,
@@ -131,8 +133,8 @@ export default function ProjectPage() {
                     <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 p-4 dark:bg-blue-900/30">
                         <BookOpen className="h-8 w-8 text-blue-500" />
                     </div>
-                    <h2 className="mb-2 text-2xl font-bold">Get Started with Your Project</h2>
-                    <p className="mb-8 text-muted-foreground">Add research papers to your project, then ask questions and generate insights.</p>
+                    <h2 className="mb-2 text-2xl font-bold">{t("Get Started with Your Project")}</h2>
+                    <p className="mb-8 text-muted-foreground">{t("Add research papers to your project, then ask questions and generate insights.")}</p>
 
                     {!isViewer && (
                         <div className="mb-8 grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
@@ -142,16 +144,16 @@ export default function ProjectPage() {
                                 className="group flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors hover:bg-accent"
                             >
                                 <UploadCloud className="mb-3 h-10 w-10 text-muted-foreground transition-colors group-hover:text-blue-500" />
-                                <h3 className="font-semibold transition-colors group-hover:text-blue-600">Upload Papers</h3>
-                                <p className="mt-1 text-sm text-muted-foreground">Upload PDFs from your computer</p>
+                                <h3 className="font-semibold transition-colors group-hover:text-blue-600">{t("Upload Papers")}</h3>
+                                <p className="mt-1 text-sm text-muted-foreground">{t("Upload PDFs from your computer")}</p>
                             </button>
                             <button
                                 onClick={() => openAddPapers("library")}
                                 className="group flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 transition-colors hover:bg-accent"
                             >
                                 <Library className="mb-3 h-10 w-10 text-muted-foreground transition-colors group-hover:text-blue-500" />
-                                <h3 className="font-semibold transition-colors group-hover:text-blue-600">Add from Library</h3>
-                                <p className="mt-1 text-sm text-muted-foreground">Choose from your existing papers</p>
+                                <h3 className="font-semibold transition-colors group-hover:text-blue-600">{t("Add from Library")}</h3>
+                                <p className="mt-1 text-sm text-muted-foreground">{t("Choose from your existing papers")}</p>
                             </button>
                         </div>
                     )}
@@ -159,17 +161,17 @@ export default function ProjectPage() {
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1.5">
                             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-xs font-medium text-blue-600 dark:bg-blue-900/30">1</span>
-                            Add papers
+                            {t("Add papers")}
                         </div>
                         <ArrowRight className="h-3 w-3" />
                         <div className="flex items-center gap-1.5">
                             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">2</span>
-                            Ask questions
+                            {t("Ask questions")}
                         </div>
                         <ArrowRight className="h-3 w-3" />
                         <div className="flex items-center gap-1.5">
                             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground">3</span>
-                            Generate insights
+                            {t("Generate insights")}
                         </div>
                     </div>
                 </div>
@@ -204,14 +206,16 @@ export default function ProjectPage() {
                             papersOnly
                             selection={mentionSelection}
                             onSelectionChange={setMentionSelection}
-                            placeholder={chatDisabled ? "Nice! You have used your chat credits for the week. Upgrade your plan to use more." : "Ask a question about your papers, analyze findings, or explore new ideas..."}
+                            placeholder={chatDisabled ? t("Nice! You have used your chat credits for the week. Upgrade your plan to use more.") : t("Ask a question about your papers, analyze findings, or explore new ideas...")}
                             disabled={chatDisabled || isSubmitting}
                             sendDisabled={!newQuery.trim()}
                             busy={isSubmitting}
                             autoFocus
                         />
                         <p className="mt-3 text-center text-xs text-muted-foreground">
-                            {papers.length} paper{papers.length === 1 ? "" : "s"} in context · pick up past chats from the sidebar
+                            {lang === "zh"
+                                ? `${papers.length} 篇论文已加入上下文 · 可从左侧继续历史对话`
+                                : `${papers.length} paper${papers.length === 1 ? "" : "s"} in context · pick up past chats from the sidebar`}
                         </p>
                     </>
                 ) : !isViewer ? (
@@ -220,9 +224,9 @@ export default function ProjectPage() {
                             <MessageCircle className="h-6 w-6 text-muted-foreground" />
                         </div>
                         <h3 className="mb-1 text-sm font-semibold">Ready to Start Conversations</h3>
-                        <p className="text-sm text-muted-foreground">Add papers to your project to begin discussing and analyzing them.</p>
+                        <p className="text-sm text-muted-foreground">{t("Add papers to your project to begin discussing and analyzing them.")}</p>
                         <Button variant="outline" size="sm" className="mt-3" onClick={() => openAddPapers()}>
-                            Add papers
+                            {t("Add papers")}
                         </Button>
                     </div>
                 ) : (

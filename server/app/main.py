@@ -1,4 +1,5 @@
 import logging
+import re
 import os
 
 import uvicorn  # type: ignore
@@ -73,10 +74,53 @@ async def set_response_language(request, call_next):
 
 client_domain = os.getenv("CLIENT_DOMAIN", "http://localhost:3000")
 
+
+def _allowed_origins(value: str) -> list[str]:
+    """Expand CLIENT_DOMAIN into the origins a browser will actually send.
+
+    Browsers omit default ports, so a deployment published on :80 presents
+    ``http://host`` while the configured domain may read ``http://host:80``;
+    the mismatch makes every login fail CORS. Comma-separated values are
+    accepted so a host can be reachable under both an IP and a name.
+    """
+    origins: list[str] = []
+    for raw in value.split(","):
+        origin = raw.strip().rstrip("/")
+        if not origin:
+            continue
+        origins.append(origin)
+        for port in (":80", ":443"):
+            if origin.endswith(port):
+                trimmed = origin[: -len(port)]
+                if trimmed not in origins:
+                    origins.append(trimmed)
+    return origins or ["http://localhost:3000"]
+
+
+def _origin_regex(value: str) -> str:
+    """Which origins may call the API from a browser.
+
+    This deployment is reached by LAN IP, by host name, over plain HTTP, and
+    sometimes from a tab still open on the port used before a move. Every one of
+    those is a different Origin string, and an exact allow-list turns each
+    mismatch into a failed preflight that the browser reports as "Failed to
+    fetch" — indistinguishable from the API being down.
+
+    Default is therefore any http(s) origin, which matches how the app is used
+    (single-tenant, self-hosted, behind the LAN). Narrow it with
+    CORS_ORIGIN_REGEX when the deployment is exposed more widely.
+    """
+    configured = os.getenv("CORS_ORIGIN_REGEX")
+    if configured:
+        return configured
+    return r"^https?://[^/]+$"
+
+
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[client_domain],
+    allow_origins=_allowed_origins(client_domain),
+    allow_origin_regex=_origin_regex(client_domain),
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],

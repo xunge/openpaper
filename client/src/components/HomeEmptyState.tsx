@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -15,6 +16,7 @@ interface HomeEmptyStateProps {
 }
 
 export function HomeEmptyState({ onUploadComplete, onUploadStart, onUrlImportStart, isUploadBlocked, onUploadBlocked }: HomeEmptyStateProps) {
+	const { t } = useI18n();
     const router = useRouter();
     const [isUploadModalOpen, setUploadModalOpen] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -91,10 +93,10 @@ export function HomeEmptyState({ onUploadComplete, onUploadStart, onUrlImportSta
             onDrop={handleDrop}
         >
             <h2 className="text-2xl font-bold text-foreground mb-3">
-                Your Personal Research Assistant
+                {t("Your Personal Research Assistant")}
             </h2>
             <p className="text-muted-foreground mb-8 max-w-md">
-                Drop a PDF anywhere or click below to get started.
+                {t("Drop a PDF anywhere or click below to get started.")}
             </p>
 
             <Button
@@ -103,25 +105,25 @@ export function HomeEmptyState({ onUploadComplete, onUploadStart, onUrlImportSta
                 onClick={handleUploadClick}
             >
                 <Upload className="h-4 w-4 mr-2" />
-                Upload your first paper
+                {t("Upload your first paper")}
             </Button>
 
             {/* Feature highlights */}
             <div className="flex items-center justify-center gap-8 mt-12 text-blue-500">
                 <div className="flex flex-col items-center gap-1 max-w-24">
                     <Library className="h-5 w-5" />
-                    <span className="text-xs font-medium text-foreground">Library</span>
-                    <span className="text-xs text-muted-foreground text-center">Store and organize your papers</span>
+                    <span className="text-xs font-medium text-foreground">{t("Library")}</span>
+                    <span className="text-xs text-muted-foreground text-center">{t("Store and organize your papers")}</span>
                 </div>
                 <div className="flex flex-col items-center gap-1 max-w-24">
                     <FolderKanban className="h-5 w-5" />
-                    <span className="text-xs font-medium text-foreground">Projects</span>
-                    <span className="text-xs text-muted-foreground text-center">Group papers by topic</span>
+                    <span className="text-xs font-medium text-foreground">{t("Projects")}</span>
+                    <span className="text-xs text-muted-foreground text-center">{t("Group papers by topic")}</span>
                 </div>
                 <div className="flex flex-col items-center gap-1 max-w-24">
                     <MessageSquare className="h-5 w-5" />
-                    <span className="text-xs font-medium text-foreground">Chat</span>
-                    <span className="text-xs text-muted-foreground text-center">Ask questions about your papers</span>
+                    <span className="text-xs font-medium text-foreground">{t("Chat")}</span>
+                    <span className="text-xs text-muted-foreground text-center">{t("Ask questions about your papers")}</span>
                 </div>
             </div>
 

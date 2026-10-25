@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useI18n } from "@/lib/i18n";
 import { fetchFromApi } from "@/lib/api";
 import { PaperUploadJobStatusResponse, JobStatus, MinimalJob } from "@/lib/schema";
 import { CheckCircle2, ChevronDown, XCircle, Loader2 } from 'lucide-react';
@@ -22,6 +23,7 @@ interface PdfUploadTrackerProps {
 const completedJobs = new Map<string, string>(); // jobId -> paperId
 
 const PdfUploadTracker: React.FC<PdfUploadTrackerProps> = ({ initialJobs, onComplete }) => {
+	const { t, lang } = useI18n();
 	const [jobs, setJobs] = useState<Job[]>([]);
 	const [isOpen, setIsOpen] = useState(false);
 	const [pollingTrigger, setPollingTrigger] = useState(0);
@@ -137,13 +139,19 @@ const PdfUploadTracker: React.FC<PdfUploadTrackerProps> = ({ initialJobs, onComp
 						<span className="text-sm font-medium">
 							{allDone
 								? hasFailures
-									? `Uploads complete with ${failedCount} error${failedCount > 1 ? 's' : ''}`
-									: `${totalCount} paper${totalCount > 1 ? 's' : ''} uploaded`
-								: `Uploading papers`
+									? (lang === "zh"
+										? `上传完成，${failedCount} 个失败`
+										: `Uploads complete with ${failedCount} error${failedCount > 1 ? 's' : ''}`)
+									: (lang === "zh"
+										? `已上传 ${totalCount} 篇论文`
+										: `${totalCount} paper${totalCount > 1 ? 's' : ''} uploaded`)
+								: t("Uploading papers")
 							}
 						</span>
 						<span className="text-sm text-muted-foreground">
-							{completedCount} of {totalCount} complete
+							{lang === "zh"
+								? `已完成 ${completedCount} / ${totalCount}`
+								: `${completedCount} of ${totalCount} complete`}
 						</span>
 					</div>
 					<ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -176,25 +184,25 @@ const PdfUploadTracker: React.FC<PdfUploadTrackerProps> = ({ initialJobs, onComp
 											return (
 												<div className="flex items-center gap-2 text-blue-500">
 													<Loader2 className="w-4 h-4 animate-spin" />
-													<span className="text-xs capitalize">{job.status}</span>
+													<span className="text-xs capitalize">{t(job.status)}</span>
 												</div>
 											);
 										case 'completed':
 											return (
 												<div className="flex items-center gap-2 text-green-500">
 													<CheckCircle2 className="w-4 h-4" />
-													<span className="text-xs">Done</span>
+													<span className="text-xs">{t("Done")}</span>
 												</div>
 											);
 										case 'failed':
 											return (
 												<div className="flex items-center gap-2 text-red-500">
 													<XCircle className="w-4 h-4" />
-													<span className="text-xs">Failed</span>
+													<span className="text-xs">{t("Failed")}</span>
 												</div>
 											);
 										default:
-											return <span className="text-xs text-muted-foreground capitalize">{job.status}</span>;
+											return <span className="text-xs text-muted-foreground capitalize">{t(job.status)}</span>;
 									}
 								})()}
 							</div>

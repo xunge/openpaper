@@ -1,4 +1,5 @@
 "use client";
+import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 
 import React, { useState, useRef, useCallback } from 'react';
@@ -15,8 +16,12 @@ interface PdfDropzoneProps {
     maxPapers?: number;
 }
 
-export function PdfDropzone({ onFileSelect, onUrlClick, maxSizeMb = 30, disabled = false, maxPapers = MAX_PAPERS_TO_UPLOAD }: PdfDropzoneProps) {
-	const { t } = useI18n();
+// The API accepts up to MAX_UPLOAD_SIZE_MB (200 here); capping the browser at 30
+// silently rejected anything larger before a single byte was sent.
+const DEFAULT_MAX_SIZE_MB = Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_MB ?? 200);
+
+export function PdfDropzone({ onFileSelect, onUrlClick, maxSizeMb = DEFAULT_MAX_SIZE_MB, disabled = false, maxPapers = MAX_PAPERS_TO_UPLOAD }: PdfDropzoneProps) {
+	const { t, lang } = useI18n();
     const [isDragging, setIsDragging] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,10 +30,12 @@ export function PdfDropzone({ onFileSelect, onUrlClick, maxSizeMb = 30, disabled
     const handleFileValidation = (file: File): boolean => {
         if (file.type !== 'application/pdf') {
             setError('Invalid file type. Please upload a PDF.');
+            toast.error('仅支持 PDF 文件');
             return false;
         }
         if (file.size > maxSize) {
             setError(`File size exceeds the ${maxSizeMb}MB limit.`);
+            toast.error(`文件超过 ${maxSizeMb}MB 上限`);
             return false;
         }
         return true;
@@ -37,6 +44,7 @@ export function PdfDropzone({ onFileSelect, onUrlClick, maxSizeMb = 30, disabled
     const processFiles = (files: File[]) => {
         if (files.length > maxPapers) {
             setError(`You can upload a maximum of ${maxPapers} papers at a time.`);
+            toast.error(`一次最多上传 ${maxPapers} 篇`);
             return;
         }
         const validFiles = files.filter(handleFileValidation);
@@ -127,15 +135,19 @@ export function PdfDropzone({ onFileSelect, onUrlClick, maxSizeMb = 30, disabled
                 <UploadCloud className={`h-12 w-12 mb-4 ${isDragging && !disabled ? 'text-primary' : 'text-muted-foreground'}`} />
                 <p className="text-center text-lg font-medium">{t("Click to upload, or drag and drop")}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                    {maxPapers === 1
-                        ? `Upload a paper up to ${maxSizeMb}MB`
-                        : `Select up to ${maxPapers} papers, up to ${maxSizeMb}MB each`}
+                    {lang === "zh"
+                        ? (maxPapers === 1
+                            ? `上传单个论文，最大 ${maxSizeMb}MB`
+                            : `最多选择 ${maxPapers} 篇论文，单个不超过 ${maxSizeMb}MB`)
+                        : (maxPapers === 1
+                            ? `Upload a paper up to ${maxSizeMb}MB`
+                            : `Select up to ${maxPapers} papers, up to ${maxSizeMb}MB each`)}
                 </p>
                 {error && <p className="text-sm text-destructive mt-2">{error}</p>}
             </div>
             <div className="flex items-center w-full">
                 <div className="flex-grow border-t border-border"></div>
-                <span className="flex-shrink mx-4 text-muted-foreground text-sm">or</span>
+                <span className="flex-shrink mx-4 text-muted-foreground text-sm">{t("or")}</span>
                 <div className="flex-grow border-t border-border"></div>
             </div>
             <Button variant="outline" onClick={onUrlClick} disabled={disabled}>{t("Import from URL")}</Button>

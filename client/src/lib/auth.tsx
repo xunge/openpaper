@@ -163,3 +163,13 @@ export function useAuth() {
 	}
 	return context;
 }
+
+/**
+ * Like useAuth, but returns null outside an AuthProvider.
+ *
+ * Hooks that merely *prefer* to know the signed-in user (and can work without
+ * one) use this so they do not explode inside layouts that skip the provider.
+ */
+export function useOptionalAuth(): AuthContextType | null {
+	return useContext(AuthContext) ?? null;
+}

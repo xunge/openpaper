@@ -103,6 +103,7 @@ interface CreateTileProps {
 }
 
 function CreateTile({ icon, label, sub, isNew, disabled, onClick }: CreateTileProps) {
+    const { t } = useI18n();
     return (
         <button
             type="button"
@@ -512,7 +513,7 @@ export function ArtifactsPanel() {
                 <div className="flex h-11 shrink-0 items-center justify-between border-b px-4">
                     <div className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4 text-blue-500" aria-hidden />
-                        <h2 className="text-sm font-semibold">Artifacts</h2>
+                        <h2 className="text-sm font-semibold">{t("Artifacts")}</h2>
                     </div>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={closeArtifacts} aria-label="Close artifacts">
                         <X className="h-4 w-4" />
@@ -523,33 +524,33 @@ export function ArtifactsPanel() {
                     {/* Create */}
                     {!isViewer && (
                         <div>
-                            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Create new</div>
+                            <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("Create new")}</div>
                             <div className="grid grid-cols-2 gap-2">
                                 <CreateTile
                                     icon={<Volume2 className="h-4 w-4" />}
-                                    label="Audio Overview"
-                                    sub="Podcast-style discussion of your papers"
+                                    label={t("Audio Overview")}
+                                    sub={t("Podcast-style discussion of your papers")}
                                     disabled={papers.length === 0}
                                     onClick={() => setCreateAudioDialogOpen(true)}
                                 />
                                 <CreateTile
                                     icon={<Table className="h-4 w-4" />}
-                                    label="Data Table"
-                                    sub="Compare findings across papers"
+                                    label={t("Data Table")}
+                                    sub={t("Compare findings across papers")}
                                     disabled={papers.length === 0}
                                     onClick={() => setDataTableSchemaModalOpen(true)}
                                 />
                                 <CreateTile
                                     icon={<BarChart3 className="h-4 w-4" />}
-                                    label="Chart"
-                                    sub="Turn cited findings into a visual"
+                                    label={t("Chart")}
+                                    sub={t("Turn cited findings into a visual")}
                                     isNew
                                     disabled={papers.length === 0}
                                     onClick={() => setChartComposerOpen(true)}
                                 />
                             </div>
                             {papers.length === 0 && (
-                                <p className="mt-2 text-xs text-muted-foreground">Add papers to your project to create artifacts.</p>
+                                <p className="mt-2 text-xs text-muted-foreground">{t("Add papers to your project to create artifacts.")}</p>
                             )}
                         </div>
                     )}
@@ -557,7 +558,7 @@ export function ArtifactsPanel() {
                     {/* List */}
                     <div className="flex min-h-0 flex-col">
                         <div className="mb-2 flex items-center justify-between">
-                            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Your artifacts</div>
+                            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t("Your artifacts")}</div>
                             <span className="text-xs text-muted-foreground">{artifactCount}</span>
                         </div>
                         {/* Bottom padding lives on the content, not the scroll
@@ -619,7 +620,7 @@ export function ArtifactsPanel() {
                             })}
                             {artifactCount === 0 && (
                                 <p className="text-xs text-muted-foreground">
-                                    Nothing here yet. Artifacts you generate appear in this list.
+                                    {t("Nothing here yet. Artifacts you generate appear in this list.")}
                                 </p>
                             )}
                         </div>
@@ -627,7 +628,7 @@ export function ArtifactsPanel() {
                 </div>
 
                 <div className="shrink-0 border-t px-4 py-2.5 text-xs text-muted-foreground">
-                    Generation runs in the background — keep working while artifacts build.
+                    {t("Generation runs in the background — keep working while artifacts build.")}
                 </div>
             </aside>
 

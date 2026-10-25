@@ -322,7 +322,12 @@ services:
     environment:
       # NEXT_PUBLIC_* is inlined into browser JS, so this is the host-published
       # server port — a compose service name would not resolve in the browser.
-      NEXT_PUBLIC_API_URL: http://${DEV_HOST:-127.0.0.1}:${SERVER_PORT:-8100}
+      # Empty on purpose: the browser uses relative /api URLs and Next proxies
+      # them to API_INTERNAL_URL, so cookies stay first-party.
+      NEXT_PUBLIC_API_URL: ""
+      API_INTERNAL_URL: http://server:8000
+      # Keep the browser-side size gate in step with MAX_UPLOAD_SIZE_MB.
+      NEXT_PUBLIC_MAX_UPLOAD_MB: "200"
       # Bind-mounted source over virtiofs drops inotify events; without polling
       # edits land on disk but never trigger a rebuild.
       WATCHPACK_POLLING: "true"

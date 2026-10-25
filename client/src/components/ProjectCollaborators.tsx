@@ -1,5 +1,7 @@
 'use client';
 
+import { useI18n } from "@/lib/i18n";
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,6 +59,7 @@ interface ProjectCollaboratorsProps {
 }
 
 export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasCollaborators }: ProjectCollaboratorsProps) {
+	const { t } = useI18n();
 	const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
 	const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 	const [isManageModalOpen, setIsManageModalOpen] = useState(false);
@@ -243,7 +246,7 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 		if (!canChangeRole) {
 			return (
 				<Badge variant={'outline'}>
-					{collaborator.role}
+					{t(collaborator.role)}
 				</Badge>
 			);
 		}
@@ -255,7 +258,7 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 			<DropdownMenu>
 				<DropdownMenuTrigger asChild>
 					<Badge variant={'outline'} className="cursor-pointer hover:bg-accent">
-						{collaborator.role}
+						{t(collaborator.role)}
 					</Badge>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="end">
@@ -354,7 +357,7 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 					className="hidden h-8 md:inline-flex"
 				>
 					<Plus className="h-4 w-4 mr-1" />
-					Invite
+					{t("Invite")}
 				</Button>
 			)}
 
@@ -362,11 +365,11 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 			<Dialog open={isManageModalOpen} onOpenChange={setIsManageModalOpen}>
 				<DialogContent className="max-w-md">
 					<DialogHeader>
-						<DialogTitle>Collaborators</DialogTitle>
+						<DialogTitle>{t("Collaborators")}</DialogTitle>
 						<DialogDescription>
 							{currentUserIsAdmin
-								? "Manage team members and their roles in this project."
-								: "View team members in this project."}
+								? t("Manage team members and their roles in this project.")
+								: t("View team members in this project.")}
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-2 max-h-[60vh] overflow-y-auto">
@@ -436,7 +439,7 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 												</div>
 											</div>
 											<div className="flex items-center space-x-2 flex-shrink-0">
-												<span className="text-xs text-muted-foreground">{invite.role}</span>
+												<span className="text-xs text-muted-foreground">{t(invite.role)}</span>
 												{currentUserIsAdmin && (
 													<AlertDialog>
 														<AlertDialogTrigger asChild>
@@ -477,7 +480,7 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 								}}
 							>
 								<Plus className="h-4 w-4 mr-1" />
-								Invite More
+								{t("Invite More")}
 							</Button>
 						)}
 					</DialogFooter>
@@ -488,36 +491,36 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 			<Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Invite Collaborators</DialogTitle>
+						<DialogTitle>{t("Invite Collaborators")}</DialogTitle>
 						<DialogDescription>
-							Add collaborators to your project. They will be notified by email.<br />If they do not have an Open Paper account, they will first receive an invitation to create one.
+							{t("Add collaborators to your project. They will be notified by email.")}<br />{t("If they do not have an Open Paper account, they will first receive an invitation to create one.")}
 						</DialogDescription>
 					</DialogHeader>
 					<div className="space-y-4 py-2">
 						{draftInvites.map((invite: PendingInvite, index: number) => (
 							<div key={index} className="flex items-end space-x-2">
 								<div className="grid flex-1 gap-2">
-									<Label htmlFor={`email-${index}`} className="sr-only">Email</Label>
+									<Label htmlFor={`email-${index}`} className="sr-only">{t("Email")}</Label>
 									<Input
 										id={`email-${index}`}
 										type="email"
-										placeholder="name@example.com"
+										placeholder={t("name@example.com")}
 										value={invite.email}
 										onChange={(e) => handleDraftInviteChange(index, 'email', e.target.value)}
 									/>
 								</div>
 								<div className="grid gap-2">
-									<Label htmlFor={`role-${index}`} className="sr-only">Role</Label>
+									<Label htmlFor={`role-${index}`} className="sr-only">{t("Role")}</Label>
 									<Select
 										value={invite.role}
 										onValueChange={(value) => handleDraftInviteChange(index, 'role', value)}
 									>
 										<SelectTrigger id={`role-${index}`}>
-											<SelectValue placeholder="Role" />
+											<SelectValue placeholder={t("Role")} />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="viewer">Viewer</SelectItem>
-											<SelectItem value="editor">Editor</SelectItem>
+											<SelectItem value="viewer">{t("Viewer")}</SelectItem>
+											<SelectItem value="editor">{t("Editor")}</SelectItem>
 										</SelectContent>
 									</Select>
 								</div>
@@ -533,18 +536,18 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 						))}
 					</div>
 					<p className="text-sm text-muted-foreground pt-2">
-						<strong>Viewers</strong> can see all papers, chats, and artifacts, but cannot create new ones. <strong>Editors</strong> can do all that, plus add papers and create new chats and artifacts.
+						<strong>{t("Viewers")}</strong> {t("can see all papers, chats, and artifacts, but cannot create new ones.")} <strong>{t("Editors")}</strong> {t("can do all that, plus add papers and create new chats and artifacts.")}
 					</p>
 					<Button variant="outline" onClick={addDraftInvite} className="mt-2">
-						Add another
+						{t("Add another")}
 					</Button>
 					<DialogFooter>
-						<Button variant="secondary" onClick={() => setIsInviteModalOpen(false)} disabled={isSending}>Cancel</Button>
+						<Button variant="secondary" onClick={() => setIsInviteModalOpen(false)} disabled={isSending}>{t("Cancel")}</Button>
 						<Button
 							disabled={draftInvites.every((invite) => !isValidEmail(invite.email)) || isSending}
 							onClick={handleSendInvites}
 						>
-							{isSending ? 'Sending...' : 'Send Invites'}
+							{isSending ? t('Sending...') : t('Send Invites')}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

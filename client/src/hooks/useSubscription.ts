@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchFromApi } from '@/lib/api';
+import { useOptionalAuth } from '@/lib/auth';
 import { SubscriptionData, UseSubscriptionReturn } from '@/lib/schema';
 
 export const useSubscription = (): UseSubscriptionReturn => {
@@ -7,19 +8,43 @@ export const useSubscription = (): UseSubscriptionReturn => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Usage limits are per account. Asking for them before anyone is signed in
+    // only produces a 401, which used to surface as a console error on every
+    // visit to the sign-in page.
+    const auth = useOptionalAuth();
+    const userId = auth?.user?.id ?? null;
+    const authLoading = auth?.loading ?? false;
+
     const fetchSubscription = useCallback(async () => {
+        if (authLoading) {
+            return;
+        }
+        if (!userId) {
+            setSubscription(null);
+            setError(null);
+            setLoading(false);
+            return;
+        }
+
         try {
             setLoading(true);
             setError(null);
             const response = await fetchFromApi("/api/subscription/usage");
             setSubscription(response);
         } catch (err) {
+            // A 401 means the session expired between render and request; that is
+            // a normal state transition, not a failure worth logging.
+            if (err instanceof Error && /not authenticated/i.test(err.message)) {
+                setSubscription(null);
+                setError(null);
+                return;
+            }
             console.error("Error fetching subscription:", err);
             setError(err instanceof Error ? err.message : "Failed to fetch subscription data");
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [authLoading, userId]);
 
     useEffect(() => {
         fetchSubscription();

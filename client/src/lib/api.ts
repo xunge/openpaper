@@ -1,4 +1,22 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+// Talk to the API directly instead of through a Next rewrite.
+//
+// The rewrite normalises trailing slashes, while FastAPI adds them back with a
+// 307 whose Location names the internal service host — the browser cannot reach
+// it, which surfaced as "Failed to fetch" on every upload. Calling the API on
+// the page's own hostname keeps the session cookie same-site (ports do not
+// affect SameSite) and lets each request reach its route verbatim.
+function resolveApiBase(): string {
+    if (process.env.NEXT_PUBLIC_API_URL) {
+        return process.env.NEXT_PUBLIC_API_URL;
+    }
+    if (typeof window !== 'undefined') {
+        return `${window.location.protocol}//${window.location.hostname}:${process.env.NEXT_PUBLIC_API_PORT ?? '8100'}`;
+    }
+    // Server-side render: inside the compose network the service name resolves.
+    return 'http://server:8000';
+}
+
+const API_BASE_URL = resolveApiBase();
 
 // The server reads this to decide the language of answers and of the extraction
 // prompts for new uploads. Read from localStorage rather than React context so

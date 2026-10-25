@@ -9,7 +9,7 @@
 
 | 服务 | 地址 | 说明 |
 | --- | --- | --- |
-| 前端 | http://10.244.128.73:3100 | 主入口 |
+| 前端 | http://10.244.128.73 | 主入口 |
 | API 文档 | http://10.244.128.73:8100/docs | Swagger |
 | Jobs API | http://10.244.128.73:8101/health | Celery 任务 API |
 | MinIO 控制台 | http://10.244.128.73:9001 | 账号密码 `minioadmin` / `minioadmin` |
@@ -132,6 +132,24 @@ sed -i 's|^TTS_BASE_URL=.*|TTS_BASE_URL=http://tts:8000/v1|' server/.env
 docker compose -f docker-compose.dev.yml up -d tts
 docker compose -f docker-compose.dev.yml up -d --force-recreate server
 ```
+
+## 访问端口
+
+前端发布在 **80**，直接访问 `http://10.244.128.73` 即可（原 `:3100` 已停用）。
+
+根 `.env` 控制：
+
+```
+CLIENT_PORT=80
+```
+
+注意三处联动，改端口时都要跟着改：
+
+1. `docker-compose.dev.yml` 的 `ports: "${CLIENT_PORT}:3000"`
+2. compose 里的 `CLIENT_DOMAIN: http://${DEV_HOST}:${CLIENT_PORT}`（给 server 做 CORS）
+3. `server/.env` 的 `CLIENT_DOMAIN`
+
+**默认端口的坑**：发布到 80 时 compose 会算出 `http://host:80`，但浏览器发出的 `Origin` 是 `http://host`（省略默认端口），CORS 不匹配会导致登录失败。`server/app/main.py` 的 `_allowed_origins()` 会自动把 `:80`/`:443` 归一化掉，同时支持逗号分隔多来源。
 
 ## 模型权重存放
 
@@ -279,7 +297,7 @@ const { t } = useI18n()
 
 ## 注册
 
-登录页底部有"Create one"入口，也可以直接访问 http://10.244.128.73:3100/register
+登录页底部有"Create one"入口，也可以直接访问 http://10.244.128.73/register
 填写邮箱、密码（可选姓名），提交后自动登录。
 
 - 账号和 scrypt 密码哈希写入本地 `users.password_hash`，不出网

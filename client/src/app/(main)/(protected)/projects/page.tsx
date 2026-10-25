@@ -27,7 +27,7 @@ const FILTER_CONFIG: Record<ProjectFilter, { label: string; icon: React.ElementT
 };
 
 function ProjectsPage() {
-    const { t } = useI18n();
+    const { t, lang } = useI18n();
 	const { projects, isLoading, error, refetch: getProjects } = useProjects(true);
 	const { user, loading: userLoading } = useAuth();
 	const { subscription } = useSubscription();
@@ -228,13 +228,13 @@ function ProjectsPage() {
 						atProjectLimit ? (
 							<Button className="bg-blue-500 dark:text-card-foreground hover:bg-blue-600 dark:hover:bg-blue-400" disabled>
 								<PlusCircle className="mr-2" />
-								New Project
+								{t("New Project")}
 							</Button>
 						) : (
 							<Button asChild className="bg-blue-500 dark:text-card-foreground hover:bg-blue-600 dark:hover:bg-blue-400">
 								<Link href="/projects/create">
 									<PlusCircle className="mr-2" />
-									New Project
+									{t("New Project")}
 								</Link>
 							</Button>
 						)
@@ -270,7 +270,7 @@ function ProjectsPage() {
 								}`}
 							>
 								<Icon className="h-3.5 w-3.5" />
-								{config.label}
+								{t(config.label)}
 							</button>
 						);
 					})}
@@ -281,10 +281,12 @@ function ProjectsPage() {
 								className="inline-flex items-center gap-1 px-2 py-1.5 rounded-full text-xs text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
 							>
 								<X className="h-3.5 w-3.5" />
-								Clear
+								{t("Clear")}
 							</button>
 							<span className="text-xs text-muted-foreground">
-								{filteredProjects.length} of {projects.length} project{projects.length !== 1 ? "s" : ""}
+								{lang === "zh"
+										? `${filteredProjects.length} / ${projects.length} 个项目`
+										: `${filteredProjects.length} of ${projects.length} project${projects.length !== 1 ? "s" : ""}`}
 							</span>
 						</>
 					)}
@@ -317,7 +319,7 @@ function ProjectsPage() {
 					</p>
 					<Button variant="outline" onClick={clearAllFilters}>
 						<X className="mr-2 h-4 w-4" />
-						Clear Filters
+						{t("Clear Filters")}
 					</Button>
 				</div>
 			) : (
@@ -336,7 +338,7 @@ function ProjectsPage() {
 								className="flex items-center gap-3 px-3 py-2.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
 							>
 								<Plus className="h-4 w-4" aria-hidden />
-								<span className="text-sm font-medium">New Project</span>
+								<span className="text-sm font-medium">{t("New Project")}</span>
 							</Link>
 						)
 					)}

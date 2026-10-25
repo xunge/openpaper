@@ -114,10 +114,10 @@ async def get_active_paper_ids(
     papers: List[Paper] = paper_crud.get_multi_uploads_completed(
         db, user=current_user, status=PaperStatus.reading
     )
+    # An empty library is a normal state, not a failed request: the client asks
+    # on every visit to the home page, and a 404 shows up as a console error.
     if not papers:
-        return JSONResponse(
-            status_code=404, content={"message": "No active papers found"}
-        )
+        return JSONResponse(status_code=200, content={"papers": []})
 
     data = [
         {
@@ -375,9 +375,7 @@ async def get_relevant_papers(
     """
     papers: List[Paper] = paper_crud.get_top_relevant_papers(db, user=current_user)
     if not papers:
-        return JSONResponse(
-            status_code=404, content={"message": "No relevant papers found"}
-        )
+        return JSONResponse(status_code=200, content={"papers": []})
 
     return JSONResponse(
         status_code=200,

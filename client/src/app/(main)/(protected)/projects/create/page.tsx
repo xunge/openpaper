@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,6 +11,7 @@ import { fetchFromApi } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 
 export default function CreateProjectPage() {
+	const { t } = useI18n();
 	const [title, setTitle] = useState("");
 	const [description, setDescription] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +30,7 @@ export default function CreateProjectPage() {
 			});
 			router.push(`/projects/${project.id}`);
 		} catch (err) {
-			setError("Failed to create project. Please try again.");
+			setError(t("Failed to create project. Please try again."));
 
 			// Keep loading state active during navigation
 			setIsLoading(false);
@@ -38,13 +40,13 @@ export default function CreateProjectPage() {
 
 	return (
 		<div className="container mx-auto p-4 max-w-2xl">
-			<h1 className="text-2xl font-bold mb-4">New Project</h1>
+			<h1 className="text-2xl font-bold mb-4">{t("New Project")}</h1>
 			<form onSubmit={handleSubmit}>
 				<div className="grid w-full items-center gap-4">
 					<div className="flex flex-col space-y-1.5">
 						<Input
 							id="title"
-							placeholder="Project Title"
+							placeholder={t("Project Title")}
 							value={title}
 							onChange={(e) => setTitle(e.target.value)}
 							required
@@ -54,7 +56,7 @@ export default function CreateProjectPage() {
 					<div className="flex flex-col space-y-1.5">
 						<Textarea
 							id="description"
-							placeholder="Project Description (Optional)"
+							placeholder={t("Project Description (Optional)")}
 							value={description}
 							onChange={(e) => setDescription(e.target.value)}
 							rows={5}
@@ -63,16 +65,16 @@ export default function CreateProjectPage() {
 					{error && <p className="text-red-500 text-sm">{error}</p>}
 					<div className="flex justify-end gap-2">
 						<Button variant="outline" asChild>
-							<Link href="/projects">Cancel</Link>
+							<Link href="/projects">{t("Cancel")}</Link>
 						</Button>
 						<Button type="submit" disabled={isLoading}>
 							{isLoading ? (
 								<>
 									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Creating...
+									{t("Creating project...")}
 								</>
 							) : (
-								"Create"
+								t("Create")
 							)}
 						</Button>
 					</div>

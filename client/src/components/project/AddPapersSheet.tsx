@@ -1,4 +1,5 @@
 "use client";
+import { useI18n } from "@/lib/i18n";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -48,6 +49,7 @@ import { useProjectWorkspace } from "@/components/project/ProjectWorkspaceProvid
 // import from URL — with per-project and per-plan limit handling. Opened from
 // anywhere in the workspace via setAddPapersOpen.
 export function AddPapersSheet() {
+	const { t, lang } = useI18n();
     const {
         projectId,
         papers,
@@ -114,13 +116,17 @@ export function AddPapersSheet() {
             formData.append("file", file);
 
             try {
-                const response = await fetchFromApi(`/api/paper/upload?project_id=${projectId}`, {
+                const response = await fetchFromApi(`/api/paper/upload/?project_id=${projectId}`, {
                     method: "POST",
                     body: formData,
                 });
                 newJobs.push({ jobId: response.job_id, fileName: file.name });
             } catch (err) {
-                setUploadError(`Failed to upload file: ${file.name}. Please try again.`);
+                const message = `Failed to upload file: ${file.name}. Please try again.`;
+                setUploadError(message);
+                // The sheet closes as soon as files are picked, so an inline
+                // error would never be seen; surface it as a toast too.
+                toast.error(message);
                 console.error(err);
             }
         }
@@ -186,13 +192,15 @@ export function AddPapersSheet() {
                                     <ArrowLeft className="h-4 w-4" />
                                 </Button>
                             )}
-                            <SheetTitle>{viewTitle}</SheetTitle>
+                            <SheetTitle>{t(viewTitle)}</SheetTitle>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                            {viewDescription}{" "}
+                            {t(viewDescription)}{" "}
                             {paperHardLimit !== null && (
                                 <span className="text-muted-foreground/70">
-                                    {currentPaperCount} / {paperHardLimit} papers in this project.
+                                    {lang === "zh"
+                                        ? `${currentPaperCount} / ${paperHardLimit} 篇论文（本项目）`
+                                        : `${currentPaperCount} / ${paperHardLimit} papers in this project.`}
                                 </span>
                             )}
                         </p>
@@ -203,7 +211,7 @@ export function AddPapersSheet() {
                             <div className={`mb-4 flex items-start gap-2 rounded-lg border p-3 text-sm ${isAtPaperHardLimit ? 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800 text-red-700 dark:text-red-300' : 'bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300'}`}>
                                 <Info className="mt-0.5 h-4 w-4 shrink-0" />
                                 {isAtPaperHardLimit ? (
-                                    <p>You&apos;ve reached the maximum of {paperHardLimit} papers. Remove papers to add more.</p>
+                                    <p>{t("You've reached the maximum of")} {paperHardLimit} {t("papers. Remove papers to add more.")}</p>
                                 ) : (
                                     <p>
                                         {remainingPaperSlots} slot{remainingPaperSlots === 1 ? "" : "s"} left. Large paper counts may impact response quality — for higher limits, contact <a href="mailto:saba@openpaper.ai" className="font-medium underline">saba@openpaper.ai</a>
@@ -224,12 +232,12 @@ export function AddPapersSheet() {
                                             <span className="text-xs font-medium text-blue-600 dark:text-blue-300"><PlusCircle className="h-4 w-4" /></span>
                                         </div>
                                     </div>
-                                    <h3 className="text-lg font-semibold group-hover:text-blue-600 transition-colors">Upload New Papers</h3>
+                                    <h3 className="text-lg font-semibold group-hover:text-blue-600 transition-colors">{t("Upload New Papers")}</h3>
                                     <p className="text-sm text-gray-500 text-center mt-1">
-                                        Upload PDFs from your computer or URL
+                                        {t("Upload PDFs from your computer or URL")}
                                     </p>
                                     <p className="text-xs mt-2 font-medium">
-                                        Drag &amp; drop or browse →
+                                        {t("Drag & drop or browse →")}
                                     </p>
                                 </button>
                                 <button
@@ -242,12 +250,12 @@ export function AddPapersSheet() {
                                             <span className="text-xs font-medium text-blue-600 dark:text-blue-300"><BookOpen className="h-4 w-4" /></span>
                                         </div>
                                     </div>
-                                    <h3 className="text-lg font-semibold group-hover:text-blue-600 transition-colors">Add from Library</h3>
+                                    <h3 className="text-lg font-semibold group-hover:text-blue-600 transition-colors">{t("Add from Library")}</h3>
                                     <p className="text-sm text-gray-500 text-center mt-1">
-                                        Choose from papers already in your library
+                                        {t("Choose from papers already in your library")}
                                     </p>
                                     <p className="text-xs mt-2 font-medium">
-                                        Browse existing papers →
+                                        {t("Browse existing papers →")}
                                     </p>
                                 </button>
                             </div>
