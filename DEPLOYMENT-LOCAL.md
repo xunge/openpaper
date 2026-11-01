@@ -84,7 +84,7 @@ DELETE 会 revoke 对应的 Celery 任务。
 
 ### Markdown / Word 导出
 
-论文阅读页右侧新增「Download」工具，三个入口：
+双语对照面板标题栏、中文渲染选择器右侧新增「Word」拆分按钮/下载菜单，默认 Word，三个入口：
 
 | 格式 | 接口 | 内容 |
 | --- | --- | --- |
@@ -101,7 +101,14 @@ DELETE 会 revoke 对应的 Celery 任务。
   Pandoc 不会联网抓图，避免 SSRF/失效外链。
 - Word 保留标题、段落、粗体/斜体、列表；`$...$`/`$$...$$` 由 Pandoc 转为
   Word 原生公式；表格/算法/代码/Figure 以图片嵌入，宽度 `6.5in` 并按原纵横比
-  缩放到页面内；图注保留。
+  缩放到页面内；图注使用独立的 `Image Caption` / `Table Caption` 样式。
+- DOCX 通过 `--reference-doc` 使用 `templates/academic-reference.docx`（构建时复制为
+  `server/templates/academic-reference.docx`，镜像内路径 `/app/templates/...`）；
+  Pandoc 同时显式带 `--shift-heading-level-by=0`，保持 Markdown 的原始标题级别不升降：
+  正文宋体/Times New Roman 12pt、`firstLineChars=200`、单倍行距、段前段后 0；
+  标题 1–6 使用独立字号并加粗；Figure 不继承正文首行缩进，Caption 居中无缩进。
+- 模板文件变化会进入 DOCX 缓存哈希，旧 DOCX 缓存自动失效。可用
+  `EXPORT_REFERENCE_DOC` 覆盖模板路径（默认 `/app/templates/academic-reference.docx`）。
 - DOCX 缓存键包含 `lang + 最终 Markdown + 图片 key` 的 SHA-256，存
   `papers/{paper_id}/ocr/{document_id}/exports/{lang}-{hash}.docx`；OCR 内容或
   图片变化后 hash 变化，旧缓存自然失效。
@@ -118,6 +125,7 @@ EXPORT_MAX_ASSET_MB=64       # 单张图片上限
 EXPORT_MAX_TOTAL_MB=512      # 一次导出图片总上限
 EXPORT_PANDOC_TIMEOUT=120    # Pandoc 超时秒数
 EXPORT_PANDOC_CONCURRENCY=2  # 同时转换的 Word 进程数
+EXPORT_REFERENCE_DOC=/app/templates/academic-reference.docx
 # PANDOC_PATH=/usr/local/bin/pandoc   # 可选；默认用 pypandoc 自带二进制
 ```
 

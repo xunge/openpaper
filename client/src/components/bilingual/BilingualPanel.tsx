@@ -6,9 +6,19 @@ import remarkGfm from "remark-gfm"
 import remarkMath from "remark-math"
 import rehypeKatex from "rehype-katex"
 import "katex/dist/katex.min.css"
-import { CheckCircle2, Loader2, RefreshCw, ScanText } from "lucide-react"
+import {
+    CheckCircle2,
+    ChevronDown,
+    Download,
+    FileArchive,
+    FileText,
+    Loader2,
+    RefreshCw,
+    ScanText,
+} from "lucide-react"
+import { toast } from "sonner"
 
-import { fetchFromApi } from "@/lib/api"
+import { downloadFromApi, fetchFromApi } from "@/lib/api"
 import { useI18n } from "@/lib/i18n"
 import { Button } from "@/components/ui/button"
 import {
@@ -18,7 +28,22 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+
+function pageRawEnglish(page: Page): string {
+    if (page.raw_ocr?.trim()) return page.raw_ocr
+    if (page.en_md?.trim()) return page.en_md
+    return (page.blocks ?? [])
+        .map((block) => block.en_md)
+        .filter(Boolean)
+        .join("\n\n")
+}
 
 export interface FocusRegion {
     page: number
@@ -192,6 +217,7 @@ export function BilingualPanel({
     // Default is the translated, rendered view; the others expose the pipeline
     // stages for checking what OCR and the translator actually produced.
     const [view, setView] = useState<"zh-rendered" | "zh-raw" | "en-rendered" | "en-raw">("zh-rendered")
+    const [downloadingFormat, setDownloadingFormat] = useState<"md" | "zip" | "docx" | null>(null)
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
     const load = useCallback(async () => {
@@ -237,6 +263,35 @@ export function BilingualPanel({
             setStarting(false)
         }
     }, [paperId])
+
+    const handleDownload = useCallback(async (format: "md" | "zip" | "docx") => {
+        if (downloadingFormat) return
+        setDownloadingFormat(format)
+        try {
+            // Export the side the reader is currently looking at; the default
+            // zh-rendered view exports Chinese, en-* exports English.
+            const exportLang = view.startsWith("zh") ? "zh" : "en"
+            const { blob, filename } = await downloadFromApi(
+                `/api/paper/${paperId}/export?format=${format}&lang=${exportLang}`,
+            )
+            const url = URL.createObjectURL(blob)
+            const anchor = window.document.createElement("a")
+            anchor.href = url
+            anchor.download =
+                filename || `paper.${format === "docx" ? "docx" : format}`
+            window.document.body.appendChild(anchor)
+            anchor.click()
+            anchor.remove()
+            URL.revokeObjectURL(url)
+            toast.success(t("Download started"))
+        } catch (err) {
+            toast.error(
+                err instanceof Error ? err.message : t("Download failed"),
+            )
+        } finally {
+            setDownloadingFormat(null)
+        }
+    }, [downloadingFormat, paperId, t, view])
 
     if (loading) {
         return (
@@ -301,26 +356,83 @@ export function BilingualPanel({
                             </p>
                         </div>
                     </div>
-                    <Select value={view} onValueChange={(value) => setView(value as typeof view)}>
-                        <SelectTrigger className="h-7 w-[9.5rem] text-xs">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent align="end">
-                            <SelectItem value="zh-rendered">{t("Chinese · rendered")}</SelectItem>
-                            <SelectItem value="zh-raw">{t("Chinese · raw markdown")}</SelectItem>
-                            <SelectItem value="en-rendered">{t("English · rendered")}</SelectItem>
-                            <SelectItem value="en-raw">{t("English · raw OCR")}</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Button size="sm" variant="outline" onClick={start} disabled={starting || running}>
-                        {running ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : done ? (
-                            <RefreshCw className="h-4 w-4" />
-                        ) : (
-                            <ScanText className="h-4 w-4" />
-                        )}
-                    </Button>
+                    <div className="flex flex-wrap items-center justify-end gap-1.5">
+                        <Select value={view} onValueChange={(value) => setView(value as typeof view)}>
+                            <SelectTrigger size="sm" className="w-[9.5rem] text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent align="end">
+                                <SelectItem value="zh-rendered">{t("Chinese · rendered")}</SelectItem>
+                                <SelectItem value="zh-raw">{t("Chinese · raw markdown")}</SelectItem>
+                                <SelectItem value="en-rendered">{t("English · rendered")}</SelectItem>
+                                <SelectItem value="en-raw">{t("English · raw OCR")}</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <div className="flex items-center">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 rounded-r-none px-2 text-xs"
+                                onClick={() => handleDownload("docx")}
+                                disabled={!done || downloadingFormat !== null}
+                                title={t("Download Word")}
+                            >
+                                {downloadingFormat ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                    <Download className="h-3.5 w-3.5" />
+                                )}
+                                <span>
+                                    {downloadingFormat ? t("Preparing…") : t("Word")}
+                                </span>
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 rounded-l-none border-l-0 px-1.5"
+                                        disabled={!done || downloadingFormat !== null}
+                                        aria-label={t("Choose download format")}
+                                    >
+                                        <ChevronDown className="h-3.5 w-3.5" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-52">
+                                    <DropdownMenuItem
+                                        onSelect={() => handleDownload("docx")}
+                                        disabled={!done || downloadingFormat !== null}
+                                    >
+                                        <Download className="h-4 w-4" />
+                                        <span>{t("Word (.docx)")}</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onSelect={() => handleDownload("md")}
+                                        disabled={!done || downloadingFormat !== null}
+                                    >
+                                        <FileText className="h-4 w-4" />
+                                        <span>{t("Markdown (.md)")}</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        onSelect={() => handleDownload("zip")}
+                                        disabled={!done || downloadingFormat !== null}
+                                    >
+                                        <FileArchive className="h-4 w-4" />
+                                        <span>{t("Markdown + images (.zip)")}</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={start} disabled={starting || running}>
+                            {running ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : done ? (
+                                <RefreshCw className="h-4 w-4" />
+                            ) : (
+                                <ScanText className="h-4 w-4" />
+                            )}
+                        </Button>
+                    </div>
                 </div>
 
                 {(running || done || (document?.status === "failed" && totalPages > 0)) && (
@@ -372,7 +484,7 @@ export function BilingualPanel({
                                     </p>
                                 )}
                                 <pre className="whitespace-pre-wrap break-words font-mono text-[0.68rem] leading-5 text-muted-foreground">
-                                    {page.raw_ocr || ""}
+                                    {pageRawEnglish(page)}
                                 </pre>
                             </div>
                         ) : (

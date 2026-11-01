@@ -22,6 +22,7 @@ RUN uv export --frozen --no-dev --no-emit-project -o requirements.txt \
 # App code is copied after the install so editing it doesn't rebuild the
 # dependency layer.
 COPY app ./app
+COPY templates ./templates
 COPY migrations ./migrations
 COPY alembic.ini ./
 COPY shell.py ./

@@ -35,6 +35,9 @@ DOCX_MIME = (
 MAX_ASSET_BYTES = int(os.getenv("EXPORT_MAX_ASSET_MB", "64")) * 1024 * 1024
 MAX_TOTAL_BYTES = int(os.getenv("EXPORT_MAX_TOTAL_MB", "512")) * 1024 * 1024
 PANDOC_TIMEOUT = int(os.getenv("EXPORT_PANDOC_TIMEOUT", "120"))
+REFERENCE_DOC = os.getenv(
+    "EXPORT_REFERENCE_DOC", "/app/templates/academic-reference.docx"
+)
 PANDOC_CONCURRENCY = max(1, int(os.getenv("EXPORT_PANDOC_CONCURRENCY", "2")))
 _PANDOC_SLOTS = threading.BoundedSemaphore(PANDOC_CONCURRENCY)
 _SAFE_EXT = {".png", ".jpg", ".jpeg", ".webp"}
@@ -136,6 +139,7 @@ def build_markdown(
     parts: List[str] = []
     assets: Dict[str, str] = {}
     used_names: Dict[str, str] = {}
+    last_image_label = ""
     pages = sorted(document.pages or [], key=lambda page: page.get("index", 0))
 
     for page in pages:
@@ -144,9 +148,20 @@ def build_markdown(
             if key is not None:
                 name = _asset_name(key, used_names)
                 assets[name] = key
-                alt = _ALT.get(str(block.get("label") or "image"), "Figure")
+                label = str(block.get("label") or "image")
+                # Empty alt in DOCX: Pandoc promotes alt text to a visible
+                # Image Caption paragraph. The real caption block is styled
+                # separately below.
+                alt = "" if image_attrs else _ALT.get(label, "Figure")
                 attrs = "{width=6.5in}" if image_attrs else ""
-                parts.append(f"![{alt}](assets/{name}){attrs}")
+                image = f"![{alt}](assets/{name}){attrs}"
+                if image_attrs:
+                    # Keep figures/table crops out of the Body Text first-line
+                    # indent, and centre them on the page.
+                    parts.append(f'::: {{custom-style="Figure"}}\n{image}\n:::')
+                else:
+                    parts.append(image)
+                last_image_label = label
                 continue
 
             primary = "zh_md" if lang == "zh" else "en_md"
@@ -156,7 +171,19 @@ def build_markdown(
                 other = "en_md" if lang == "zh" else "zh_md"
                 text = (block.get(other) or "").strip()
             if text:
-                parts.append(text)
+                if image_attrs and str(block.get("label") or "").lower() in {
+                    "caption",
+                    "figure_title",
+                    "table_title",
+                }:
+                    style = (
+                        "Table Caption"
+                        if last_image_label == "table"
+                        else "Image Caption"
+                    )
+                    parts.append(f'::: {{custom-style="{style}"}}\n{text}\n:::')
+                else:
+                    parts.append(text)
 
     markdown = "\n\n".join(part for part in parts if part).strip()
     if not markdown:
@@ -230,13 +257,21 @@ def convert_docx(markdown: str, asset_files: Dict[str, bytes]) -> bytes:
                 handle.write(data)
 
         output_path = os.path.join(tmp, "export.docx")
+        if not os.path.exists(REFERENCE_DOC):
+            raise ExportError(
+                503,
+                f"Word reference template is missing: {REFERENCE_DOC}",
+            )
         command = [
             pandoc,
             "content.md",
             "-f",
-            "markdown+tex_math_dollars+link_attributes+pipe_tables",
+            "markdown+tex_math_dollars+link_attributes+pipe_tables+fenced_divs",
             "-t",
             "docx",
+            "--shift-heading-level-by=0",
+            "--reference-doc",
+            REFERENCE_DOC,
             f"--resource-path={tmp}",
             "-o",
             "export.docx",
@@ -269,6 +304,14 @@ def convert_docx(markdown: str, asset_files: Dict[str, bytes]) -> bytes:
         return data
 
 
+def _reference_doc_digest() -> str:
+    try:
+        with open(REFERENCE_DOC, "rb") as handle:
+            return hashlib.sha256(handle.read()).hexdigest()[:16]
+    except OSError:
+        return "missing"
+
+
 def docx_cache_key(
     document: Any, lang: str, markdown: str, assets: Dict[str, str]
 ) -> str:
@@ -277,6 +320,7 @@ def docx_cache_key(
             lang,
             markdown,
             str(getattr(document, "updated_at", "")),
+            _reference_doc_digest(),
             *[f"{name}:{key}" for name, key in sorted(assets.items())],
         ]
     )

@@ -218,3 +218,200 @@ class TestCacheAndHeaders(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+
+
+def _styles(docx_bytes):
+    import xml.etree.ElementTree as ET
+
+    archive = zipfile.ZipFile(io.BytesIO(docx_bytes))
+    return ET.fromstring(archive.read("word/styles.xml"))
+
+
+def _style_map(styles):
+    return {style.get(W + "styleId"): style for style in styles.findall(W + "style")}
+
+
+def _document(docx_bytes):
+    import xml.etree.ElementTree as ET
+
+    archive = zipfile.ZipFile(io.BytesIO(docx_bytes))
+    return ET.fromstring(archive.read("word/document.xml"))
+
+
+def _paragraph_style(paragraph):
+    ppr = paragraph.find(W + "pPr")
+    if ppr is None:
+        return None
+    style = ppr.find(W + "pStyle")
+    return style.get(W + "val") if style is not None else None
+
+
+def _style_by_name(styles, name):
+    for style in styles.findall(W + "style"):
+        node = style.find(W + "name")
+        if node is not None and (node.get(W + "val") or "").lower() == name.lower():
+            return style
+    raise AssertionError(f"style not found: {name}")
+
+
+def _style_chain(styles, style):
+    by_id = {item.get(W + "styleId"): item for item in styles.findall(W + "style")}
+    current = style
+    while current is not None:
+        yield current
+        based = current.find(W + "basedOn")
+        current = by_id.get(based.get(W + "val")) if based is not None else None
+
+
+def _effective(styles, style, section, tag):
+    for item in _style_chain(styles, style):
+        parent = item.find(W + section)
+        if parent is not None:
+            node = parent.find(W + tag)
+            if node is not None:
+                return node
+    defaults = styles.find(W + "docDefaults")
+    if defaults is not None:
+        default_section = defaults.find(W + ("rPrDefault" if section == "rPr" else "pPrDefault"))
+        if default_section is not None:
+            parent = default_section.find(W + section)
+            if parent is not None:
+                return parent.find(W + tag)
+    return None
+
+
+def _style_names(docx_bytes):
+    return {
+        item.get(W + "styleId"): (
+            item.find(W + "name").get(W + "val")
+            if item.find(W + "name") is not None
+            else ""
+        )
+        for item in _styles(docx_bytes).findall(W + "style")
+    }
+
+
+class TestReferenceDocStyles(unittest.TestCase):
+    def test_reference_template_is_present(self):
+        from app.helpers.paper_export import REFERENCE_DOC
+
+        self.assertTrue(REFERENCE_DOC.endswith("academic-reference.docx"))
+        self.assertTrue(__import__("os").path.exists(REFERENCE_DOC))
+
+    def test_body_fonts_size_spacing_and_first_line(self):
+        from app.helpers.paper_export import REFERENCE_DOC
+
+        with open(REFERENCE_DOC, "rb") as handle:
+            styles = _styles(handle.read())
+        normal = _style_by_name(styles, "Normal")
+        body_text = _style_by_name(styles, "Body Text")
+        first = _style_by_name(styles, "First Paragraph")
+
+        fonts = _effective(styles, normal, "rPr", "rFonts")
+        self.assertEqual(fonts.get(W + "ascii"), "Times New Roman")
+        self.assertEqual(fonts.get(W + "hAnsi"), "Times New Roman")
+        self.assertEqual(fonts.get(W + "eastAsia"), "宋体")
+        for style in (normal, body_text, first):
+            size = _effective(styles, style, "rPr", "sz")
+            self.assertEqual(size.get(W + "val"), "24")
+        for style in (body_text, first):
+            ind = _effective(styles, style, "pPr", "ind")
+            self.assertEqual(ind.get(W + "firstLineChars"), "200")
+            self.assertEqual(ind.get(W + "firstLine"), "480")
+            spacing = _effective(styles, style, "pPr", "spacing")
+            self.assertEqual(spacing.get(W + "before") or "0", "0")
+            self.assertEqual(spacing.get(W + "after") or "0", "0")
+            # No w:line means Word's single-spacing default.
+            self.assertIn(spacing.get(W + "line"), (None, "240"))
+
+    def test_heading_sizes_and_bold(self):
+        from app.helpers.paper_export import REFERENCE_DOC
+
+        with open(REFERENCE_DOC, "rb") as handle:
+            styles = _styles(handle.read())
+        expected = {
+            "heading 1": "32",
+            "heading 2": "28",
+            "heading 3": "24",
+            "heading 4": "22",
+            "heading 5": "21",
+            "heading 6": "20",
+        }
+        for name, size in expected.items():
+            style = _style_by_name(styles, name)
+            actual_size = _effective(styles, style, "rPr", "sz")
+            self.assertEqual(actual_size.get(W + "val"), size)
+            self.assertIsNotNone(_effective(styles, style, "rPr", "b"))
+            ind = _effective(styles, style, "pPr", "ind")
+            if ind is not None:
+                self.assertEqual(ind.get(W + "firstLineChars"), "0")
+            spacing = _effective(styles, style, "pPr", "spacing")
+            self.assertIsNotNone(spacing.get(W + "before"))
+            self.assertIsNotNone(spacing.get(W + "after"))
+
+    def test_generated_docx_uses_figure_and_caption_styles(self):
+        markdown, _ = build_markdown(make_document(), lang="zh", image_attrs=True)
+        data = convert_docx(markdown, {"table.png": PNG, "figure.png": PNG})
+        doc = _document(data)
+        caption_style = None
+        image_styles = []
+        for paragraph in doc.iter(W + "p"):
+            if list(paragraph.iter(W + "drawing")):
+                image_styles.append(_paragraph_style(paragraph))
+            text = "".join(t.text or "" for t in paragraph.iter(W + "t"))
+            if "表 1" in text:
+                caption_style = _paragraph_style(paragraph)
+        self.assertTrue(image_styles)
+        self.assertTrue(all(style == "Figure" for style in image_styles))
+        self.assertEqual(caption_style, "TableCaption")
+
+        for paragraph in doc.iter(W + "p"):
+            if _paragraph_style(paragraph) == "Figure":
+                ppr = paragraph.find(W + "pPr")
+                self.assertIsNone(ppr.find(W + "ind"))
+
+        body_seen = False
+        for paragraph in doc.iter(W + "p"):
+            if _paragraph_style(paragraph) in {"BodyText", "FirstParagraph"}:
+                body_seen = True
+                ppr = paragraph.find(W + "pPr")
+                self.assertIsNone(ppr.find(W + "ind"))
+        self.assertTrue(body_seen)
+
+    def test_figure_caption_uses_image_caption(self):
+        document = make_document()
+        document.pages[0]["blocks"].append(
+            {
+                "label": "caption",
+                "zh_md": "图 1：测试图。",
+                "en_md": "Figure 1: Test figure.",
+                "boxes_norm": [],
+            }
+        )
+        markdown, _ = build_markdown(document, lang="zh", image_attrs=True)
+        data = convert_docx(markdown, {"table.png": PNG, "figure.png": PNG})
+        doc = _document(data)
+        found = None
+        for paragraph in doc.iter(W + "p"):
+            text = "".join(t.text or "" for t in paragraph.iter(W + "t"))
+            if "图 1" in text:
+                found = _paragraph_style(paragraph)
+        self.assertEqual(found, "ImageCaption")
+
+    def test_generated_heading_levels(self):
+        markdown = "\n\n".join(
+            f"{'#' * level} H{level}" for level in range(1, 7)
+        ) + "\n\n正文。\n"
+        data = convert_docx(markdown, {})
+        doc = _document(data)
+        names = _style_names(data)
+        found = {}
+        for paragraph in doc.iter(W + "p"):
+            text = "".join(t.text or "" for t in paragraph.iter(W + "t")).strip()
+            if text.startswith("H") and text[1:].isdigit():
+                found[text] = names.get(_paragraph_style(paragraph), "")
+        for level in range(1, 7):
+            self.assertEqual(found.get(f"H{level}"), f"heading {level}")
