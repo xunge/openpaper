@@ -32,6 +32,7 @@ from app.database.models import (
     ConversableType,
     Conversation,
     JobStatus,
+    PaperDocument,
     ReferralStatus,
     ZoteroImportStatus,
 )
@@ -59,7 +60,7 @@ from app.services.zotero_import import (
     auto_import_new_papers,
     sync_batch,
 )
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
 from pydantic import BaseModel, ValidationError
 from sqlalchemy.orm import Session
 
@@ -1153,3 +1154,114 @@ async def _run_zotero_sync_all(user_ids: list[uuid.UUID]) -> None:
         )
     finally:
         db.close()
+
+
+class BilingualProgressPayload(BaseModel):
+    """Progress/terminal event posted by the bilingual Celery task."""
+
+    task_id: Optional[str] = None
+    event: str
+    status: Optional[str] = None
+    stage: Optional[str] = None
+    stage_progress: int = 0
+    stage_total: int = 0
+    progress: Optional[int] = None
+    page_count: Optional[int] = None
+    pages: Optional[list[dict]] = None
+    error: Optional[str] = None
+
+
+def _merge_pages(existing: list[dict], incoming: list[dict]) -> list[dict]:
+    """Merge page records by index; later events win for the same page."""
+    merged = {page.get("index"): page for page in existing if page.get("index") is not None}
+    for page in incoming:
+        if page.get("index") is not None:
+            merged[page["index"]] = page
+    return [merged[index] for index in sorted(merged)]
+
+
+@webhook_router.post("/bilingual/{document_id}")
+async def handle_bilingual_webhook(
+    document_id: uuid.UUID,
+    payload: BilingualProgressPayload,
+    x_internal_secret: Optional[str] = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    """Persist progress from the bilingual worker.
+
+    Events carry the Celery task id: after a regenerate the old task may still be
+    finishing, and its late pages must not overwrite the new run.
+    """
+    expected = os.getenv("JOBS_INTERNAL_SECRET", "")
+    if expected and x_internal_secret != expected:
+        raise HTTPException(status_code=403, detail="Invalid internal secret")
+
+    document = (
+        db.query(PaperDocument).filter(PaperDocument.id == document_id).first()
+    )
+    if not document:
+        return {"status": "ignored - document not found"}
+    if (
+        document.task_id
+        and payload.task_id
+        and payload.task_id != document.task_id
+    ):
+        logger.info(
+            "ignoring bilingual event from superseded task %s (current %s)",
+            payload.task_id,
+            document.task_id,
+        )
+        return {"status": "ignored - superseded task"}
+    if document.status == "completed":
+        return {"status": "ignored - already completed"}
+
+    if payload.event == "failed":
+        document.status = "failed"
+        document.stage = "done"
+        document.error = (payload.error or "OCR/翻译任务失败")[:500]
+        db.add(document)
+        db.commit()
+        return {"status": "failed recorded"}
+
+    if payload.event == "completed":
+        if payload.pages:
+            document.pages = payload.pages
+        document.progress = (
+            payload.progress
+            or payload.page_count
+            or len(document.pages or [])
+        )
+        if payload.page_count:
+            document.page_count = payload.page_count
+        document.status = "completed"
+        document.stage = "done"
+        document.stage_progress = document.progress
+        document.stage_total = document.progress
+        document.error = None
+        db.add(document)
+        db.commit()
+        logger.info(
+            "bilingual document %s completed (%s pages)",
+            document.id,
+            document.progress,
+        )
+        return {"status": "completed recorded"}
+
+    if document.status not in {"pending", "running"}:
+        return {"status": "ignored - not active"}
+
+    document.status = "running"
+    if payload.stage:
+        document.stage = payload.stage
+    document.stage_progress = payload.stage_progress
+    if payload.stage_total:
+        document.stage_total = payload.stage_total
+    if payload.page_count:
+        document.page_count = payload.page_count
+    if payload.pages:
+        document.pages = _merge_pages(document.pages or [], payload.pages)
+        document.progress = len(document.pages)
+    document.error = None
+    db.add(document)
+    db.commit()
+    return {"status": "progress recorded"}

@@ -52,7 +52,123 @@ docker compose -f docker-compose.dev.yml exec -T server \
 
 不传 `--password` 时会交互式输入两次，避免密码进入 shell 历史和进程列表。
 
-### vLLM-Omni 推理后端
+### 双语对照阅读（OCR + 翻译）
+
+扫描版 PDF 走 OCR + 翻译，产出「左：原页图 / 右：中文 markdown」的对照视图。
+入口是论文阅读页右侧面板的「双语对照」，不是独立路由。
+
+| 组件 | 说明 |
+| --- | --- |
+| OCR 服务 | 默认固定 MinerU 4.1；`ocr`（DeepSeek-OCR-2）与 `ocr-xiaomi` 仅保留给旧文档/API 兼容 |
+| 模型 | DeepSeek 在 `/home/jiang/share/model/DeepSeek-OCR-2`；Xiaomi 在 `/home/jiang/share/model/Xiaomi-OCR-0` |
+| 接口 | `127.0.0.1:8105` / `127.0.0.1:8106`，OpenAI 兼容 `/v1/chat/completions` |
+| 显存 | OCR 0.20 × 96 ≈ 19 GB，Xiaomi 0.12 × 96 ≈ 12 GB，与 tts-vllm（36 GB）共存 |
+| 翻译 | `deepseek-flash`，按阅读顺序 6k 字符分块、6 路并发 |
+| 执行 | Celery `bilingual` 队列（`jobs-worker`），不在 API 进程里跑 |
+| 前端 | 论文页右侧 Bilingual 面板 |
+
+### 管线
+
+```
+POST /api/paper/bilingual/ → 建 PaperDocument(pending) → 提交 Celery
+PDF → PyMuPDF 渲染每页 PNG(144 DPI) → 存 MinIO
+    → OCR 并发出图（4 路）→ 按块切分、版面坐标回填
+    → 按阅读顺序分块翻译（6k/块）→ 逐页组装
+    → webhook 回写 stage/进度/页面（/api/webhooks/bilingual/{id}）
+```
+
+状态机：`pending → running(stage=render|ocr|prepare|translate|assemble) → completed|failed`。
+每页完成即回传，前端 3 秒轮询能逐页看到内容；`updated_at` 超过
+`BILINGUAL_STALE_SECONDS`（默认 420s）没有心跳时，GET 会把文档标成失败并允许重试。
+DELETE 会 revoke 对应的 Celery 任务。
+
+### MinerU 4.1（默认 OCR Provider）
+
+MinerU 作为文档级解析接入，和 DeepSeek/Xiaomi 共用同一条双语流程（翻译、跨页合并、
+逐页回调都不变），不是第二条独立管线。
+
+| 项 | 说明 |
+| --- | --- |
+| File Parse | `http://127.0.0.1:8003`，`POST /v1/file_parse`，200 直接返回 ZIP，202 用 `request_id` 轮询 |
+| Tasks API | `http://127.0.0.1:8000`，`POST /v1/tasks` → PUT 上传 → 轮询 → `result_url` |
+| 模式 | `MINERU_API_MODE=auto`（优先 8003，不可达时切 8000）/ `file_parse` / `tasks` |
+| 选择 | 前端已移除 OCR 下拉，始终使用 MinerU 4.1；API 仍兼容 `?model=...` 供旧客户端/调试 |
+| 产物 | `papers/{paper_id}/ocr/{document_id}/content.md`、`source/*`、`assets/*.png` |
+
+`content.md` 是源语言重建稿，图片链接为同前缀的 `assets/...`（导出/调试用）；
+阅读器实际使用 API 返回的预签名 `blocks[].image_url`，不会因为 content.md 的相对链接
+而失效。`content_url`、`source_urls`、页面 `diagnostics` 与块 `search_text` 都在
+`GET /api/paper/bilingual/` 响应里。
+
+Docker 中 MinerU 在宿主机，不在 compose 里；compose 已给 `server`、`jobs-worker`
+加 `host.docker.internal:host-gateway`，并把 `MINERU_FILE_PARSE_URL` 指向
+`http://host.docker.internal:8003`。宿主机直接跑 jobs 时默认 `127.0.0.1` 即可。
+
+特殊内容规则：
+
+- `table`、`algorithm`、`code` 从**原始 PDF** 按 bbox 裁成 PNG（默认 300 DPI），
+  不把 HTML/Markdown 再截图；MinerU 自带区域图只在 PDF 裁剪失败时兜底。
+- 算法没有独立类型（MinerU 会落在 `code`），通过 `Algorithm N` / `Procedure` /
+  `Pseudocode` / `Require:`/`Ensure:` 等特征识别；代码通过 `guess_lang`、代码围栏、
+  关键字与缩进特征识别。误判为 code 的正文会保留为文本并写 `diagnostics`。
+- 图片化内容只出现一次：表格不再输出 HTML，算法/代码不再输出代码块；
+  标题/图注作为可翻译文本保留一次；`search_text` 留给检索，不进入阅读 Markdown。
+- 跨页表格/算法用 `continues_prev` 把两页裁图纵向拼接成一张。
+- 旋转页使用 PyMuPDF 的显示坐标（`page.rect` + `get_pixmap(clip=...)`），
+  与 MinerU 的 0-1 bbox 一致。
+- 无法可靠裁剪时保留文本兜底，并在页 `diagnostics` 里标记 `needs_review`，
+  不会伪造 bbox 或声称已图片化。
+
+相关环境变量（worker 侧）：
+
+```bash
+OCR_PROVIDER=mineru                 # 默认；需要覆盖时才改
+MINERU_FILE_PARSE_URL=http://127.0.0.1:8003
+MINERU_TASKS_API_URL=http://127.0.0.1:8000
+MINERU_API_MODE=auto
+MINERU_TIER=standard
+MINERU_OCR_MODE=auto
+MINERU_PRESERVE_VISUAL_BLOCKS=true
+MINERU_VISUAL_BLOCK_TYPES=table,algorithm,code
+MINERU_DPI=300
+MINERU_MAX_PDF_MB=100
+MINERU_MAX_ZIP_MB=512
+MINERU_TASK_TIMEOUT=1800
+```
+
+### 表格与坐标
+
+- 表格按 cell 抽取、翻译、回填，保留 `rowspan`/`colspan`；未闭合的 `<table>` 先补闭合，
+  单元格边界丢失的表格回退为整块翻译；翻译失败回退原文，不再出现空白块。
+- `label[[x0,y0,x1,y1]]` 坐标归一化后存入 `boxes_norm`，点击右侧段落会定位左侧页面区域。
+- 有文本层的页面用 `pdf_layout` 把 OCR 块对齐回 PDF 坐标；纯扫描页直接使用模型框。
+- 跨页续段：翻译前会把下一页的第一个正文段并到上一页末尾，标题/列表/表格/图不会作为续段；
+- 跨栏续段：两栏论文按 bbox 区分左右栏，左栏最后一个正文块与右栏第一个正文块用同一套
+  续段/大小写/标点规则合并；栏尾连字符同样用 PDF 文本层判断（`decompi-` + `lation` →
+  `decompilation`）。合并后右栏该段从原页移除，翻译按整段进行；
+  页尾连字符按 PDF 文本层判断（`decompi-` + `lation` 拼成 `decompilation`，不是 `decompi lation`）。
+  因此右侧面板的“页”与物理页码不再严格一一对应，下一页开头可能为空或被跳过。
+- 有序列表：连续的 `1.`/`2.`/`3.` 或 `1)`/`2)` 在翻译前合并成一个列表块（跨页、跨栏也接续），
+  翻译后按源编号校正；前端自定义 `ol` 会透传 `start`，因此单独成块的 `3.` 也不会显示成 `1.`。
+- 行间公式统一规范为独立成行的 `$$...$$`。单行 `$$...$$` 会被 remark-math 当成行内公式，
+  而 KaTeX 的 `\tag` 只允许出现在行间模式，会直接报错。
+- Xiaomi 不输出版面标记，流水线会从 PDF 自身的位图与矢量绘图聚类中恢复图区，
+  按阅读顺序插入；图下方 `Figure N:` 题注用于确定下边界，首页标题区会被跳过，
+  避免把标题和作者裁进图里。
+
+### 必须记住的坑
+
+1. **`--limit-mm-per-prompt` 要传 JSON**：`'{"image": 1}'`，写成 `image=1` 会直接启动失败。
+2. **`max_tokens` 不能等于上下文长度**：图片 token 已占约 1.2k，`--max-model-len 8192` 下 `max_tokens` 必须留余量（这里用 4096），否则请求 400。
+3. **Triton 编译错误**：OCR 路径上的内核引用了模块级常量（`LOG2E`），需要 `TRITON_ALLOW_NON_CONSTEXPR_GLOBALS=1`。
+4. **表格 `colspan` 大于推断列数**：`table_normalise` 会把 span 夹到网格宽度，否则放置循环会死循环（表现为 worker CPU 100%、进度不动）。
+5. **翻译不要一次发整篇**：整篇一次请求会跑满 `max_tokens` 并丢 `@@BLOCK` 编号；6k 分块 + `deepseek-flash` 实测把 13 页从 468s 降到约 100s。
+
+### 依赖
+
+`pymupdf` 在 server 与 jobs 两个镜像里都已固化；本功能不再需要手工 `pip install`。
+
+## vLLM-Omni 推理后端
 
 TTS 现在由 **vLLM-Omni** 提供（官方镜像 `vllm/vllm-omni:v0.30.0`，内置 vllm 0.30.0 + vllm_omni 0.30.0）。
 
@@ -132,6 +248,25 @@ sed -i 's|^TTS_BASE_URL=.*|TTS_BASE_URL=http://tts:8000/v1|' server/.env
 docker compose -f docker-compose.dev.yml up -d tts
 docker compose -f docker-compose.dev.yml up -d --force-recreate server
 ```
+
+## 数据安全铁律
+
+2026-10-26 发生过一次事故：清理测试数据时用脚本清空了整个 MinIO 桶，把用户上传的 PDF 一并删掉了（对象存储没有版本控制，删了就没了）。由此定下三条规则：
+
+1. **永远不要"清空桶"**。删对象必须按 key 前缀白名单精确匹配，例如只删 `uploads/<paper_id>-bilingual-page-*.png`。
+2. **破坏性操作前先备份**：
+
+```bash
+# 数据库
+docker compose -f docker-compose.dev.yml exec -T postgres \
+  pg_dump -U postgres -Fc annotated-paper > /home/jiang/backups/db-$(date +%Y%m%d-%H%M).dump
+
+# 对象（按前缀，别全量）
+DEV_HOST=... docker compose -f docker-compose.dev.yml exec -T server \
+  python scripts/backup_objects.py --prefix uploads/
+```
+
+3. **删用户/论文用脚本按 FK 联动删**，不要手写 DELETE 猜依赖顺序：`scripts/delete_papers.py`、`scripts/cleanup_user.py`。
 
 ## 访问端口
 
@@ -445,6 +580,19 @@ jobs-worker jobs-beat jobs-api`。
 | `client/src/lib/providers.tsx` | 没有 `NEXT_PUBLIC_POSTHOG_KEY` 时跳过 `posthog.init` 与 pageview 捕获，不再刷 "initialized without a token" 警告 |
 | `client/src/app/apple-icon.svg` | 由 `icon.svg` 改名：它和 `public/icon.svg` 同时占用 `/icon.svg` 路由，Next 报冲突导致该地址 500 |
 | `server/app/database/telemetry.py`、`jobs/src/telemetry.py` | 无 `POSTHOG_API_KEY` 时改用空实现，启动和周期任务不再输出 PostHog ERROR/WARNING |
+| `jobs/src/bilingual/`、`src/bilingual/task.py` | 双语流水线迁入 Celery：OCR、版面、翻译、表格重建、进度回调；队列 `bilingual` |
+| `server/app/api/paper_bilingual_api.py`、`app/helpers/bilingual_jobs.py` | 提交/revoke Celery 任务，逐页回传，僵死超时恢复 |
+| `server/app/api/webhook_api.py` | `/api/webhooks/bilingual/{id}` 接收进度/完成/失败，按 `task_id` 忽略旧任务 |
+| 迁移 `f4b2c8d1e930` | `paper_documents` 新增 `task_id`/`stage`/`stage_progress`/`stage_total`；唯一约束改为 `(paper_id, user_id)` |
+| `client/src/components/bilingual/BilingualPanel.tsx`、`lib/i18n.tsx` | 阶段进度、失败重试、部分页面保留 |
+| `jobs/src/bilingual/mineru_client.py` | MinerU 4.1 客户端：file_parse 200/202、tasks API 兜底、轮询、ZIP 安全解压、大小/超时/重试限制 |
+| `jobs/src/bilingual/mineru_layout.py` | 结构化块重建 Markdown；table/algorithm/code 从原 PDF 300 DPI 切图；图注、跨页拼接、诊断与 search_text |
+| `jobs/src/bilingual/ocr_providers.py`、`ocr_client.py` | 注册 `mineru` provider 与健康检查路径 |
+| `jobs/src/bilingual/pipeline.py`、`task.py` | MinerU 文档级分支复用同一翻译/跨页合并/回调流程；保留 search_text 与 diagnostics |
+| `server/app/helpers/ocr_probe.py` | 默认 provider 为 MinerU，并探测 host-gateway 地址可用性 |
+| `server/app/api/paper_bilingual_api.py`、`server/tests/test_bilingual_serialise.py` | 暴露 content.md / MinerU 源文件 URL、search_text、diagnostics |
+| `docker-compose.dev.yml`、`server/.env.example` | MinerU 环境变量与 `host.docker.internal:host-gateway` |
+| `client/src/components/bilingual/BilingualPanel.tsx`、`lib/i18n.tsx` | MinerU 阶段、图片点击查看大图、search_text 类型 |
 | `server/Dockerfile`、`jobs/Dockerfile`、`client/Dockerfile.dev` | 加 `PIP_INDEX_URL` / `NPM_REGISTRY` 构建参数（默认国内源）；jobs 镜像改为先建用户再装依赖，并改用 `uv export` + 显式 venv 安装 |
 
 ## 已知限制

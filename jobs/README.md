@@ -183,6 +183,26 @@ Optionally, start Flower to monitor Celery jobs:
 ```
 Access the Flower dashboard at `http://localhost:5555`.
 
+## Bilingual OCR + translation
+
+`generate_bilingual_document` (queue `bilingual`) renders each PDF page, runs the
+selected OCR backend (DeepSeek-OCR-2 or Xiaomi-OCR-0), translates the blocks in
+reading-order chunks and reports progress to the server webhook
+`/api/webhooks/bilingual/{document_id}`. Each event carries the Celery task id so
+the server can ignore a superseded run; the callback is authenticated with
+`JOBS_INTERNAL_SECRET` from this service's environment.
+
+The pipeline lives in `src/bilingual/` and owns no database connection: the server
+creates the document and the worker only reports pages and stage progress.
+
+MinerU 4.1 is a document-level provider in the same flow
+(`src/bilingual/mineru_client.py` + `mineru_layout.py`): `POST /v1/file_parse`, or
+the `POST /v1/tasks` async contract as a fallback. Tables, algorithms and code are
+cropped from the original PDF at 300 DPI and referenced as images; the structured
+blocks are reassembled into Markdown. MinerU is the default OCR provider; configure it with
+`MINERU_FILE_PARSE_URL` and `MINERU_TASKS_API_URL` (`OCR_PROVIDER` remains an
+override).
+
 ## Future Development
 
 The Jobs Service is designed to be extensible. In the future, we plan to add more asynchronous tasks, such as:

@@ -449,6 +449,31 @@ const zh: Record<string, string> = {
 	"Converting paper to audio...": "正在将论文转为音频…",
 	"Nice! You've used your chat credits for the week. Upgrade your plan to continue chatting.": "本周对话额度已用完，升级方案可继续对话。",
 
+	"Back to paper": "返回论文",
+	"Bilingual view": "双语对照",
+	"Regenerate": "重新生成",
+	"Start OCR + translation": "开始 OCR + 翻译",
+	"Generate a Chinese markdown version of this scanned paper, page by page, next to the original page images.": "逐页生成这篇扫描论文的中文 markdown，并与原页面图并排显示。",
+	"Starting…": "正在启动…",
+	"Rendering…": "渲染中…",
+
+	"Not generated yet": "尚未生成",
+	"Queued": "排队中",
+	"Rendering pages": "渲染页面",
+	"Running OCR": "OCR 识别",
+	"MinerU parsing": "MinerU 解析",
+	"Preparing blocks": "整理版面",
+	"Translating": "翻译",
+	"Assembling pages": "组装页面",
+	"Processing": "处理中",
+
+	"Chinese · rendered": "中文 · 渲染",
+	"Chinese · raw markdown": "中文 · 原始文本",
+	"English · rendered": "英文 · 渲染",
+	"English · raw OCR": "英文 · OCR 原文",
+
+	"OCR output on this page looked repetitive; shown as-is": "本页 OCR 输出出现重复，已按原样显示",
+
 	// Common actions
 	"Upload": "上传",
 	"Upload paper": "上传论文",
@@ -468,7 +493,6 @@ const zh: Record<string, string> = {
 	"Dismiss": "忽略",
 
 	// Papers
-	Papers: "论文",
 	"Search papers": "搜索论文",
 	"Search your library": "搜索文献库",
 	"No papers yet": "还没有论文",
@@ -477,7 +501,6 @@ const zh: Record<string, string> = {
 	"Notes": "笔记",
 	"Summary": "摘要",
 	"Highlights": "要点",
-	"Authors": "作者",
 	"Published": "发表时间",
 
 	// Projects

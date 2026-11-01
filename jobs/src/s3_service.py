@@ -138,6 +138,14 @@ class S3Service:
             logger.error(f"File not found: {file_path}")
             raise ValueError(f"File not found: {file_path}")
 
+    def upload_bytes(
+        self, object_key: str, data: bytes, content_type: str = "application/octet-stream"
+    ) -> None:
+        """Upload raw bytes under an explicit key (rendered pages, figure crops)."""
+        self.s3_client.put_object(
+            Bucket=self.bucket_name, Key=object_key, Body=data, ContentType=content_type
+        )
+
     def delete_file(self, object_key: str) -> bool:
         """
         Delete a file from S3

@@ -1,4 +1,6 @@
 'use client';
+import { useI18n } from "@/lib/i18n";
+import Link from "next/link";
 
 import { PdfHighlighterViewer, RenderedHighlightPosition } from '@/components/PdfHighlighterViewer';
 import { Button } from '@/components/ui/button';
@@ -33,7 +35,7 @@ import ReportSkeleton from '@/components/ReportSkeleton';
 
 import { SidePanelContent } from '@/components/SidePanelContent';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Book, Box } from 'lucide-react';
+import { Book, Box, Languages } from 'lucide-react';
 
 const OverviewTool = {
     name: "Overview",
@@ -59,12 +61,19 @@ const AudioTool = {
     icon: AudioLines,
 }
 
+const BilingualTool = {
+    name: "Bilingual",
+    label: "Bilingual view",
+    icon: Languages,
+}
+
 const PaperToolset = {
     nav: [
         ChatTool,
         OverviewTool,
         AnnotationsTool,
         AudioTool,
+        BilingualTool,
     ],
 }
 
@@ -74,6 +83,9 @@ export default function PaperView() {
     const searchParams = useSearchParams();
     const id = params.id as string;
     const { user } = useAuth();
+    const { t } = useI18n();
+    // Region the bilingual panel asked the reader to highlight.
+    const [focusRegion, setFocusRegion] = useState<{ page: number; box: number[] } | null>(null);
     const [paperData, setPaperData] = useState<PaperData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -617,6 +629,7 @@ export default function PaperView() {
                             {paperData.file_url && (
                                 <PdfHighlighterViewer
                                     pdfUrl={paperData.file_url}
+                                focusRegion={focusRegion}
                                     explicitSearchTerm={explicitSearchTerm}
                                     setUserMessageReferences={setUserMessageReferences}
                                     setSelectedText={setSelectedText}
@@ -669,7 +682,7 @@ export default function PaperView() {
                                     </div>
                                 ) : (
                                     <>
-                                        <SidePanelContent {...sidePanelProps} isMobile={true} />
+                                        <SidePanelContent {...sidePanelProps} isMobile={true} onFocusRegion={setFocusRegion} />
                                         <PaperSidebar
                                             rightSideFunction={rightSideFunction}
                                             setRightSideFunction={handleSelectFunction}
@@ -714,6 +727,7 @@ export default function PaperView() {
                         <div className="h-full w-full min-w-0">
                             <PdfHighlighterViewer
                                 pdfUrl={paperData.file_url}
+                                focusRegion={focusRegion}
                                 explicitSearchTerm={explicitSearchTerm}
                                 setUserMessageReferences={setUserMessageReferences}
                                 setSelectedText={setSelectedText}
@@ -787,7 +801,7 @@ export default function PaperView() {
                         </div>
                     ) : (
                         <>
-                            <SidePanelContent {...sidePanelProps} isMobile={false} />
+                            <SidePanelContent {...sidePanelProps} isMobile={false} onFocusRegion={setFocusRegion} />
                             <PaperSidebar
                                 rightSideFunction={rightSideFunction}
                                 setRightSideFunction={handleSelectFunction}

@@ -1777,3 +1777,55 @@ class DataTableRow(Base):
         Index("ix_data_table_rows_paper_id", "paper_id"),
         Index("ix_data_table_rows_data_table_id", "data_table_id"),
     )
+
+
+class PaperDocument(Base):
+    """Per-page OCR + translation of a scanned paper (bilingual reader)."""
+
+    __tablename__ = "paper_documents"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # A paper can be shared into a project, so the document is per viewer. The
+    # unique constraint below is (paper_id, user_id), not paper_id alone: the
+    # latter made a collaborator's first generation collide with the owner's.
+    paper_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("papers.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+
+    # pending -> running -> completed | failed
+    status = Column(String, nullable=False, default="pending")
+    # Pages fully assembled and available to the reader.
+    progress = Column(Integer, nullable=False, default=0)
+    page_count = Column(Integer, nullable=True)
+    error = Column(Text, nullable=True)
+
+    # Celery task currently (or last) responsible for this document. The server
+    # uses it to revoke on delete and to ignore events from an older run.
+    task_id = Column(String, nullable=True, index=True)
+    # render | ocr | prepare | translate | assemble | done
+    stage = Column(String, nullable=True)
+    stage_progress = Column(Integer, nullable=False, default=0)
+    stage_total = Column(Integer, nullable=False, default=0)
+
+    ocr_model = Column(String, nullable=True)
+    translation_model = Column(String, nullable=True)
+
+    # [{index, image_key, en_md, zh_md}] — image_key points at the rendered page PNG
+    pages = Column(JSONB, nullable=True)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    __table_args__ = (
+        UniqueConstraint("paper_id", "user_id", name="uq_paper_documents_paper_user"),
+    )

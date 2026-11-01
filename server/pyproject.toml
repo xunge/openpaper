@@ -44,6 +44,7 @@ dependencies = [
     "celery>=5.5.3",
     "stripe>=12.3.0",
     "pypdf>=6.13.3",
+    "pymupdf>=1.26.0",
     "exa-py>=1.0.0",
     "e2b-code-interpreter>=1.0.0",
     "langfuse>=4.7.0",

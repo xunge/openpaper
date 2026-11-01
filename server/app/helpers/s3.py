@@ -160,6 +160,15 @@ class S3Service:
             logger.error(f"Error uploading file to S3: {e}")
             raise ValueError("Failed to upload file to S3")
 
+    def upload_bytes(
+        self, object_key: str, data: bytes, content_type: str = "application/octet-stream"
+    ) -> str:
+        """Upload raw bytes under an explicit key (used for rendered page images)."""
+        self.s3_client.put_object(
+            Bucket=self.bucket_name, Key=object_key, Body=data, ContentType=content_type
+        )
+        return self._public_url(object_key)
+
     def delete_file(self, object_key: str) -> bool:
         """
         Delete a file from S3

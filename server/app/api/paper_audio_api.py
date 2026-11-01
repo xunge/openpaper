@@ -155,7 +155,18 @@ async def get_audio_overview_job_status(
     )
 
     if not audio_overview_job:
-        return JSONResponse(status_code=404, content={"message": "Job not found"})
+        # No job yet is the normal state before anything is generated. A 404 here
+        # shows up as a console error on every visit to a paper without audio.
+        return JSONResponse(
+            status_code=200,
+            content={
+                "job_id": None,
+                "status": "none",
+                "status_message": None,
+                "conversable_id": id,
+                "conversable_type": "paper",
+            },
+        )
 
     # If the audio overview has been running for more than 20 minutes, mark it as failed.
     # Long/medium multi-paper generations can legitimately take 10-15 minutes

@@ -24,6 +24,7 @@ from app.api.highlight_api import highlight_router
 from app.api.message_api import message_router
 from app.api.onboarding_api import onboarding_router
 from app.api.paper_api import paper_router
+from app.api.paper_bilingual_api import paper_bilingual_router
 from app.api.paper_audio_api import paper_audio_router
 from app.api.paper_image_api import paper_image_router
 from app.api.paper_search_api import paper_search_router
@@ -132,6 +133,7 @@ app.add_middleware(
 app.include_router(router, prefix="/api")
 app.include_router(auth_router, prefix="/api/auth")  # Auth routes
 app.include_router(paper_router, prefix="/api/paper")
+app.include_router(paper_bilingual_router, prefix="/api/paper/bilingual")
 app.include_router(conversation_router, prefix="/api/conversation")
 app.include_router(message_router, prefix="/api/message")
 app.include_router(highlight_router, prefix="/api/highlight")
@@ -177,6 +179,10 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port,
         reload=reload,
+        # A reload waits for background tasks to finish, and the bilingual
+        # pipeline can run for minutes. Without a cap the reloader stops serving
+        # requests until the task ends, which looks like the API being down.
+        timeout_graceful_shutdown=10,
         # Only the application package. The server directory also holds eval
         # fixtures, dev tooling and tests — none of them should trigger a
         # restart, and the seed PDFs would make the watcher needlessly

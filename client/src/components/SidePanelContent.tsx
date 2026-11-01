@@ -33,6 +33,7 @@ import { ChatHistorySkeleton } from '@/components/ChatHistorySkeleton';
 import { Button } from '@/components/ui/button';
 import { AnnotationsView } from '@/components/AnnotationsView';
 import { AudioOverviewPanel } from '@/components/AudioOverview';
+import { BilingualPanel } from '@/components/bilingual/BilingualPanel';
 import PaperMetadata from '@/components/PaperMetadata';
 import { ChatMessageActions } from '@/components/ChatMessageActions';
 import { AnimatedMarkdown, CopyableTable } from '@/components/AnimatedMarkdown';
@@ -67,6 +68,7 @@ interface SidePanelContentProps {
     matchesCurrentCitation: (key: string, messageIndex: number) => boolean;
     handleCitationClickFromSummary: (citationKey: string, messageIndex: number) => void;
     setRightSideFunction: (value: string) => void;
+    onFocusRegion?: (region: { page: number; box: number[] }) => void;
     setExplicitSearchTerm: (value: string) => void;
     handleCitationClick: (key: string, messageIndex: number) => void;
     userMessageReferences: string[];
@@ -109,6 +111,7 @@ export function SidePanelContent({
     matchesCurrentCitation,
     handleCitationClickFromSummary,
     setRightSideFunction,
+    onFocusRegion,
     setExplicitSearchTerm,
     handleCitationClick,
     userMessageReferences,
@@ -949,6 +952,16 @@ export function SidePanelContent({
                                         paper_id={id}
                                         paper_title={paperData.title}
                                         setExplicitSearchTerm={setExplicitSearchTerm} />
+                                </div>
+                            )
+                        }
+                        {
+                            rightSideFunction === 'Bilingual' && (
+                                <div className={`flex flex-col ${heightClass} md:px-2 overflow-y-auto`}>
+                                    <BilingualPanel
+                                        paperId={id}
+                                        onFocusRegion={(region) => onFocusRegion?.(region)}
+                                    />
                                 </div>
                             )
                         }

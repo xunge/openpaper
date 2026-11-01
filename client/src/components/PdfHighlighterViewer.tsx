@@ -232,6 +232,8 @@ interface PdfHighlighterViewerProps {
 	/** Focus / read mode state for the PdfToolbar toggle. */
 	isReadMode?: boolean;
 	onToggleReadMode?: () => void;
+	/** Page (1-based) and normalised box the bilingual panel wants highlighted. */
+	focusRegion?: { page: number; box: number[] } | null;
 }
 
 /** Syncs PdfLoader's render-prop pdfDocument into parent state without calling setState during render. */
@@ -294,6 +296,7 @@ export function PdfHighlighterViewer(props: PdfHighlighterViewerProps) {
 		onAnnotateViaSidePanel,
 		sidePanelOpen = false,
 		isReadMode = false,
+		focusRegion,
 		onToggleReadMode,
 	} = props;
 
@@ -383,6 +386,74 @@ export function PdfHighlighterViewer(props: PdfHighlighterViewerProps) {
 	// Ref so ResizeObserver callbacks (which close over a stale scale) can re-apply the current scale
 	const scaleRef = useRef(1.0);
 	const [currentPage, setCurrentPage] = useState(1);
+	// Temporary highlight box drawn over the page the panel pointed at.
+	const [focusBox, setFocusBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+
+	useEffect(() => {
+		if (!focusRegion) {
+			setFocusBox(null);
+			return;
+		}
+		setCurrentPage(focusRegion.page);
+
+		// Scroll the page into view ourselves: `currentPageNumber` only moves the
+		// viewer's own page counter, and it does not centre a block that sits
+		// lower on a page that is already current.
+		const scrollerFor = (el: HTMLElement | null): HTMLElement | null => {
+			let node = el?.parentElement ?? null;
+			while (node) {
+				const style = window.getComputedStyle(node);
+				const scrollable =
+					(style.overflowY === "auto" || style.overflowY === "scroll") &&
+					node.scrollHeight > node.clientHeight + 4;
+				if (scrollable) return node;
+				node = node.parentElement;
+			}
+			return null;
+		};
+
+		let frame = 0;
+		const started = performance.now();
+		let scrolled = false;
+		const tick = () => {
+			const pageEl = document.querySelector<HTMLElement>(
+				`.page[data-page-number="${focusRegion.page}"]`,
+			);
+			if (pageEl && !scrolled) {
+				const scroller = scrollerFor(pageEl);
+				if (scroller) {
+					const pageTop =
+						pageEl.getBoundingClientRect().top -
+						scroller.getBoundingClientRect().top +
+						scroller.scrollTop;
+					const boxTop = pageEl.offsetHeight * focusRegion.box[1];
+					scroller.scrollTo({
+						top: Math.max(0, pageTop + boxTop - scroller.clientHeight * 0.3),
+						behavior: "smooth",
+					});
+					scrolled = true;
+				}
+			}
+			if (pageEl) {
+				const rect = pageEl.getBoundingClientRect();
+				setFocusBox({
+					left: rect.left + rect.width * focusRegion.box[0],
+					top: rect.top + rect.height * focusRegion.box[1],
+					width: rect.width * Math.max(focusRegion.box[2] - focusRegion.box[0], 0.01),
+					height: rect.height * Math.max(focusRegion.box[3] - focusRegion.box[1], 0.01),
+				});
+			}
+			// pdf.js renders pages lazily, so keep trying until the page exists.
+			if (performance.now() - started < 4500) {
+				frame = requestAnimationFrame(tick);
+			} else {
+				setFocusBox(null);
+			}
+		};
+		frame = requestAnimationFrame(tick);
+		return () => cancelAnimationFrame(frame);
+	}, [focusRegion]);
+
 	const [numPages, setNumPages] = useState<number | null>(null);
 	const [showScrollToTop] = useState(false);
 	const [pdfReady, setPdfReady] = useState(false);
@@ -1725,6 +1796,19 @@ export function PdfHighlighterViewer(props: PdfHighlighterViewerProps) {
 			className="flex flex-col w-full h-full min-h-0 overflow-x-visible overflow-y-hidden"
 			id="pdf-container"
 		>
+			{/* Transient box the bilingual panel asked for; positioned in viewport
+			    coordinates so it tracks the page while it scrolls. */}
+			{focusBox && (
+				<div
+					className="pointer-events-none fixed z-40 rounded-sm border-2 border-blue-500 bg-blue-400/20 transition-opacity"
+					style={{
+						left: focusBox.left,
+						top: focusBox.top,
+						width: focusBox.width,
+						height: focusBox.height,
+					}}
+				/>
+			)}
 			{/* Toolbar */}
 			<PdfToolbar
 				currentPage={currentPage}

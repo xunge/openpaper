@@ -28,7 +28,7 @@ celery_app = Celery(
     "openpaper_tasks",
     broker=BROKER_URL,
     backend=BACKEND_URL,
-    include=["src.tasks"]
+    include=["src.tasks", "src.bilingual.task"]
 )
 
 # Celery configuration
@@ -43,6 +43,7 @@ celery_app.conf.update(
         "upload_and_process_file": {"queue": "pdf_processing"},
         "delayed_referral_settlement_callback": {"queue": "user_processing"},
         "periodic_zotero_sync": {"queue": "zotero_sync"},
+        "generate_bilingual_document": {"queue": "bilingual"},
     },
     worker_prefetch_multiplier=1,  # Process one task at a time
     task_acks_late=True,

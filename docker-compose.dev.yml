@@ -27,6 +27,18 @@ x-jobs-service: &jobs-service
     # Webhooks land on the server over the compose network, not the host port.
     WEBHOOK_BASE_URL: http://server:8000
     LANGFUSE_TRACING_ENVIRONMENT: local-docker
+    # MinerU runs on the host, not in this compose file. Inside a container
+    # 127.0.0.1 is the worker itself, so reach the host gateway explicitly.
+    OCR_PROVIDER: ${OCR_PROVIDER:-mineru}
+    MINERU_FILE_PARSE_URL: http://host.docker.internal:8003
+    MINERU_TASKS_API_URL: http://host.docker.internal:8000
+    MINERU_API_MODE: auto
+    MINERU_TIER: standard
+    MINERU_OCR_MODE: auto
+    MINERU_PRESERVE_VISUAL_BLOCKS: "true"
+    MINERU_VISUAL_BLOCK_TYPES: table,algorithm,code
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
   volumes:
     # Only the source dirs are mounted, not ./jobs itself. Mounting the whole
     # directory would shadow the image's Linux virtualenv at /app/.venv with the
@@ -211,6 +223,80 @@ services:
       retries: 3
       start_period: 20s
 
+  # DeepSeek-OCR-2 for scanned PDFs. The vllm-openai image does not register this
+  # architecture (checked v0.16.0); the omni image ships deepseek_ocr2.py, so it
+  # is the one to use even though only its text pipeline is exercised here.
+  ocr:
+    image: vllm/vllm-omni:v0.30.0
+    command:
+      - vllm
+      - serve
+      - /models/DeepSeek-OCR-2
+      - --served-model-name
+      - deepseek-ocr-2
+      - --trust-remote-code
+      - --max-model-len
+      - "8192"
+      - --gpu-memory-utilization
+      - "0.20"
+      - --max-num-seqs
+      - "4"
+      - --limit-mm-per-prompt
+      - '{"image": 1}'
+    gpus: all
+    environment:
+      VLLM_USE_FLASHINFER_SAMPLER: "0"
+      HF_HUB_OFFLINE: "1"
+      # A kernel on the OCR path references a module-level constant from inside
+      # @triton.jit, which newer Triton rejects at compile time.
+      TRITON_ALLOW_NON_CONSTEXPR_GLOBALS: "1"
+    volumes:
+      - /home/jiang/share/model:/models:ro
+    ports:
+      - "127.0.0.1:${OCR_PORT:-8105}:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 60
+      start_period: 420s
+
+  # Xiaomi-OCR-0 (Qwen3.5-VL based). Served by the same vllm-omni image, whose
+  # registry already maps Qwen3_5ForConditionalGeneration.
+  ocr-xiaomi:
+    image: vllm/vllm-omni:v0.30.0
+    command:
+      - vllm
+      - serve
+      - /models/Xiaomi-OCR-0
+      - --served-model-name
+      - xiaomi-ocr-0
+      - --max-model-len
+      - "8192"
+      - --gpu-memory-utilization
+      - "0.12"
+      - --max-num-seqs
+      - "4"
+      - --limit-mm-per-prompt
+      - '{"image": 1}'
+    gpus: all
+    environment:
+      VLLM_USE_FLASHINFER_SAMPLER: "0"
+      HF_HUB_OFFLINE: "1"
+      TRITON_ALLOW_NON_CONSTEXPR_GLOBALS: "1"
+    volumes:
+      - /home/jiang/share/model:/models:ro
+    ports:
+      - "127.0.0.1:${XIAOMI_OCR_PORT:-8106}:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 60
+      start_period: 420s
+
   # One-shot, exactly as prod does it. `server` waits for this to exit 0, so a
   # failed migration surfaces as a failed startup instead of a half-migrated db.
   migrate:
@@ -265,6 +351,11 @@ services:
       GOOGLE_REDIRECT_URI: http://${DEV_HOST:-127.0.0.1}:${SERVER_PORT:-8100}/api/auth/google/callback
       ZOTERO_REDIRECT_URI: http://${DEV_HOST:-127.0.0.1}:${SERVER_PORT:-8100}/api/auth/zotero/callback
       LANGFUSE_TRACING_ENVIRONMENT: local-docker
+      # The server probes MinerU for availability too, so it needs the same
+      # host-gateway address as the worker (MinerU itself is not in compose).
+      OCR_PROVIDER: ${OCR_PROVIDER:-mineru}
+      MINERU_FILE_PARSE_URL: http://host.docker.internal:8003
+      MINERU_TASKS_API_URL: http://host.docker.internal:8000
       DEBUG: "True"
       # Autoreload. server/ is bind-mounted, so edits are live in the container
       # immediately — but the uvicorn process keeps whatever it imported at
@@ -278,6 +369,8 @@ services:
       # so uvicorn falls back to StatReload and polls mtimes. inotify events do
       # not cross a macOS bind mount, so the faster watcher would see nothing.
       UVICORN_RELOAD: "True"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "${SERVER_PORT:-8100}:8000"
     volumes:
