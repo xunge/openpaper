@@ -213,6 +213,158 @@ def merge_ordered_list_blocks(pages: List[Dict[str, Any]]) -> int:
     return merged
 
 
+def _starts_sentence(text: str) -> bool:
+    """Whether a text block opens a sentence/paragraph rather than continuing one."""
+    value = (text or "").lstrip()
+    # Strip Markdown emphasis, blockquote markers and opening quotes/brackets
+    # before looking at the first letter.
+    value = value.lstrip("*_`~> \"'‘“([【")
+    if not value:
+        return True
+    first = value[0]
+    if first.islower():
+        return False
+    if first in ",.;:!?)]}，。；：！？、”’»":
+        return False
+    if first in "-–—":
+        return False
+    return True
+
+
+def _ends_sentence(text: str) -> bool:
+    stem = (text or "").rstrip().rstrip(_TRAILING)
+    return stem.endswith(_TERMINAL)
+
+
+def _column_blocks(blocks: List[Dict[str, Any]], side: str) -> List[Dict[str, Any]]:
+    result: List[Dict[str, Any]] = []
+    for block in blocks:
+        box = _column_box(block)
+        if box is None:
+            continue
+        centre = (box[0] + box[2]) / 2
+        if side == "left" and centre < 0.47 and box[2] < 0.55:
+            result.append(block)
+        elif side == "right" and centre > 0.53 and box[0] > 0.45:
+            result.append(block)
+    return result
+
+
+def _start_candidates(blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Body blocks that open a page or a column, in reading order."""
+    candidates: List[Dict[str, Any]] = []
+    page_start = _first_body(blocks)
+    if page_start is not None:
+        candidates.append(page_start[1])
+
+    # Check the right column even when the page opens with a heading: its first
+    # paragraph often continues the left column of the *same* section. The
+    # merge loop only allows a cross-page target when the page has no heading
+    # before its body.
+    right_blocks = _column_blocks(blocks, "right")
+    if right_blocks:
+        right_start = _first_body(right_blocks)
+        if right_start is not None and right_start[1] not in candidates:
+            candidates.append(right_start[1])
+    return candidates
+
+
+def _previous_body(
+    ordered: List[Tuple[int, Dict[str, Any]]], target: Dict[str, Any]
+) -> Optional[Tuple[int, Dict[str, Any]]]:
+    """Nearest preceding body block, ignoring media but stopping at headings/lists."""
+    target_index = next(
+        (i for i, (_page, block) in enumerate(ordered) if block is target), None
+    )
+    if target_index is None:
+        return None
+    for index in range(target_index - 1, -1, -1):
+        page_index, block = ordered[index]
+        if _is_heading(block):
+            return None
+        is_list = _ordered_item(block) is not None or bool(
+            _LIST_START.match((block.get("text") or "").strip())
+        )
+        if is_list:
+            # A long numbered paragraph (e.g. "1) CFG Extraction: ...") can
+            # itself continue on the next page. Short list items remain barriers.
+            if len((block.get("text") or "").strip()) >= 120:
+                return page_index, block
+            return None
+        if _is_body(block):
+            return page_index, block
+    return None
+
+
+def _join_continuation(left: str, right: str, hyphenated: bool = False) -> str:
+    left = left.rstrip()
+    if right[:1] in ",.;:!?)]}，。；：！？、":
+        return left + right
+    if left.endswith(("(", "[", "“", "\"", "'")):
+        return left + right
+    return _join(left, right, hyphenated=hyphenated)
+
+
+def merge_continuations(
+    pages: List[Dict[str, Any]], hyphenated_blocks: Optional[set[int]] = None
+) -> int:
+    """Merge text that starts mid-sentence at a page or column opening.
+
+    Instead of looking only at "the last text block of the previous page", this
+    walks the reading order: the first body text of every page (and of the right
+    column, when the page has two columns) is checked. If it starts lowercase or
+    with a continuation punctuation, the nearest preceding body text is found
+    even when a table or figure sits between them. That covers a page that opens
+    with a table, or a two-column page whose entire left column is images and
+    whose right column continues the previous paragraph.
+    """
+    hyphenated_blocks = hyphenated_blocks or set()
+    merged = 0
+
+    for page in pages:
+        blocks = page.get("blocks", [])
+        page_start = _first_body(blocks)
+        candidates = _start_candidates(blocks)
+        for candidate in candidates:
+            if candidate not in page.get("blocks", []):
+                continue
+            if _starts_sentence(candidate.get("text") or ""):
+                continue
+
+            ordered: List[Tuple[int, Dict[str, Any]]] = [
+                (p["index"], block)
+                for p in pages
+                for block in p.get("blocks", [])
+            ]
+            previous = _previous_body(ordered, candidate)
+            if previous is None:
+                continue
+
+            previous_page, previous_block = previous
+            if page_start is None and previous_page != page["index"]:
+                # The page opens with a heading/new section; never cross it to
+                # the previous page. A same-page left-column target is still OK.
+                continue
+            if _ends_sentence(previous_block.get("text") or ""):
+                # A completed sentence followed by a lowercase block is an odd
+                # OCR/new-paragraph case, not a page-break continuation.
+                continue
+            previous_block["text"] = _join_continuation(
+                previous_block.get("text") or "",
+                candidate.get("text") or "",
+                hyphenated=id(previous_block) in hyphenated_blocks,
+            )
+            page["blocks"].remove(candidate)
+            merged += 1
+            logger.info(
+                "merged page %s opening text into page %s text block (%s chars)",
+                page.get("index"),
+                previous_page,
+                len(previous_block["text"]),
+            )
+    return merged
+
+
 def _join(left: str, right: str, hyphenated: bool = False) -> str:
     left = left.rstrip()
     if left.endswith(("-", "\u00ad")) and right[:1].islower():

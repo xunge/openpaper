@@ -194,6 +194,8 @@ the server can ignore a superseded run; the callback is authenticated with
 
 The pipeline lives in `src/bilingual/` and owns no database connection: the server
 creates the document and the worker only reports pages and stage progress.
+Cross-page and cross-column continuations are merged by checking the first body
+block of every page/right-column opening, even when tables or figures intervene.
 
 MinerU 4.1 is a document-level provider in the same flow
 (`src/bilingual/mineru_client.py` + `mineru_layout.py`): `POST /v1/file_parse`, or

@@ -19,12 +19,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from . import ocr_client, ocr_providers, pdf_layout
-from .continuation import (
-    last_column_body,
-    merge_column_paragraphs,
-    merge_ordered_list_blocks,
-    merge_page_paragraphs,
-)
+from .continuation import merge_continuations, merge_ordered_list_blocks
 from .doc_translate import translate_document
 from .html_cells import extract_cells, render_cells, split_tables
 from .table_normalise import normalise_table
@@ -310,31 +305,15 @@ def _finalize_pages(
     on_page: Optional[PageCallback] = None,
 ) -> List[Dict[str, Any]]:
     """Merge page-split paragraphs, translate, then assemble the reader pages."""
-    column_hyphenated = set()
-    for page in prepared_pages:
-        left = last_column_body(page.get("blocks", []))
-        boxes = (left or {}).get("boxes_norm") or []
-        if left and boxes and pdf_layout.column_ends_hyphenated(
-            pdf_bytes, page["index"], boxes[0]
-        ):
-            column_hyphenated.add(page["index"])
-
-    columns_merged = merge_column_paragraphs(
-        prepared_pages, hyphenated_pages=column_hyphenated
+    hyphenated_blocks = pdf_layout.hyphenated_block_ids(pdf_bytes, prepared_pages)
+    merged = merge_continuations(
+        prepared_pages, hyphenated_blocks=hyphenated_blocks
     )
-    if columns_merged:
-        logger.info(
-            "merged %d paragraph(s) split across a column break", columns_merged
-        )
-
-    hyphenated_pages = {
-        page["index"]
-        for page in prepared_pages
-        if pdf_layout.page_ends_hyphenated(pdf_bytes, page["index"])
-    }
-    merged = merge_page_paragraphs(prepared_pages, hyphenated_pages=hyphenated_pages)
     if merged:
-        logger.info("merged %d paragraph(s) split by a page break", merged)
+        logger.info(
+            "merged %d page/column opening text block(s) into previous paragraphs",
+            merged,
+        )
 
     lists_merged = merge_ordered_list_blocks(prepared_pages)
     if lists_merged:
