@@ -153,3 +153,42 @@ export async function getPaperFileUrl(paperId: string): Promise<string | null> {
     const response = await fetchFromApi(`/api/paper/${paperId}/file-url`);
     return response?.file_url ?? null;
 }
+
+/**
+ * Download a binary export through the existing cookie-authenticated API.
+ * Returns the blob and the server-provided filename; errors carry the JSON
+ * `detail`/`message` when the backend rejected the request.
+ */
+export async function downloadFromApi(
+    endpoint: string,
+): Promise<{ blob: Blob; filename: string | null }> {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: languageHeader(),
+    });
+    if (!response.ok) {
+        let message = `API error: ${response.status}`;
+        try {
+            const data = await response.json();
+            message = data?.detail || data?.message || data?.error || message;
+        } catch {
+            // keep the status-based message
+        }
+        throw new Error(typeof message === 'string' ? message : String(message));
+    }
+    const disposition = response.headers.get('content-disposition') || '';
+    const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+    const plain = /filename="?([^";]+)"?/i.exec(disposition);
+    let filename: string | null = null;
+    if (encoded?.[1]) {
+        try {
+            filename = decodeURIComponent(encoded[1].replace(/["']/g, ''));
+        } catch {
+            filename = encoded[1];
+        }
+    } else if (plain?.[1]) {
+        filename = plain[1];
+    }
+    return { blob: await response.blob(), filename };
+}

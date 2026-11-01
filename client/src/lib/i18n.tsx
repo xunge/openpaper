@@ -255,6 +255,13 @@ const zh: Record<string, string> = {
 	"Cite Paper": "引用论文",
 	"Creating Audio Overview": "正在生成音频概述",
 	"Download PNG": "下载 PNG",
+	"Download the final OCR Markdown, its images, or a Word document.": "下载最终 OCR 的 Markdown、完整图片包或 Word 文档。",
+	"Markdown (.md)": "Markdown (.md)",
+	"Markdown + images (.zip)": "Markdown + 图片 (.zip)",
+	"Word (.docx)": "Word (.docx)",
+	"Preparing download…": "正在准备下载…",
+	"Download started": "已开始下载",
+	"Download failed": "下载失败",
 	"Audio Overview": "音频概述",
 
 	Short: "简短",

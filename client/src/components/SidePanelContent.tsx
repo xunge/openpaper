@@ -17,6 +17,9 @@ import {
     Sparkle,
     Check,
     Route,
+    Download,
+    FileText,
+    FileArchive,
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -47,7 +50,7 @@ import Link from 'next/link';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import React, { useState, useRef, useEffect, useMemo, useCallback, FormEvent } from 'react';
 import { toast } from "sonner";
-import { fetchFromApi, fetchStreamFromApi } from '@/lib/api';
+import { fetchFromApi, fetchStreamFromApi, downloadFromApi } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useSubscription, getChatCreditUsagePercentage, isChatCreditAtLimit, isChatCreditNearLimit } from '@/hooks/useSubscription';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -123,6 +126,33 @@ export function SidePanelContent({
     addAnnotation,
 }: SidePanelContentProps) {
     const { t, lang } = useI18n();
+    const [downloadingFormat, setDownloadingFormat] = useState<string | null>(null);
+
+    const handleDownload = useCallback(async (format: "md" | "zip" | "docx") => {
+        if (downloadingFormat) return;
+        setDownloadingFormat(format);
+        try {
+            const { blob, filename } = await downloadFromApi(
+                `/api/paper/${id}/export?format=${format}&lang=${lang}`,
+            );
+            const url = URL.createObjectURL(blob);
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download =
+                filename || `paper.${format === "docx" ? "docx" : format}`;
+            document.body.appendChild(anchor);
+            anchor.click();
+            anchor.remove();
+            URL.revokeObjectURL(url);
+            toast.success(t("Download started"));
+        } catch (err) {
+            toast.error(
+                err instanceof Error ? err.message : t("Download failed"),
+            );
+        } finally {
+            setDownloadingFormat(null);
+        }
+    }, [downloadingFormat, id, lang, t]);
     const { user } = useAuth();
     const [conversationId, setConversationId] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -841,6 +871,46 @@ export function SidePanelContent({
                                         onComposeHighlightDismiss={onComposeHighlightDismiss}
                                         addAnnotation={addAnnotation}
                                     />
+                                </div>
+                            )
+                        }
+                        {
+                            rightSideFunction === 'Download' && (
+                                <div className={`flex flex-col ${heightClass} p-4 space-y-4`}>
+                                    <h3 className="text-lg font-semibold">{t("Download")}</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        {t("Download the final OCR Markdown, its images, or a Word document.")}
+                                    </p>
+                                    <Button
+                                        variant="outline"
+                                        className="justify-start gap-2"
+                                        disabled={downloadingFormat !== null}
+                                        onClick={() => handleDownload("md")}
+                                    >
+                                        {downloadingFormat === "md" ? <Loader className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                                        {t("Markdown (.md)")}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="justify-start gap-2"
+                                        disabled={downloadingFormat !== null}
+                                        onClick={() => handleDownload("zip")}
+                                    >
+                                        {downloadingFormat === "zip" ? <Loader className="h-4 w-4 animate-spin" /> : <FileArchive className="h-4 w-4" />}
+                                        {t("Markdown + images (.zip)")}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        className="justify-start gap-2"
+                                        disabled={downloadingFormat !== null}
+                                        onClick={() => handleDownload("docx")}
+                                    >
+                                        {downloadingFormat === "docx" ? <Loader className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                                        {t("Word (.docx)")}
+                                    </Button>
+                                    {downloadingFormat && (
+                                        <p className="text-xs text-muted-foreground">{t("Preparing download…")}</p>
+                                    )}
                                 </div>
                             )
                         }

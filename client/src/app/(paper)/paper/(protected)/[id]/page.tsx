@@ -35,7 +35,7 @@ import ReportSkeleton from '@/components/ReportSkeleton';
 
 import { SidePanelContent } from '@/components/SidePanelContent';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Book, Box, Languages } from 'lucide-react';
+import { Book, Box, Download, Languages } from 'lucide-react';
 
 const OverviewTool = {
     name: "Overview",
@@ -67,6 +67,12 @@ const BilingualTool = {
     icon: Languages,
 }
 
+const DownloadTool = {
+    name: "Download",
+    label: "Download",
+    icon: Download,
+}
+
 const PaperToolset = {
     nav: [
         ChatTool,
@@ -74,6 +80,7 @@ const PaperToolset = {
         AnnotationsTool,
         AudioTool,
         BilingualTool,
+        DownloadTool,
     ],
 }
 

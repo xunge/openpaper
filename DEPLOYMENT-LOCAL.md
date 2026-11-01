@@ -82,6 +82,52 @@ PDF → PyMuPDF 渲染每页 PNG(144 DPI) → 存 MinIO
 `BILINGUAL_STALE_SECONDS`（默认 420s）没有心跳时，GET 会把文档标成失败并允许重试。
 DELETE 会 revoke 对应的 Celery 任务。
 
+### Markdown / Word 导出
+
+论文阅读页右侧新增「Download」工具，三个入口：
+
+| 格式 | 接口 | 内容 |
+| --- | --- | --- |
+| Markdown | `GET /api/paper/{paper_id}/export?format=md&lang=zh` | 最终阅读 Markdown（默认中文，`lang=en` 为英文） |
+| 完整 Markdown | `...&format=zip` | `content.md` + `assets/` 下全部被引用图片 |
+| Word | `...&format=docx` | Pandoc 从同一份最终 Markdown 转 DOCX |
+
+- 来源是 `paper_documents.pages[].blocks[]` 的 `zh_md`/`en_md` 与 `image_key`，
+  与阅读器展示一致；**不会**重新调用 MinerU，也**不会**使用 `markdown.md` 或
+  MinerU 原始 DOCX。ZIP 里的 `content.md` 也是重新生成的，不是 S3 上的
+  `papers/.../content.md`。
+- 图片只从 OpenPaper 的对象存储读取；新记录用 `image_key`，旧记录的
+  `image_url` 只有 host 属于本部署 S3 时才映射回 key，任意外部 URL 会被跳过，
+  Pandoc 不会联网抓图，避免 SSRF/失效外链。
+- Word 保留标题、段落、粗体/斜体、列表；`$...$`/`$$...$$` 由 Pandoc 转为
+  Word 原生公式；表格/算法/代码/Figure 以图片嵌入，宽度 `6.5in` 并按原纵横比
+  缩放到页面内；图注保留。
+- DOCX 缓存键包含 `lang + 最终 Markdown + 图片 key` 的 SHA-256，存
+  `papers/{paper_id}/ocr/{document_id}/exports/{lang}-{hash}.docx`；OCR 内容或
+  图片变化后 hash 变化，旧缓存自然失效。
+- 中文文件名使用 RFC 5987 `filename*=UTF-8''...`，同时提供 ASCII fallback。
+- Pandoc 以 `pypandoc-binary` 依赖随 server 镜像安装（当前 3.9），不修改
+  MinerU 镜像，也不用 LibreOffice。
+- 安全：临时目录 + 120s 超时 + 单图/总大小上限；ZIP 内路径来自安全 asset 名，
+  不接受任意 URL/路径遍历。
+
+导出相关环境变量（server）：
+
+```bash
+EXPORT_MAX_ASSET_MB=64       # 单张图片上限
+EXPORT_MAX_TOTAL_MB=512      # 一次导出图片总上限
+EXPORT_PANDOC_TIMEOUT=120    # Pandoc 超时秒数
+EXPORT_PANDOC_CONCURRENCY=2  # 同时转换的 Word 进程数
+# PANDOC_PATH=/usr/local/bin/pandoc   # 可选；默认用 pypandoc 自带二进制
+```
+
+改完 server 代码或依赖后需要重建 server 镜像：
+
+```bash
+docker compose -f docker-compose.dev.yml build server
+docker compose -f docker-compose.dev.yml up -d server
+```
+
 ### MinerU 4.1（默认 OCR Provider）
 
 MinerU 作为文档级解析接入，和 DeepSeek/Xiaomi 共用同一条双语流程（翻译、跨页合并、

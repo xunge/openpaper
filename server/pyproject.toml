@@ -48,6 +48,8 @@ dependencies = [
     "exa-py>=1.0.0",
     "e2b-code-interpreter>=1.0.0",
     "langfuse>=4.7.0",
+    # Bundled Pandoc binary for DOCX export; Debian apt is unreachable here.
+    "pypandoc-binary>=1.17",
     "openinference-instrumentation-google-genai>=0.1.10",
     "openinference-instrumentation-anthropic>=1.0.6",
 ]

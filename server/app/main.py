@@ -20,6 +20,7 @@ from app.api.api import router
 from app.api.auth_api import auth_router
 from app.api.conversation_api import conversation_router
 from app.api.discover_api import discover_router
+from app.api.export_api import paper_export_router
 from app.api.highlight_api import highlight_router
 from app.api.message_api import message_router
 from app.api.onboarding_api import onboarding_router
@@ -133,6 +134,7 @@ app.add_middleware(
 app.include_router(router, prefix="/api")
 app.include_router(auth_router, prefix="/api/auth")  # Auth routes
 app.include_router(paper_router, prefix="/api/paper")
+app.include_router(paper_export_router, prefix="/api/paper")
 app.include_router(paper_bilingual_router, prefix="/api/paper/bilingual")
 app.include_router(conversation_router, prefix="/api/conversation")
 app.include_router(message_router, prefix="/api/message")
