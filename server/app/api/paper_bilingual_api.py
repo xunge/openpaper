@@ -174,26 +174,10 @@ async def get_bilingual_document(
     )
 
 
-@paper_bilingual_router.get("/models")
-async def list_ocr_models(
-    request: Request,
-    current_user: CurrentUser = Depends(get_required_user),
-):
-    """OCR backends the user can choose from, with live availability."""
-    return JSONResponse(
-        status_code=200,
-        content={
-            "models": ocr_probe.available_providers(),
-            "default": ocr_probe.DEFAULT_PROVIDER,
-        },
-    )
-
-
 @paper_bilingual_router.post("/")
 async def start_bilingual_document(
     request: Request,
     id: str = Query(..., description="Paper id"),
-    model: str | None = Query(None, description="OCR backend name"),
     db: Session = Depends(get_db),
     current_user: CurrentUser = Depends(get_required_user),
 ):
@@ -207,15 +191,10 @@ async def start_bilingual_document(
     if not paper or not paper.s3_object_key:
         return JSONResponse(status_code=404, content={"message": "Paper not found"})
 
-    provider = ocr_probe.resolve(model)
-    provider_ready = any(
-        item["name"] == provider["name"] and item["available"]
-        for item in ocr_probe.available_providers()
-    )
-    if not provider_ready:
+    if not ocr_probe.ocr_available():
         return JSONResponse(
             status_code=503,
-            content={"message": f"OCR backend {provider['label']} is not available"},
+            content={"message": "MinerU OCR backend is not available"},
         )
 
     document = _find(db, paper_id, current_user.id)
@@ -252,7 +231,7 @@ async def start_bilingual_document(
     document.stage_total = 0
     document.error = None
     document.pages = []
-    document.ocr_model = provider["name"]
+    document.ocr_model = "mineru"
     document.translation_model = os.getenv(
         "TRANSLATE_MODEL", os.getenv("DEEPSEEK_FAST_MODEL", "deepseek-flash")
     )
@@ -266,7 +245,6 @@ async def start_bilingual_document(
             document_id=str(document.id),
             paper_id=str(paper.id),
             s3_object_key=str(paper.s3_object_key),
-            provider=provider["name"],
         )
     except Exception as exc:
         logger.exception("could not queue bilingual document %s", document.id)
@@ -288,10 +266,9 @@ async def start_bilingual_document(
     db.commit()
     db.refresh(document)
     logger.info(
-        "queued bilingual document %s as task %s (%s)",
+        "queued bilingual document %s as task %s",
         document.id,
         task_id,
-        provider["name"],
     )
     return JSONResponse(status_code=202, content={"document": _serialise(document)})
 

@@ -19,7 +19,7 @@
 
 | 模块 | 改造内容 |
 | --- | --- |
-| OCR | 接入 **MinerU 4.1.3**；默认 provider 固定为 `mineru`；保留 DeepSeek-OCR-2 / Xiaomi-OCR-0 作为旧文档/API 兼容 |
+| OCR | 接入 **MinerU 4.1.3**；OCR 入口只保留 MinerU |
 | OCR 客户端 | 支持 MinerU `file_parse` 200/202、Tasks API 兜底、ZIP 安全解压、轮询、超时与重试 |
 | 版面重建 | MinerU 结构化 Markdown → OpenPaper `pages[].blocks[]`；保留标题、段落、公式 LaTeX、图注、阅读顺序 |
 | 特殊内容 | `table` / `algorithm` / `code` / `figure` 从**原始 PDF** 300 DPI 裁剪为 PNG；图片标题独立；表格不再重复输出 HTML |
@@ -552,7 +552,6 @@ MAX_UPLOAD_SIZE_MB=200
 ALLOW_LOCAL_REGISTRATION=true
 
 # OCR / 双语
-OCR_PROVIDER=mineru
 MINERU_FILE_PARSE_URL=http://host.docker.internal:8003
 MINERU_TASKS_API_URL=http://host.docker.internal:8000
 MINERU_API_MODE=auto
@@ -608,7 +607,6 @@ CELERY_RESULT_BACKEND=redis://redis:6379/0
 WEBHOOK_BASE_URL=http://server:8000
 JOBS_INTERNAL_SECRET=${JOBS_SECRET}
 
-OCR_PROVIDER=mineru
 MINERU_FILE_PARSE_URL=http://host.docker.internal:8003
 MINERU_TASKS_API_URL=http://host.docker.internal:8000
 MINERU_API_MODE=auto
@@ -699,7 +697,7 @@ docker run --rm \
 
 ### 7.6 构建并启动 OpenPaper
 
-只启动需要的服务，**不要启动 `tts`、`tts-vllm`、`ocr`、`ocr-xiaomi`**；这些会额外占用 GPU，且 MinerU 已经承担 OCR。
+只启动需要的服务，**不要启动 `tts`、`tts-vllm`**；这些会额外占用 GPU，且 MinerU 已经承担 OCR。
 
 ```bash
 cd /opt/openpaper
@@ -842,20 +840,7 @@ TTS_MAX_CHUNK_CHARS=800
 
 ---
 
-## 10. 旧 OCR Provider（可选）
-
-默认只用 MinerU。DeepSeek-OCR-2 / Xiaomi-OCR-0 仅保留给旧文档和 API 调试：
-
-```bash
-# 旧 provider 需要额外模型和显存，不建议新部署启用
-docker compose -f docker-compose.dev.yml up -d ocr ocr-xiaomi
-```
-
-前端已经没有 OCR 模型下拉，始终使用 MinerU；API 仍兼容 `?model=...`。
-
----
-
-## 11. 生产化建议
+## 10. 生产化建议
 
 当前 `docker-compose.dev.yml` 是单机自托管/开发栈，功能完整，但默认带开发特性：
 
@@ -905,7 +890,7 @@ docker compose -f docker-compose.dev.yml up -d \
 
 ---
 
-## 12. 常见问题
+## 11. 常见问题
 
 ### MinerU 起不来 / GPU 不可用
 
@@ -967,7 +952,7 @@ docker compose -f docker-compose.dev.yml up -d server
 
 ---
 
-## 13. 目录说明
+## 12. 目录说明
 
 ```text
 openpaper/
@@ -987,11 +972,11 @@ openpaper/
 
 ---
 
-## 14. 测试与已知限制
+## 13. 测试与已知限制
 
 已验证：
 
-- jobs 测试：71 个通过
+- jobs 测试：59 个通过
 - server 测试：323 个，5 个既有额度断言失败（`UNLIMITED_USAGE=true`）
 - 前端 `tsc`：仅既有 `AudioOverview.tsx` 两个 `nova` 类型错误
 - 真实 MinerU 文档：OCR、跨页/跨栏合并、列表、表格/算法/代码/Figure 图片、Markdown/ZIP/Word 导出均已跑通
@@ -1008,7 +993,7 @@ openpaper/
 
 ---
 
-## 15. 上游与许可证
+## 14. 上游与许可证
 
 - 上游：https://github.com/khoj-ai/openpaper
 - 本仓库保留上游 AGPL-3.0 许可证；二次分发/部署请遵守 AGPL。

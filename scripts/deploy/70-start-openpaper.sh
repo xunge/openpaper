@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build and start the OpenPaper application services only.
-# Deliberately excludes tts/tts-vllm/ocr/ocr-xiaomi so MinerU owns the GPU.
+# Deliberately excludes tts/tts-vllm so MinerU owns the GPU.
 set -euo pipefail
 source "$(dirname -- "$0")/lib.sh"
 load_env

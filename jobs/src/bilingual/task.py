@@ -119,7 +119,6 @@ def generate_bilingual_document(
     paper_id: str,
     s3_object_key: str,
     webhook_url: str,
-    provider: str | None = None,
 ) -> Dict[str, Any]:
     """OCR and translate one paper, reporting progress to the server webhook."""
     task_id = str(self.request.id)
@@ -129,11 +128,10 @@ def generate_bilingual_document(
         webhook_url, os.getenv("JOBS_INTERNAL_SECRET", ""), task_id
     )
     logger.info(
-        "bilingual task %s starting (document=%s paper=%s provider=%s)",
+        "bilingual task %s starting (document=%s paper=%s)",
         task_id,
         document_id,
         paper_id,
-        provider,
     )
 
     def upload(object_key: str, data: bytes, content_type: str) -> None:
@@ -144,7 +142,6 @@ def generate_bilingual_document(
         pages = generate_pages(
             pdf_bytes,
             paper_id=paper_id,
-            provider=provider,
             upload=upload,
             on_stage=callback.stage,
             on_page=callback.page,
@@ -157,7 +154,7 @@ def generate_bilingual_document(
         return {"document_id": document_id, "status": "completed", "pages": len(pages)}
     except SoftTimeLimitExceeded:
         logger.error("bilingual task %s hit the soft time limit", task_id)
-        callback.failed("OCR/翻译超时，请重试或改用较快的 OCR 模型")
+        callback.failed("OCR/翻译超时，请重试")
         raise
     except Exception as exc:
         logger.exception("bilingual task %s failed", task_id)

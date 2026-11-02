@@ -59,10 +59,9 @@ docker compose -f docker-compose.dev.yml exec -T server \
 
 | 组件 | 说明 |
 | --- | --- |
-| OCR 服务 | 默认固定 MinerU 4.1；`ocr`（DeepSeek-OCR-2）与 `ocr-xiaomi` 仅保留给旧文档/API 兼容 |
-| 模型 | DeepSeek 在 `/home/jiang/share/model/DeepSeek-OCR-2`；Xiaomi 在 `/home/jiang/share/model/Xiaomi-OCR-0` |
-| 接口 | `127.0.0.1:8105` / `127.0.0.1:8106`，OpenAI 兼容 `/v1/chat/completions` |
-| 显存 | OCR 0.20 × 96 ≈ 19 GB，Xiaomi 0.12 × 96 ≈ 12 GB，与 tts-vllm（36 GB）共存 |
+| OCR 服务 | 仅使用 MinerU 4.1 |
+| 接口 | MinerU file-parse `127.0.0.1:8003` / Tasks API `127.0.0.1:8000` |
+| 显存 | MinerU vLLM（约 24 GB 级别，视页数/并发而定） |
 | 翻译 | `deepseek-flash`，按阅读顺序 6k 字符分块、6 路并发 |
 | 执行 | Celery `bilingual` 队列（`jobs-worker`），不在 API 进程里跑 |
 | 前端 | 论文页右侧 Bilingual 面板 |
@@ -136,17 +135,16 @@ docker compose -f docker-compose.dev.yml build server
 docker compose -f docker-compose.dev.yml up -d server
 ```
 
-### MinerU 4.1（默认 OCR Provider）
+### MinerU 4.1（唯一 OCR 服务）
 
-MinerU 作为文档级解析接入，和 DeepSeek/Xiaomi 共用同一条双语流程（翻译、跨页合并、
-逐页回调都不变），不是第二条独立管线。
+MinerU 作为文档级解析接入，OCR、翻译、跨页合并、逐页回调都在同一条双语流程。
 
 | 项 | 说明 |
 | --- | --- |
 | File Parse | `http://127.0.0.1:8003`，`POST /v1/file_parse`，200 直接返回 ZIP，202 用 `request_id` 轮询 |
 | Tasks API | `http://127.0.0.1:8000`，`POST /v1/tasks` → PUT 上传 → 轮询 → `result_url` |
 | 模式 | `MINERU_API_MODE=auto`（优先 8003，不可达时切 8000）/ `file_parse` / `tasks` |
-| 选择 | 前端已移除 OCR 下拉，始终使用 MinerU 4.1；API 仍兼容 `?model=...` 供旧客户端/调试 |
+| 选择 | OCR 只使用 MinerU 4.1，没有模型选择入口 |
 | 产物 | `papers/{paper_id}/ocr/{document_id}/content.md`、`source/*`、`assets/*.png` |
 
 `content.md` 是源语言重建稿，图片链接为同前缀的 `assets/...`（导出/调试用）；
@@ -176,7 +174,6 @@ Docker 中 MinerU 在宿主机，不在 compose 里；compose 已给 `server`、
 相关环境变量（worker 侧）：
 
 ```bash
-OCR_PROVIDER=mineru                 # 默认；需要覆盖时才改
 MINERU_FILE_PARSE_URL=http://127.0.0.1:8003
 MINERU_TASKS_API_URL=http://127.0.0.1:8000
 MINERU_API_MODE=auto
@@ -210,17 +207,10 @@ MINERU_TASK_TIMEOUT=1800
   翻译后按源编号校正；前端自定义 `ol` 会透传 `start`，因此单独成块的 `3.` 也不会显示成 `1.`。
 - 行间公式统一规范为独立成行的 `$$...$$`。单行 `$$...$$` 会被 remark-math 当成行内公式，
   而 KaTeX 的 `\tag` 只允许出现在行间模式，会直接报错。
-- Xiaomi 不输出版面标记，流水线会从 PDF 自身的位图与矢量绘图聚类中恢复图区，
-  按阅读顺序插入；图下方 `Figure N:` 题注用于确定下边界，首页标题区会被跳过，
-  避免把标题和作者裁进图里。
+### 翻译注意事项
 
-### 必须记住的坑
-
-1. **`--limit-mm-per-prompt` 要传 JSON**：`'{"image": 1}'`，写成 `image=1` 会直接启动失败。
-2. **`max_tokens` 不能等于上下文长度**：图片 token 已占约 1.2k，`--max-model-len 8192` 下 `max_tokens` 必须留余量（这里用 4096），否则请求 400。
-3. **Triton 编译错误**：OCR 路径上的内核引用了模块级常量（`LOG2E`），需要 `TRITON_ALLOW_NON_CONSTEXPR_GLOBALS=1`。
-4. **表格 `colspan` 大于推断列数**：`table_normalise` 会把 span 夹到网格宽度，否则放置循环会死循环（表现为 worker CPU 100%、进度不动）。
-5. **翻译不要一次发整篇**：整篇一次请求会跑满 `max_tokens` 并丢 `@@BLOCK` 编号；6k 分块 + `deepseek-flash` 实测把 13 页从 468s 降到约 100s。
+**翻译不要一次发整篇**：整篇一次请求会跑满 `max_tokens` 并丢 `@@BLOCK` 编号；
+6k 分块 + `deepseek-flash` 实测把 13 页从 468s 降到约 100s。
 
 ### 依赖
 
@@ -645,9 +635,8 @@ jobs-worker jobs-beat jobs-api`。
 | `client/src/components/bilingual/BilingualPanel.tsx`、`lib/i18n.tsx` | 阶段进度、失败重试、部分页面保留 |
 | `jobs/src/bilingual/mineru_client.py` | MinerU 4.1 客户端：file_parse 200/202、tasks API 兜底、轮询、ZIP 安全解压、大小/超时/重试限制 |
 | `jobs/src/bilingual/mineru_layout.py` | 结构化块重建 Markdown；table/algorithm/code 从原 PDF 300 DPI 切图；图注、跨页拼接、诊断与 search_text |
-| `jobs/src/bilingual/ocr_providers.py`、`ocr_client.py` | 注册 `mineru` provider 与健康检查路径 |
 | `jobs/src/bilingual/pipeline.py`、`task.py` | MinerU 文档级分支复用同一翻译/跨页合并/回调流程；保留 search_text 与 diagnostics |
-| `server/app/helpers/ocr_probe.py` | 默认 provider 为 MinerU，并探测 host-gateway 地址可用性 |
+| `server/app/helpers/ocr_probe.py` | 探测 MinerU host-gateway 地址可用性 |
 | `server/app/api/paper_bilingual_api.py`、`server/tests/test_bilingual_serialise.py` | 暴露 content.md / MinerU 源文件 URL、search_text、diagnostics |
 | `docker-compose.dev.yml`、`server/.env.example` | MinerU 环境变量与 `host.docker.internal:host-gateway` |
 | `client/src/components/bilingual/BilingualPanel.tsx`、`lib/i18n.tsx` | MinerU 阶段、图片点击查看大图、search_text 类型 |

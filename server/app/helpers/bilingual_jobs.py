@@ -35,7 +35,6 @@ def submit_bilingual_task(
     document_id: str,
     paper_id: str,
     s3_object_key: str,
-    provider: str,
 ) -> str:
     """Queue a document for OCR + translation; returns the Celery task id."""
     task_id = str(uuid.uuid4())
@@ -46,7 +45,6 @@ def submit_bilingual_task(
             "document_id": document_id,
             "paper_id": paper_id,
             "s3_object_key": s3_object_key,
-            "provider": provider,
             "webhook_url": webhook_url,
         },
         task_id=task_id,

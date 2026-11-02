@@ -16,7 +16,7 @@ from unittest.mock import patch
 import pymupdf
 from PIL import Image
 
-from src.bilingual import mineru_layout, ocr_providers
+from src.bilingual import mineru_layout
 from src.bilingual.mineru_client import (
     MineruClient,
     MineruConfig,
@@ -628,19 +628,6 @@ class TestBuilder(unittest.TestCase):
     def test_missing_bbox_crop_returns_none(self):
         self.assertIsNone(crop_pdf_region(self.pdf, 0, None))
         self.assertIsNone(crop_pdf_region(self.pdf, 99, [0.1, 0.1, 0.2, 0.2]))
-
-
-class TestProviderCompatibility(unittest.TestCase):
-    def test_old_providers_still_resolve(self):
-        self.assertEqual(ocr_providers.resolve("deepseek-ocr-2")["name"], "deepseek-ocr-2")
-        self.assertEqual(ocr_providers.resolve("xiaomi-ocr-0")["name"], "xiaomi-ocr-0")
-        self.assertEqual(ocr_providers.resolve("mineru")["name"], "mineru")
-
-    def test_unknown_provider_falls_back_to_default(self):
-        self.assertEqual(
-            ocr_providers.resolve("does-not-exist")["name"],
-            ocr_providers.DEFAULT_PROVIDER,
-        )
 
 
 if __name__ == "__main__":

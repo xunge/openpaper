@@ -571,7 +571,7 @@ export const ConversationView = ({
 							colorFrom="#6366f1"
 							colorTo="#3b82f6"
 						>
-							What would you like to discover in your papers?
+							{t("What would you like to discover in your papers?")}
 						</AnimatedGradientText>
 					)}
 					<form onSubmit={handleNewSubmit} className="w-full transition-all duration-300 ease-in-out" ref={chatInputFormRef}>

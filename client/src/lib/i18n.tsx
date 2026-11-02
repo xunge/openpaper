@@ -35,6 +35,7 @@ const zh: Record<string, string> = {
 	"View all papers": "查看全部文献",
 	"View all chats": "查看全部对话",
 	"Open": "打开",
+	"What would you like to discover in your papers?": "你想在论文中发现什么？",
 	"Enter a research question and we'll find relevant papers across the web.": "输入研究问题，我们会从全网为你查找相关论文。",
 	"Search structured indexed academic databases...": "搜索结构化索引的学术数据库…",
 	"Search across preprints, journals, and research sites...": "在预印本、期刊和研究网站中搜索…",

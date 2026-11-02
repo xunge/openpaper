@@ -71,7 +71,7 @@ class TestBilingualSerialise(unittest.TestCase):
         )
 
     def test_legacy_document_has_no_mineru_urls(self):
-        payload = _serialise(fake_document(ocr_model="deepseek-ocr-2"))
+        payload = _serialise(fake_document(ocr_model="legacy"))
         self.assertIsNone(payload["content_url"])
         self.assertIsNone(payload["source_urls"])
 
