@@ -73,3 +73,6 @@ build_*tex.sh
 # scripts/fetch-tts-models.sh — never commit these.
 tts-models/
 /models/
+
+# New-server deployment secrets (copy from deploy.env.example)
+deploy.env

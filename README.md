@@ -184,6 +184,82 @@ export CLIENT_PORT=3100
 # 此时 CLIENT_DOMAIN 也要相应改为 http://${SERVER_IP}:3100
 ```
 
+### 5.1 脚本化部署（新增）
+
+上面的手动步骤已经整理成可重复执行的脚本：
+
+```text
+scripts/deploy/
+├── deploy.sh                 # 总入口
+├── 00-preflight.sh
+├── 10-install-docker.sh
+├── 20-install-nvidia.sh
+├── 30-load-mineru.sh
+├── 40-start-mineru.sh
+├── 50-init-env.sh
+├── 60-init-minio.sh
+├── 70-start-openpaper.sh
+├── 80-create-admin.sh
+└── 90-verify.sh
+```
+
+首次使用：
+
+```bash
+cd /opt/openpaper
+cp deploy.env.example deploy.env
+chmod 600 deploy.env
+vi deploy.env                 # 填 IP/域名、DeepSeek Key、MinIO 密码、GPU
+
+scripts/deploy/deploy.sh all
+```
+
+`all` 会执行：
+
+```text
+preflight → Docker → NVIDIA Toolkit → MinerU 镜像
+→ MinerU 启动 → env 生成 → MinIO bucket/CORS
+→ OpenPaper 构建/迁移/启动 → 健康检查
+```
+
+然后**人工创建管理员**：
+
+```bash
+scripts/deploy/deploy.sh admin
+```
+
+也可以分阶段执行：
+
+```bash
+scripts/deploy/deploy.sh preflight
+scripts/deploy/deploy.sh docker
+scripts/deploy/deploy.sh nvidia
+scripts/deploy/deploy.sh mineru
+scripts/deploy/deploy.sh env
+scripts/deploy/deploy.sh minio
+scripts/deploy/deploy.sh openpaper
+scripts/deploy/deploy.sh verify
+```
+
+常用调试：
+
+```bash
+DRY_RUN=1 scripts/deploy/deploy.sh env     # 只打印，不写文件
+FORCE_ENV=1 scripts/deploy/deploy.sh env   # 重新生成 env
+SKIP_GPU=1 scripts/deploy/deploy.sh preflight
+DRY_RUN=1 scripts/deploy/deploy.sh mineru
+```
+
+脚本会尽量幂等，但以下仍然必须人工确认：
+
+- NVIDIA **驱动**是否安装（Toolkit 脚本只装容器运行时）
+- MinerU 镜像从哪里来（`MINERU_IMAGE_TAR` / `MINERU_IMAGE_REGISTRY`）
+- `deploy.env` 中的 API Key、密码、域名、GPU 编号
+- 管理员密码（终端交互输入）
+- 域名 DNS、TLS、防火墙/安全组
+
+`deploy.env` 不要提交 Git。
+
 ---
 
 ## 6. MinerU 完整部署
@@ -902,6 +978,8 @@ openpaper/
 ├── templates/              源模板 academic-reference.docx
 ├── docker/                 TTS / TTS proxy 构建文件
 ├── docker-compose.dev.yml  单机部署 compose
+├── deploy.env.example      部署变量模板
+├── scripts/deploy/        新服务器分阶段部署脚本
 ├── scripts/                dev/fixture/TTS 脚本
 ├── DEPLOYMENT-LOCAL.md     更详细的本机部署记录
 └── README.md               本文件
