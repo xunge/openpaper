@@ -123,7 +123,7 @@ export function CitePaperButton({ paper, paperId: providedPaperId, minimalist = 
                         <label className="text-sm font-medium">{t("Citation Style")}</label>
                         <Select value={selectedStyle} onValueChange={setSelectedStyle}>
                             <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select citation style" />
+                                <SelectValue placeholder={t("Select citation style")} />
                             </SelectTrigger>
                             <SelectContent>
                                 {citationStyles.map((style) => (

@@ -521,7 +521,7 @@ export default function Home() {
 						<div className="flex justify-end mt-4">
 							{showPricingOnError && (
 								<Button variant="default" asChild className="mr-2 bg-blue-500 hover:bg-blue-200 dark:bg-blue-600 dark:hover:bg-blue-700 text-white">
-									<Link href="/pricing">Upgrade</Link>
+									<Link href="/pricing">{t("Upgrade")}</Link>
 								</Button>
 							)}
 						</div>
@@ -538,7 +538,7 @@ export default function Home() {
 						e.preventDefault();
 					}}>
 					<DialogHeader>
-						<DialogTitle className="text-center">Processing Your Paper</DialogTitle>
+						<DialogTitle className="text-center">{t("Processing Your Paper")}</DialogTitle>
 						<DialogDescription className="text-center">
 							This might take up to two minutes...
 						</DialogDescription>

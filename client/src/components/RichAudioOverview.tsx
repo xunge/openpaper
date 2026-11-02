@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from '@/lib/i18n';
 import { useState, useRef } from "react";
 import { useIsMobile } from "@/lib/useMobile";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ export const RichAudioOverview = ({
     papers,
     onOpenPaperExternal,
 }: RichAudioOverviewProps) => {
+    const { t } = useI18n();
     const [pdfUrl, setPdfUrl] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState<string | null>(null);
     const [isPdfVisible, setIsPdfVisible] = useState(false);
@@ -159,7 +161,7 @@ export const RichAudioOverview = ({
                                         className="mt-6 pt-4 border-t border-gray-300 dark:border-gray-700 flex items-center justify-between"
                                         id="references-section"
                                     >
-                                        <h4 className="text-sm font-semibold mb-2">References</h4>
+                                        <h4 className="text-sm font-semibold mb-2">{t("References")}</h4>
                                         <ChatMessageActions
                                             message={audioOverview.transcript}
                                             references={references}

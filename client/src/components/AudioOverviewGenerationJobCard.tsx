@@ -26,18 +26,18 @@ const getStatusIcon = (status: string) => {
     }
 };
 
-const getStatusText = (status: string) => {
+const getStatusText = (status: string, t: (s: string) => string) => {
     switch (status) {
         case 'pending':
-            return 'Queued';
+            return t("Queued");
         case 'running':
-            return 'Generating...';
+            return t("Generating...");
         case 'completed':
-            return 'Completed';
+            return t("Completed");
         case 'failed':
-            return 'Failed';
+            return t("Failed");
         case 'cancelled':
-            return 'Cancelled';
+            return t("Cancelled");
         default:
             return status.charAt(0).toUpperCase() + status.slice(1);
     }
@@ -74,7 +74,7 @@ export default function AudioOverviewGenerationJobCard({ job }: AudioOverviewGen
                         {t("Creating Audio Overview")}
                     </h3>
                     <p className={`text-xs font-medium mb-1 ${getStatusColor(job.status)}`}>
-                        {job.status_message || getStatusText(job.status)}
+                        {job.status_message || getStatusText(job.status, t)}
                     </p>
                     <p className="text-xs text-muted-foreground">
                         {job.completed_at ? (

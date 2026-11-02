@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { ChartArtifact } from "@/lib/schema";
 import { ChartPoint, exactNumber } from "@/components/ChartFigure";
 
@@ -17,6 +18,7 @@ export function ChartValuesTable({ artifact, points, onOpenPaper }: {
     points: ChartPoint[];
     onOpenPaper: (paperId: string, searchTerm?: string) => void;
 }) {
+    const { t } = useI18n();
     const excluded = artifact.records.filter(record => record.exclusion_reason);
     if (points.length === 0 && excluded.length === 0) return null;
 
@@ -31,7 +33,7 @@ export function ChartValuesTable({ artifact, points, onOpenPaper }: {
                             <th scope="col" className="py-1 pr-3 text-right font-medium">
                                 {artifact.plan.y.unit ? `${artifact.plan.y.label} (${artifact.plan.y.unit})` : artifact.plan.y.label}
                             </th>
-                            <th scope="col" className="py-1 font-medium">Source</th>
+                            <th scope="col" className="py-1 font-medium">{t("Source")}</th>
                         </tr>
                     </thead>
                     <tbody>

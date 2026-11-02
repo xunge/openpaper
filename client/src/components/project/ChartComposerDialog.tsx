@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { BarChart3, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function ChartComposerDialog({ open, onOpenChange, projectId, papers, onCreated }: Props) {
+    const { t } = useI18n();
     const [prompt, setPrompt] = useState("");
     const [paperIds, setPaperIds] = useState<string[]>([]);
     const [plan, setPlan] = useState<ChartPlan | null>(null);
@@ -98,23 +100,23 @@ export function ChartComposerDialog({ open, onOpenChange, projectId, papers, onC
     return <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
             <DialogHeader>
-                <DialogTitle>Create a chart</DialogTitle>
-                <DialogDescription>Describe the comparison, then review the chart shape before it searches for cited values.</DialogDescription>
+                <DialogTitle>{t("Create a chart")}</DialogTitle>
+                <DialogDescription>{t("Describe the comparison, then review the chart shape before it searches for cited values.")}</DialogDescription>
             </DialogHeader>
             {!plan ? (
                 <div className="space-y-4">
                     <div>
-                        <Label htmlFor="chart-request">What should the chart show?</Label>
+                        <Label htmlFor="chart-request">{t("What should the chart show?")}</Label>
                         <Textarea
                             id="chart-request"
                             className="mt-2"
                             value={prompt}
                             onChange={event => setPrompt(event.target.value)}
-                            placeholder="Compare sample size against accuracy across these papers"
+                            placeholder={t("Compare sample size against accuracy across these papers")}
                         />
                     </div>
                     <div>
-                        <Label>Paper scope</Label>
+                        <Label>{t("Paper scope")}</Label>
                         <div className="mt-2 max-h-36 space-y-2 overflow-y-auto rounded border p-2">
                             {papers.map(paper => (
                                 <label key={paper.id} className="flex gap-2 text-sm">
@@ -133,21 +135,20 @@ export function ChartComposerDialog({ open, onOpenChange, projectId, papers, onC
                         </div>
                     </div>
                     <div className="flex justify-end gap-2">
-                        <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+                        <Button variant="secondary" onClick={() => onOpenChange(false)}>{t("Cancel")}</Button>
                         <Button onClick={propose} disabled={loading || !prompt.trim() || paperIds.length === 0}>
                             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Design chart
+                            {t("Design chart")}
                         </Button>
                     </div>
                 </div>
             ) : (
                 <div className="space-y-4">
                     <p className="rounded bg-muted p-2 text-xs text-muted-foreground">
-                        Review and customize this plan. Generation will search the selected papers
-                        and include only directly cited values.
+                        {t("Review and customize this plan. Generation will search the selected papers and include only directly cited values.")}
                     </p>
                     <div>
-                        <Label htmlFor="chart-title">Title</Label>
+                        <Label htmlFor="chart-title">{t("Title")}</Label>
                         <Input
                             id="chart-title"
                             className="mt-1"
@@ -159,7 +160,7 @@ export function ChartComposerDialog({ open, onOpenChange, projectId, papers, onC
                         />
                     </div>
                     <div>
-                        <Label>Chart type</Label>
+                        <Label>{t("Chart type")}</Label>
                         <Select
                             value={plan.chart_type}
                             onValueChange={(value: ChartPlan["chart_type"]) => {
@@ -169,15 +170,15 @@ export function ChartComposerDialog({ open, onOpenChange, projectId, papers, onC
                         >
                             <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="bar">Bar</SelectItem>
-                                <SelectItem value="line">Line</SelectItem>
-                                <SelectItem value="scatter">Scatter</SelectItem>
+                                <SelectItem value="bar">{t("Bar")}</SelectItem>
+                                <SelectItem value="line">{t("Line")}</SelectItem>
+                                <SelectItem value="scatter">{t("Scatter")}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <Label htmlFor="chart-x">X axis</Label>
+                            <Label htmlFor="chart-x">{t("X axis")}</Label>
                             <Input
                                 id="chart-x"
                                 className="mt-1"
@@ -186,7 +187,7 @@ export function ChartComposerDialog({ open, onOpenChange, projectId, papers, onC
                             />
                         </div>
                         <div>
-                            <Label htmlFor="chart-y">Y axis</Label>
+                            <Label htmlFor="chart-y">{t("Y axis")}</Label>
                             <Input
                                 id="chart-y"
                                 className="mt-1"
@@ -196,22 +197,21 @@ export function ChartComposerDialog({ open, onOpenChange, projectId, papers, onC
                         </div>
                     </div>
                     <div>
-                        <Label htmlFor="chart-unit">Y axis unit</Label>
+                        <Label htmlFor="chart-unit">{t("Y axis")} unit</Label>
                         <Input
                             id="chart-unit"
                             className="mt-1"
-                            placeholder="none"
+                            placeholder={t("none")}
                             value={plan.y.unit ?? ""}
                             onChange={event => updateUnit(event.target.value)}
                         />
                         <p className="mt-1 text-xs text-muted-foreground">
-                            Every paper&apos;s value is converted into this unit. Leave it empty
-                            for a count or a dimensionless score.
+                            {t("Every paper's value is converted into this unit. Leave it empty for a count or a dimensionless score.")}
                         </p>
                     </div>
                     {plan.calculation && (
                         <p className="text-xs text-muted-foreground">
-                            Calculated y: {plan.calculation.spec}
+                            {t("Calculated y:")} {plan.calculation.spec}
                         </p>
                     )}
                     {generationError && (
@@ -223,12 +223,12 @@ export function ChartComposerDialog({ open, onOpenChange, projectId, papers, onC
                         </p>
                     )}
                     <div className="flex justify-between gap-2">
-                        <Button variant="ghost" onClick={() => setPlan(null)}>Back</Button>
+                        <Button variant="ghost" onClick={() => setPlan(null)}>{t("Back")}</Button>
                         <Button onClick={generate} disabled={loading || !plan.title.trim()}>
                             {loading
                                 ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 : <BarChart3 className="mr-2 h-4 w-4" />}
-                            Generate chart
+                            {t("Generate chart")}
                         </Button>
                     </div>
                 </div>

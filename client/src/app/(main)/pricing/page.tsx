@@ -399,7 +399,7 @@ export default function PricingPage() {
                         <div className="pt-4">
                             <div className="text-3xl font-light text-slate-900 dark:text-slate-100">
                                 $0
-                                <span className="text-lg font-normal text-slate-500 dark:text-slate-400">/month</span>
+                                <span className="text-lg font-normal text-slate-500 dark:text-slate-400">{t("/month")}</span>
                             </div>
                         </div>
                     </CardHeader>
@@ -445,7 +445,7 @@ export default function PricingPage() {
                         <div className="pt-4">
                             <div className="text-3xl font-light text-slate-900 dark:text-slate-100">
                                 ${isAnnual ? annualPrice : monthlyPrice}
-                                <span className="text-lg font-normal text-slate-500 dark:text-slate-400">/month</span>
+                                <span className="text-lg font-normal text-slate-500 dark:text-slate-400">{t("/month")}</span>
                             </div>
                             {isAnnual && (
                                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
@@ -587,7 +587,7 @@ export default function PricingPage() {
                             <CardDescription className="text-slate-600 dark:text-slate-400">{t("For research teams and organizations")}</CardDescription>
                         </div>
                         <div className="pt-4">
-                            <div className="text-3xl font-light text-slate-900 dark:text-slate-100">{t("TBD")}<span className="text-lg font-normal text-slate-500 dark:text-slate-400">/month</span>
+                            <div className="text-3xl font-light text-slate-900 dark:text-slate-100">{t("TBD")}<span className="text-lg font-normal text-slate-500 dark:text-slate-400">{t("/month")}</span>
                             </div>
                         </div>
                     </CardHeader>

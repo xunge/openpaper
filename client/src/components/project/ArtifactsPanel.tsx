@@ -515,7 +515,7 @@ export function ArtifactsPanel() {
                         <Sparkles className="h-4 w-4 text-blue-500" aria-hidden />
                         <h2 className="text-sm font-semibold">{t("Artifacts")}</h2>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={closeArtifacts} aria-label="Close artifacts">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={closeArtifacts} aria-label={t("Close artifacts")}>
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
@@ -636,16 +636,16 @@ export function ArtifactsPanel() {
             <Dialog open={isCreateAudioDialogOpen} onOpenChange={setCreateAudioDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Create an Audio Overview</DialogTitle>
+                        <DialogTitle>{t("Create an Audio Overview")}</DialogTitle>
                         <DialogDescription>
                             Generate an audio overview of your project papers. Add custom instructions to guide the content.
                         </DialogDescription>
                     </DialogHeader>
                     {atAudioLimit ? (
                         <div className="mt-4 text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/30 rounded-md">
-                            <p className="text-sm text-yellow-800 dark:text-yellow-200">You&apos;ve used all your audio overviews for this week.</p>
+                            <p className="text-sm text-yellow-800 dark:text-yellow-200">{t("You've used all your audio overviews for this week.")}</p>
                             <Link href="/pricing" passHref>
-                                <Button variant="link" className="p-0 h-auto text-sm">Upgrade your plan to create more.</Button>
+                                <Button variant="link" className="p-0 h-auto text-sm">{t("Upgrade your plan to create more.")}</Button>
                             </Link>
                         </div>
                     ) : (
@@ -656,7 +656,7 @@ export function ArtifactsPanel() {
                                 </Label>
                                 <Select value={selectedAudioLength} onValueChange={setSelectedAudioLength}>
                                     <SelectTrigger className="mt-2">
-                                        <SelectValue placeholder="Select audio length" />
+                                        <SelectValue placeholder={t("Select audio length")} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {audioLengthOptions.map((option) => (
@@ -673,7 +673,7 @@ export function ArtifactsPanel() {
                                 </Label>
                                 <Textarea
                                     id="audio-instructions"
-                                    placeholder="Add any specific topics, focus areas, or instructions for the audio overview..."
+                                    placeholder={t("Add any specific topics, focus areas, or instructions for the audio overview...")}
                                     value={audioInstructions}
                                     onChange={(e) => setAudioInstructions(e.target.value)}
                                     className="mt-2 min-h-[100px] resize-none"

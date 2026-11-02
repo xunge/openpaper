@@ -46,7 +46,7 @@ export function ManageProjectsButton() {
                 </DrawerTrigger>
                 <DrawerContent>
                     <DrawerHeader>
-                        <DrawerTitle>Projects</DrawerTitle>
+                        <DrawerTitle>{t("Projects")}</DrawerTitle>
                     </DrawerHeader>
                     <div className="px-4 pb-4">
                         {content}

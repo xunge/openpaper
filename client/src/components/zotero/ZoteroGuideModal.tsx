@@ -9,6 +9,7 @@ import {
 	DialogTitle
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 export function ZoteroGuideModal({
 	open,
@@ -21,17 +22,18 @@ export function ZoteroGuideModal({
 	onConnect?: () => void;
 	connecting?: boolean;
 }) {
+	const { t } = useI18n();
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-2xl">
 				<DialogHeader>
-					<DialogTitle>How to connect your Zotero account</DialogTitle>
+					<DialogTitle>{t("How to connect your Zotero account")}</DialogTitle>
 				</DialogHeader>
 				<ol className="space-y-4 text-sm">
 					<li className="flex gap-3">
 						<span className="font-semibold shrink-0">1.</span>
 						<div>
-							<p className="font-medium">Log in to your Zotero account on the web</p>
+							<p className="font-medium">{t("Log in to your Zotero account on the web")}</p>
 							<p className="text-muted-foreground mt-0.5">
 								Go to{" "}
 								<a
@@ -49,7 +51,7 @@ export function ZoteroGuideModal({
 				<li className="flex gap-3">
 					<span className="font-semibold shrink-0">2.</span>
 					<div className="space-y-2">
-						<p className="font-medium">Sync with your Zotero desktop app</p>
+						<p className="font-medium">{t("Sync with your Zotero desktop app")}</p>
 						<p className="text-muted-foreground mt-0.5">
 							Open the Zotero desktop app and click the sync button (the circular arrow) in the toolbar to make sure your library is up to date.
 						</p>
@@ -63,9 +65,9 @@ export function ZoteroGuideModal({
 					<li className="flex gap-3">
 						<span className="font-semibold shrink-0">3.</span>
 						<div>
-							<p className="font-medium">Click &quot;Connect Zotero&quot; below</p>
+							<p className="font-medium">{t('Click "Connect Zotero" below')}</p>
 							<p className="text-muted-foreground mt-0.5">
-								You&apos;ll be redirected to Zotero to authorize Open Paper, then brought back to this page. Open Paper only reads your library — it never changes anything in Zotero.
+								{t("You'll be redirected to Zotero to authorize Open Paper, then brought back to this page. Open Paper only reads your library — it never changes anything in Zotero.")}
 							</p>
 						</div>
 					</li>
@@ -82,7 +84,7 @@ export function ZoteroGuideModal({
 							</Button>
 						</>
 					) : (
-						<Button onClick={() => onOpenChange(false)}>Got it</Button>
+						<Button onClick={() => onOpenChange(false)}>{t("Got it")}</Button>
 					)}
 				</DialogFooter>
 			</DialogContent>

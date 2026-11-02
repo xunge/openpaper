@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useMemo, useState } from "react";
 import { BarChart3, Sigma } from "lucide-react";
 import Link from "next/link";
@@ -57,6 +58,7 @@ export function ChartArtifactCard({ artifact, onOpenPaper, chatHref, detailHref,
     detailHref?: string;
     display?: "compact" | "full";
 }) {
+    const { t } = useI18n();
     const view = useMemo(() => chartView(artifact), [artifact]);
     const sources = useMemo(() => paperSources(artifact), [artifact]);
     const [log, setLog] = useState(view.defaultLog);
@@ -107,7 +109,7 @@ export function ChartArtifactCard({ artifact, onOpenPaper, chatHref, detailHref,
                 <ChartValuesTable artifact={artifact} points={points} onOpenPaper={onOpenPaper} />
 
                 {(points.length > 0 || artifact.investigation_trace || artifact.warnings.length > 0) && <div className="mt-6 space-y-2 border-t pt-3 text-xs">
-                    <h4 className="m-0 text-xs font-semibold">Sources</h4>
+                    <h4 className="m-0 text-xs font-semibold">{t("Sources")}</h4>
                     {artifact.plan.calculation && (
                         <p className="flex gap-1 text-muted-foreground">
                             <Sigma className="h-3.5 w-3.5 shrink-0" />{artifact.plan.calculation.spec}
@@ -115,7 +117,7 @@ export function ChartArtifactCard({ artifact, onOpenPaper, chatHref, detailHref,
                     )}
                     {artifact.computation?.script && (
                         <details className="rounded bg-muted/60 p-2">
-                            <summary className="cursor-pointer font-medium">View calculation code</summary>
+                            <summary className="cursor-pointer font-medium">{t("View calculation code")}</summary>
                             <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-[10px]">{artifact.computation.script}</pre>
                         </details>
                     )}

@@ -187,7 +187,7 @@ function ProjectsPage() {
 						<div className="flex items-start">
 							<Info className="h-4 w-4 mt-1 text-muted-foreground" />
 							<div className="ml-2">
-								<AlertTitle className="text-foreground">Usage summary</AlertTitle>
+								<AlertTitle className="text-foreground">{t("Usage summary")}</AlertTitle>
 								<AlertDescription className="text-muted-foreground">
 									{atProjectLimit
 										? t("You've used your available project slots. Upgrade for more, or archive existing projects.")

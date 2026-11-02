@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 import { AlertTriangle, ChevronsUpDown, User as UserIcon, X } from "lucide-react";
 import {
     SidebarFooter,
@@ -53,6 +54,7 @@ export function AppSidebarFooter({
     onLogout,
     referralEntry,
 }: AppSidebarFooterProps) {
+    const { t } = useI18n();
     return (
         <SidebarFooter>
             {/* Subscription Warning */}
@@ -154,7 +156,7 @@ export function AppSidebarFooter({
                             className="w-full flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-2 rounded-md transition-colors"
                         >
                             <UserIcon size={16} />
-                            <span className="font-medium">Sign In</span>
+                            <span className="font-medium">{t("Sign In")}</span>
                         </a>
                     </SidebarMenuButton>
                 </SidebarMenuItem>

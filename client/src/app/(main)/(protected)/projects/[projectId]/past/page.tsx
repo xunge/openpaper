@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from "@/lib/i18n";
 import { useEffect } from 'react';
 import { fetchFromApi } from '@/lib/api';
 import Link from 'next/link';
@@ -9,6 +10,7 @@ import ConversationHistory from '@/components/ConversationHistory';
 import { useProjectWorkspace } from '@/components/project/ProjectWorkspaceProvider';
 
 export default function ProjectPastConversationsPage() {
+    const { t } = useI18n();
     const { projectId, conversations, refetchConversations, setCrumb } = useProjectWorkspace();
 
     useEffect(() => {
@@ -32,7 +34,7 @@ export default function ProjectPastConversationsPage() {
             <div className="mx-auto w-full max-w-3xl p-4 md:p-6">
                 <div className="mb-6 flex items-start justify-between">
                     <div>
-                        <h1 className="text-lg font-semibold">Past Conversations</h1>
+                        <h1 className="text-lg font-semibold">{t("Past Conversations")}</h1>
                         <p className="mt-1 text-sm text-muted-foreground">
                             Browse and manage your previous conversations for this project.
                         </p>

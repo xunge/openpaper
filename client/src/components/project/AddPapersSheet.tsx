@@ -187,7 +187,7 @@ export function AddPapersSheet() {
                                     size="icon"
                                     className="-ml-2 h-7 w-7"
                                     onClick={() => setView("initial")}
-                                    aria-label="Back"
+                                    aria-label={t("Back")}
                                 >
                                     <ArrowLeft className="h-4 w-4" />
                                 </Button>
@@ -214,7 +214,10 @@ export function AddPapersSheet() {
                                     <p>{t("You've reached the maximum of")} {paperHardLimit} {t("papers. Remove papers to add more.")}</p>
                                 ) : (
                                     <p>
-                                        {remainingPaperSlots} slot{remainingPaperSlots === 1 ? "" : "s"} left. Large paper counts may impact response quality — for higher limits, contact <a href="mailto:saba@openpaper.ai" className="font-medium underline">saba@openpaper.ai</a>
+                                        {lang === "zh"
+                                            ? `还剩 ${remainingPaperSlots} 个论文名额。论文数量较多可能影响响应质量；需要更高额度请联系 `
+                                            : `${remainingPaperSlots} slot${remainingPaperSlots === 1 ? "" : "s"} left. Large paper counts may impact response quality — for higher limits, contact `}
+                                        <a href="mailto:saba@openpaper.ai" className="font-medium underline">saba@openpaper.ai</a>
                                     </p>
                                 )}
                             </div>
@@ -268,13 +271,13 @@ export function AddPapersSheet() {
                                 {isPaperUploadAtLimit(subscription) && (
                                     <Alert variant="destructive" className="mt-4">
                                         <AlertCircle className="h-4 w-4" />
-                                        <AlertTitle>Upload Limit Reached</AlertTitle>
+                                        <AlertTitle>{t("Upload Limit Reached")}</AlertTitle>
                                         <AlertDescription>
-                                            You have reached your paper upload limit. Please{" "}
+                                            {t("You have reached your paper upload limit. Please")}{" "}
                                             <Link href="/pricing" className="font-bold underline">
-                                                upgrade your plan
+                                                {t("upgrade your plan")}
                                             </Link>{" "}
-                                            to upload more papers.
+                                            {t("to upload more papers.")}
                                         </AlertDescription>
                                     </Alert>
                                 )}
@@ -292,9 +295,9 @@ export function AddPapersSheet() {
             <Dialog open={isUrlDialogOpen} onOpenChange={setIsUrlDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Import PDF from URL</DialogTitle>
+                        <DialogTitle>{t("Import PDF from URL")}</DialogTitle>
                         <DialogDescription>
-                            Enter the public URL of the PDF you want to upload.
+                            {t("Enter the public URL of the PDF you want to upload.")}
                         </DialogDescription>
                     </DialogHeader>
                     <Input
@@ -306,11 +309,11 @@ export function AddPapersSheet() {
                     />
                     <div className="flex justify-end gap-2 mt-4">
                         <Button variant="secondary" onClick={() => setIsUrlDialogOpen(false)}>
-                            Cancel
+                            {t("Cancel")}
                         </Button>
                         <Button onClick={handleDialogConfirm} disabled={!pdfUrl || isUploading}>
                             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Submit
+                            {t("Submit")}
                         </Button>
                     </div>
                 </DialogContent>

@@ -140,14 +140,14 @@ export default function Annotation({
                         <button
                             className="p-1 hover:bg-muted rounded transition-colors"
                             onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
-                            title="Edit"
+                            title={t("Edit")}
                         >
                             <Pencil size={12} className="text-muted-foreground hover:text-primary" />
                         </button>
                         <button
                             className="p-1 hover:bg-destructive/10 rounded transition-colors"
                             onClick={(e) => { e.stopPropagation(); removeAnnotation(annotation.id); }}
-                            title="Delete"
+                            title={t("Delete")}
                         >
                             <Trash2 size={12} className="text-muted-foreground hover:text-destructive" />
                         </button>

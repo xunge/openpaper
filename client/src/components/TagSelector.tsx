@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { fetchFromApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { PaperTag } from "@/lib/schema";
 import { toast } from "sonner";
 import { PlusCircle } from "lucide-react";
@@ -16,6 +17,7 @@ interface TagSelectorProps {
 }
 
 export function TagSelector({ paperIds, onTagsApplied }: TagSelectorProps) {
+    const { t } = useI18n();
     const [tags, setTags] = useState<PaperTag[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
@@ -78,14 +80,14 @@ export function TagSelector({ paperIds, onTagsApplied }: TagSelectorProps) {
             onTagsApplied();
         } catch (error) {
             console.error("Failed to apply tags", error);
-            toast.error("Failed to apply tags.");
+            toast.error(t("Failed to apply tags."));
         }
     };
 
     return (
         <div className="p-4 space-y-4">
             <Input
-                placeholder="Filter tags..."
+                placeholder={t("Filter tags...")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -112,7 +114,7 @@ export function TagSelector({ paperIds, onTagsApplied }: TagSelectorProps) {
             </ScrollArea>
             <div className="flex items-center space-x-2">
                 <Input
-                    placeholder="Create new tag..."
+                    placeholder={t("Create new tag...")}
                     value={newTagName}
                     onChange={(e) => setNewTagName(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleCreateTag()}

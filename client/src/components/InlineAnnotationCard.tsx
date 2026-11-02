@@ -303,7 +303,7 @@ export function InlineAnnotationCard({
                                 className="h-6 w-6 text-muted-foreground hover:text-foreground flex-shrink-0"
                                 onClick={(e) => { e.stopPropagation(); onClose(); }}
                                 onMouseDown={(e) => e.stopPropagation()}
-                                title="Close"
+                                title={t("Close")}
                             >
                                 <X size={14} />
                             </Button>
@@ -406,7 +406,7 @@ export function InlineAnnotationCard({
                                                         setEditContent(ann.content);
                                                     }}
                                                     onMouseDown={(e) => e.stopPropagation()}
-                                                    title="Edit"
+                                                    title={t("Edit")}
                                                 >
                                                     <Pencil size={12} />
                                                 </Button>
@@ -422,7 +422,7 @@ export function InlineAnnotationCard({
                                                         handleDeleteComment(ann.id);
                                                     }}
                                                     onMouseDown={(e) => e.stopPropagation()}
-                                                    title="Delete"
+                                                    title={t("Delete")}
                                                 >
                                                     <Trash2 size={12} />
                                                 </Button>

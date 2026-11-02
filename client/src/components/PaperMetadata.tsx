@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import {
     Collapsible,
     CollapsibleContent,
@@ -26,6 +27,7 @@ const googleScholarUrl = (searchTerm: string) => {
 
 // Set default for readonly to false
 function PaperMetadata({ paperData }: IPaperMetadata) {
+    const { t } = useI18n();
     const [isOpen, setIsOpen] = useState(false);
 
     const showAccordion = paperData.authors?.length > 0 || paperData.institutions?.length > 0;
@@ -79,7 +81,7 @@ function PaperMetadata({ paperData }: IPaperMetadata) {
                     </AccordionItem>
                 )}
             </Accordion>
-        ) : <p className="text-sm text-muted-foreground">No additional metadata available.</p>
+        ) : <p className="text-sm text-muted-foreground">{t("No additional metadata available.")}</p>
     );
 
     return (

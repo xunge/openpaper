@@ -83,7 +83,7 @@ export default function PaperView() {
     const searchParams = useSearchParams();
     const id = params.id as string;
     const { user } = useAuth();
-    const { t } = useI18n();
+    const { t, lang } = useI18n();
     // Region the bilingual panel asked the reader to highlight.
     const [focusRegion, setFocusRegion] = useState<{ page: number; box: number[] } | null>(null);
     const [paperData, setPaperData] = useState<PaperData | null>(null);
@@ -560,9 +560,11 @@ export default function PaperView() {
             setPaperData(prev => prev ? { ...prev, status: status } : null);
             if (status === PaperStatusEnum.COMPLETED) {
                 toast.success(
-                    "Completed reading! 🎉",
+                    t("Completed reading! 🎉"),
                     {
-                        description: `Congrats on finishing ${paperData?.title}!`,
+                        description: lang === "zh"
+                            ? `恭喜读完《${paperData?.title}》！`
+                            : `Congrats on finishing ${paperData?.title}!`,
                         duration: 5000,
                     }
                 )
@@ -594,7 +596,7 @@ export default function PaperView() {
 
     if (loading) return <PaperViewSkeleton />;
 
-    if (!paperData) return <div>Paper not found</div>;
+    if (!paperData) return <div>{t("Paper not found")}</div>;
 
     const sidePanelProps = {
         rightSideFunction,
@@ -700,11 +702,11 @@ export default function PaperView() {
                     <div className="flex justify-around items-center h-16">
                         <Button variant="ghost" onClick={() => setMobileView('reader')} className={`flex flex-col items-center gap-1 ${mobileView === 'reader' ? 'text-blue-500' : ''}`}>
                             <Book size={24} />
-                            <span className="text-xs">Reader</span>
+                            <span className="text-xs">{t("Reader")}</span>
                         </Button>
                         <Button variant="ghost" onClick={() => setMobileView('panel')} className={`flex flex-col items-center gap-1 ${mobileView === 'panel' ? 'text-blue-500' : ''}`}>
                             <Box size={24} />
-                            <span className="text-xs">Tools</span>
+                            <span className="text-xs">{t("Tools")}</span>
                         </Button>
                     </div>
                 </div>

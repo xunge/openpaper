@@ -59,7 +59,7 @@ interface ProjectCollaboratorsProps {
 }
 
 export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasCollaborators }: ProjectCollaboratorsProps) {
-	const { t } = useI18n();
+	const { t, lang } = useI18n();
 	const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
 	const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
 	const [isManageModalOpen, setIsManageModalOpen] = useState(false);
@@ -325,7 +325,7 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 										</Avatar>
 									</TooltipTrigger>
 									<TooltipContent>
-										<p>{remainingCount} more collaborator{remainingCount > 1 ? 's' : ''}</p>
+										<p>{lang === 'zh' ? `还有 ${remainingCount} 位协作者` : `${remainingCount} more collaborator${remainingCount > 1 ? 's' : ''}`}</p>
 									</TooltipContent>
 								</Tooltip>
 							)}
@@ -339,7 +339,7 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 										</Avatar>
 									</TooltipTrigger>
 									<TooltipContent>
-										<p>{pendingInvites.length} pending invite{pendingInvites.length > 1 ? 's' : ''}</p>
+										<p>{lang === 'zh' ? `${pendingInvites.length} 个待接受邀请` : `${pendingInvites.length} pending invite${pendingInvites.length > 1 ? 's' : ''}`}</p>
 									</TooltipContent>
 								</Tooltip>
 							)}
@@ -401,15 +401,15 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 											</AlertDialogTrigger>
 											<AlertDialogContent>
 												<AlertDialogHeader>
-													<AlertDialogTitle>Remove Collaborator</AlertDialogTitle>
+													<AlertDialogTitle>{t("Remove Collaborator")}</AlertDialogTitle>
 													<AlertDialogDescription>
-														Are you sure you want to remove <b>{displayName}</b> from the project? You will have to invite them again to add them back.
+														{lang === 'zh' ? '确定要将 ' : 'Are you sure you want to remove '}<b>{displayName}</b>{lang === 'zh' ? ' 从项目中移除吗？移除后需要重新邀请才能加入。' : ' from the project? You will have to invite them again to add them back.'}
 													</AlertDialogDescription>
 												</AlertDialogHeader>
 												<AlertDialogFooter>
-													<AlertDialogCancel>Cancel</AlertDialogCancel>
+													<AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
 													<AlertDialogAction onClick={() => handleRemove(collaborator.id)}>
-														Remove
+														{t("Remove")}
 													</AlertDialogAction>
 												</AlertDialogFooter>
 											</AlertDialogContent>
@@ -423,7 +423,7 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 						{/* Pending Invites Section */}
 						{pendingInvites.length > 0 && (
 							<div className="border-t pt-4 mt-4">
-								<p className="text-sm font-medium text-muted-foreground mb-3">Pending Invites</p>
+								<p className="text-sm font-medium text-muted-foreground mb-3">{t("Pending Invites")}</p>
 								<div className="space-y-3">
 									{pendingInvites.map((invite: PendingInvite, index: number) => (
 										<div key={`pending-${index}`} className="flex items-center justify-between opacity-60">
@@ -435,7 +435,7 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 												</Avatar>
 												<div className="min-w-0">
 													<p className="font-medium text-sm text-muted-foreground truncate">{invite.email}</p>
-													<p className="text-xs text-muted-foreground">Invite sent • Not yet accepted</p>
+													<p className="text-xs text-muted-foreground">{t("Invite sent • Not yet accepted")}</p>
 												</div>
 											</div>
 											<div className="flex items-center space-x-2 flex-shrink-0">
@@ -449,15 +449,15 @@ export function ProjectCollaborators({ projectId, currentUserIsAdmin, setHasColl
 														</AlertDialogTrigger>
 														<AlertDialogContent>
 															<AlertDialogHeader>
-																<AlertDialogTitle>Cancel Invitation</AlertDialogTitle>
+																<AlertDialogTitle>{t("Cancel Invitation")}</AlertDialogTitle>
 																<AlertDialogDescription>
-																	Are you sure you want to cancel the invitation to {invite.email}?
+																	{lang === 'zh' ? `确定要取消发给 ${invite.email} 的邀请吗？` : `Are you sure you want to cancel the invitation to ${invite.email}?`}
 																</AlertDialogDescription>
 															</AlertDialogHeader>
 															<AlertDialogFooter>
-																<AlertDialogCancel>Cancel</AlertDialogCancel>
+																<AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
 																<AlertDialogAction onClick={() => invite.id && removePendingInvite(invite.id)}>
-																	Cancel Invitation
+																	{t("Cancel Invitation")}
 																</AlertDialogAction>
 															</AlertDialogFooter>
 														</AlertDialogContent>

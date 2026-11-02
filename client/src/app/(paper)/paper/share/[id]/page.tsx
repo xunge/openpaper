@@ -30,9 +30,11 @@ import { ChatMessageActions } from '@/components/ChatMessageActions';
 import { BasicUser } from '@/lib/auth';
 import { Avatar } from '@/components/ui/avatar';
 import EmptyConversationState from './EmptyConversationState';
+import { useI18n } from "@/lib/i18n";
 
 
 export default function SharedPaperView() {
+    const { t } = useI18n();
     const params = useParams();
     const shareId = params.id as string;
 
@@ -232,7 +234,7 @@ export default function SharedPaperView() {
                     {msg.references && msg.references.citations && msg.references.citations.length > 0 ? (
                         <div className="mt-0 pt-0 border-t border-gray-300 dark:border-gray-700" id="references-section">
                             <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-semibold mb-2">References</h4>
+                                <h4 className="text-sm font-semibold mb-2">{t("References")}</h4>
                                 {msg.role === 'assistant' && (
                                     <ChatMessageActions message={msg.content} references={msg.references} />
                                 )}
@@ -337,7 +339,7 @@ export default function SharedPaperView() {
     const heightClass = isMobile ? "h-[calc(100vh-128px)]" : "h-[calc(100vh-64px)]";
 
     if (loading) {
-        return <div className="flex justify-center items-center h-screen">Loading shared paper...</div>;
+        return <div className="flex justify-center items-center h-screen">{t("Loading shared paper...")}</div>;
     }
 
     if (error) {
@@ -345,7 +347,7 @@ export default function SharedPaperView() {
     }
 
     if (!paperData) {
-        return <div className="flex justify-center items-center h-screen">Shared paper data not found.</div>;
+        return <div className="flex justify-center items-center h-screen">{t("Shared paper data not found.")}</div>;
     }
 
 
@@ -384,7 +386,7 @@ export default function SharedPaperView() {
                                     sidePanelOpen
                                 />
                             ) : (
-                                <div className="flex justify-center items-center h-full">PDF could not be loaded.</div>
+                                <div className="flex justify-center items-center h-full">{t("PDF could not be loaded.")}</div>
                             )}
                         </div>
                     ) : (
@@ -411,7 +413,7 @@ export default function SharedPaperView() {
                                                 {memoizedOverviewContent}
                                                 {paperData.summary_citations && paperData.summary_citations.length > 0 && (
                                                     <div className="mt-0 pt-0 border-t border-gray-300 dark:border-gray-700" id="references-section">
-                                                        <h4 className="text-sm font-semibold mb-2">References</h4>
+                                                        <h4 className="text-sm font-semibold mb-2">{t("References")}</h4>
                                                         <ul className="list-none p-0">
                                                             {paperData.summary_citations.map((citation, index) => (
                                                                 <div
@@ -462,11 +464,11 @@ export default function SharedPaperView() {
                     <div className="flex justify-around items-center h-16">
                         <Button variant="ghost" onClick={() => setMobileView('reader')} className={`flex flex-col items-center gap-1 ${mobileView === 'reader' ? 'text-blue-500' : ''}`}>
                             <Book size={24} />
-                            <span className="text-xs">Reader</span>
+                            <span className="text-xs">{t("Reader")}</span>
                         </Button>
                         <Button variant="ghost" onClick={() => setMobileView('panel')} className={`flex flex-col items-center gap-1 ${mobileView === 'panel' ? 'text-blue-500' : ''}`}>
                             <Box size={24} />
-                            <span className="text-xs">Panel</span>
+                            <span className="text-xs">{t("Panel")}</span>
                         </Button>
                     </div>
                 </div>
@@ -510,7 +512,7 @@ export default function SharedPaperView() {
                             sidePanelOpen
                         />
                     ) : (
-                        <div className="flex justify-center items-center h-full">PDF could not be loaded.</div>
+                        <div className="flex justify-center items-center h-full">{t("PDF could not be loaded.")}</div>
                     )}
                 </div>
 
@@ -542,7 +544,7 @@ export default function SharedPaperView() {
                                     {
                                         paperData.summary_citations && paperData.summary_citations.length > 0 && (
                                             <div className="mt-0 pt-0 border-t border-gray-300 dark:border-gray-700" id="references-section">
-                                                <h4 className="text-sm font-semibold mb-2">References</h4>
+                                                <h4 className="text-sm font-semibold mb-2">{t("References")}</h4>
                                                 <ul className="list-none p-0">
                                                     {paperData.summary_citations.map((citation, index) => (
                                                         <div

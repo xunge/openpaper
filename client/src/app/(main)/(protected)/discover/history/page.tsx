@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { DiscoverSearchHistory } from "../DiscoverHistory"
+import { useI18n } from "@/lib/i18n"
 
 export default function DiscoverHistoryPage() {
+    const { t } = useI18n()
     const router = useRouter()
     const [searches, setSearches] = useState<DiscoverSearchHistory[]>([])
     const [loading, setLoading] = useState(true)
@@ -39,16 +41,16 @@ export default function DiscoverHistoryPage() {
                     className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <ArrowLeft className="h-4 w-4" />
-                    Back to Discover
+                    {t("Back to Discover")}
                 </Link>
             </div>
 
-            <h1 className="text-xl font-semibold mb-6">Search History</h1>
+            <h1 className="text-xl font-semibold mb-6">{t("Search History")}</h1>
 
             {loading ? (
-                <div className="text-sm text-muted-foreground">Loading...</div>
+                <div className="text-sm text-muted-foreground">{t("Loading...")}</div>
             ) : searches.length === 0 ? (
-                <div className="text-sm text-muted-foreground">No searches yet.</div>
+                <div className="text-sm text-muted-foreground">{t("No searches yet.")}</div>
             ) : (
                 <div className="space-y-1">
                     {searches.map((search) => (

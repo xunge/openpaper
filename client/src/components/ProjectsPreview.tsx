@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useMemo } from "react";
 import Link from "next/link";
 import { Project } from "@/lib/schema";
@@ -26,6 +27,7 @@ function ProjectCardSkeleton() {
 }
 
 export function ProjectsPreview({ limit = 4 }: ProjectsPreviewProps) {
+    const { t } = useI18n();
     const { projects: allProjects, isLoading } = useProjects(true);
 
     // Sort by updated_at and take top N.
@@ -63,7 +65,7 @@ export function ProjectsPreview({ limit = 4 }: ProjectsPreviewProps) {
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <FolderKanban className="h-5 w-5 text-primary" />
-                    <h2 className="text-lg font-semibold">Active Projects</h2>
+                    <h2 className="text-lg font-semibold">{t("Active Projects")}</h2>
                 </div>
                 <Link
                     href="/projects"

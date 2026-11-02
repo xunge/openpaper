@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -68,6 +69,7 @@ interface CitationArtifactCardProps {
 }
 
 export function CitationArtifactCard({ artifacts }: CitationArtifactCardProps) {
+    const { t } = useI18n();
     const [selectedStyle, setSelectedStyle] = useState<string>(() =>
         consensusStyleName(artifacts),
     );
@@ -102,7 +104,7 @@ export function CitationArtifactCard({ artifacts }: CitationArtifactCardProps) {
                 <div className="flex items-center gap-1">
                     <Select value={selectedStyle} onValueChange={setSelectedStyle}>
                         <SelectTrigger className="h-7 w-auto gap-1 text-xs">
-                            <SelectValue placeholder="Citation style" />
+                            <SelectValue placeholder={t("Citation style")} />
                         </SelectTrigger>
                         <SelectContent>
                             {citationStyles.map((style) => (

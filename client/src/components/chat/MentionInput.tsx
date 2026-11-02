@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { RefObject, useRef } from "react";
 import { AtSign, Loader, Send } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -57,6 +58,7 @@ export function MentionInput({
 	textareaRef,
 	minHeightClass = "min-h-20",
 }: MentionInputProps) {
+	const { t } = useI18n();
 	const internalRef = useRef<HTMLTextAreaElement>(null);
 	const taRef = textareaRef ?? internalRef;
 
@@ -126,8 +128,8 @@ export function MentionInput({
 							size="sm"
 							variant="ghost"
 							onClick={() => mention.openMentionMenu()}
-							title="Add context (@)"
-							aria-label="Add context"
+							title={t("Add context (@)")}
+							aria-label={t("Add context")}
 							className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
 							disabled={disabled}
 						>

@@ -28,7 +28,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getStatusIcon, PaperStatus } from "@/components/utils/PdfStatus";
+import { getStatusIcon, getStatusLabel, PaperStatus } from "@/components/utils/PdfStatus";
 import { HighlightColor } from "@/lib/schema";
 import { HIGHLIGHT_COLOR_SWATCHES } from "@/components/pdf-viewer/highlightColors";
 
@@ -312,21 +312,21 @@ export function PdfToolbar({
 						<DropdownMenuTrigger asChild>
 							<Button size="sm" variant="outline" className="h-8 px-2 gap-1">
 								{getStatusIcon(paperStatus)}
-								<span className="text-xs capitalize">{paperStatus}</span>
+								<span className="text-xs capitalize">{getStatusLabel(paperStatus, t)}</span>
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem onClick={() => handleStatusChange("todo")}>
 								{getStatusIcon("todo")}
-								Todo
+								{getStatusLabel("todo", t)}
 							</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => handleStatusChange("reading")}>
 								{getStatusIcon("reading")}
-								Reading
+								{getStatusLabel("reading", t)}
 							</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => handleStatusChange("completed")}>
 								{getStatusIcon("completed")}
-								Completed
+								{getStatusLabel("completed", t)}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -364,15 +364,15 @@ export function PdfToolbar({
 							<>
 								<DropdownMenuItem onClick={() => handleStatusChange("todo")}>
 									{getStatusIcon("todo")}
-									Todo
+									{getStatusLabel("todo", t)}
 								</DropdownMenuItem>
 								<DropdownMenuItem onClick={() => handleStatusChange("reading")}>
 									{getStatusIcon("reading")}
-									Reading
+									{getStatusLabel("reading", t)}
 								</DropdownMenuItem>
 								<DropdownMenuItem onClick={() => handleStatusChange("completed")}>
 									{getStatusIcon("completed")}
-									Completed
+									{getStatusLabel("completed", t)}
 								</DropdownMenuItem>
 							</>
 						)}

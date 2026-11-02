@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { Conversation } from "@/lib/schema";
 import { formatDate, getInitials } from "@/lib/utils";
 import { ArrowRight, Trash2 } from "lucide-react";
@@ -29,6 +30,7 @@ interface ConversationCardProps {
 }
 
 export default function ConversationCard({ convo, href, onDelete, showAvatar = true, compact = false }: ConversationCardProps) {
+    const { t } = useI18n();
 	const [isAlertOpen, setIsAlertOpen] = useState(false);
 
 	const handleDelete = (e: React.MouseEvent) => {
@@ -75,14 +77,14 @@ export default function ConversationCard({ convo, href, onDelete, showAvatar = t
 				<AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
 					<AlertDialogContent>
 						<AlertDialogHeader>
-							<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+							<AlertDialogTitle>{t("Are you sure?")}</AlertDialogTitle>
 							<AlertDialogDescription>
-								This action cannot be undone. This will permanently delete the conversation.
+								{t("This action cannot be undone. This will permanently delete the conversation.")}
 							</AlertDialogDescription>
 						</AlertDialogHeader>
 						<AlertDialogFooter>
-							<AlertDialogCancel>Cancel</AlertDialogCancel>
-							<AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+							<AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+							<AlertDialogAction onClick={confirmDelete}>{t("Delete")}</AlertDialogAction>
 						</AlertDialogFooter>
 					</AlertDialogContent>
 				</AlertDialog>
@@ -135,14 +137,14 @@ export default function ConversationCard({ convo, href, onDelete, showAvatar = t
 			<AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you sure?</AlertDialogTitle>
+						<AlertDialogTitle>{t("Are you sure?")}</AlertDialogTitle>
 						<AlertDialogDescription>
-							This action cannot be undone. This will permanently delete the conversation.
+							{t("This action cannot be undone. This will permanently delete the conversation.")}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+						<AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+						<AlertDialogAction onClick={confirmDelete}>{t("Delete")}</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>

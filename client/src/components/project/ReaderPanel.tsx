@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useEffect } from "react";
 import { FileText, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,7 @@ import { useProjectWorkspace } from "@/components/project/ProjectWorkspaceProvid
 // On-demand reading pane: papers opened from the rail or citation clicks stack
 // up as tabs here, so reading never navigates away from the chat.
 export function ReaderPanel() {
+    const { t } = useI18n();
     const {
         papers,
         openPaperIds,
@@ -88,7 +90,7 @@ export function ReaderPanel() {
                     size="icon"
                     className="h-6 w-6 shrink-0"
                     onClick={closeReader}
-                    aria-label="Close reader"
+                    aria-label={t("Close reader")}
                 >
                     <X className="h-4 w-4" />
                 </Button>

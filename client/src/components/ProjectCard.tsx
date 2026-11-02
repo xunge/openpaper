@@ -178,7 +178,7 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 							e.preventDefault();
 							setShowUnlinkAlert(true);
 						}}
-						aria-label="Unlink paper from project"
+						aria-label={t("Unlink paper from project")}
 						className="h-6 w-6 shrink-0 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
 					>
 						<X className="h-3.5 w-3.5" />
@@ -190,7 +190,7 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 								variant="ghost"
 								size="icon"
 								onClick={(e) => e.preventDefault()}
-								aria-label="Project actions"
+								aria-label={t("Project actions")}
 								className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
 							>
 								<MoreHorizontal className="h-3.5 w-3.5" />
@@ -226,14 +226,14 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 			<AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+						<AlertDialogTitle>{t("Are you absolutely sure?")}</AlertDialogTitle>
 						<AlertDialogDescription>
 							This action cannot be undone. This will permanently delete your project and remove your data from our servers.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction onClick={deleteProject}>Continue</AlertDialogAction>
+						<AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+						<AlertDialogAction onClick={deleteProject}>{t("Continue")}</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
@@ -247,7 +247,7 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 			}}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Edit Project</AlertDialogTitle>
+						<AlertDialogTitle>{t("Edit Project")}</AlertDialogTitle>
 						<AlertDialogDescription>
 							Update the title and description for your project.
 						</AlertDialogDescription>
@@ -255,7 +255,7 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 					<div className="grid gap-4 py-4">
 						<div className="grid grid-cols-4 items-center gap-4">
 							<Label htmlFor="title" className="text-right">
-								Title
+								{t("Title")}
 							</Label>
 							<Input
 								id="title"
@@ -266,7 +266,7 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 						</div>
 						<div className="grid grid-cols-4 items-center gap-4">
 							<Label htmlFor="description" className="text-right">
-								Description
+								{t("Description")}
 							</Label>
 							<Input
 								id="description"
@@ -277,8 +277,8 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 						</div>
 					</div>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction onClick={handleUpdateProject}>Save</AlertDialogAction>
+						<AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+						<AlertDialogAction onClick={handleUpdateProject}>{t("Save")}</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
@@ -286,14 +286,14 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 			<AlertDialog open={showUnlinkAlert} onOpenChange={setShowUnlinkAlert}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you sure you want to unlink this paper?</AlertDialogTitle>
+						<AlertDialogTitle>{t("Are you sure you want to unlink this paper?")}</AlertDialogTitle>
 						<AlertDialogDescription>
 							This action will remove this paper from the project. You can add it back later.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction onClick={onUnlink}>Unlink</AlertDialogAction>
+						<AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+						<AlertDialogAction onClick={onUnlink}>{t("Unlink")}</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
@@ -301,15 +301,15 @@ export function ProjectCard({ project, onProjectUpdate, onUnlink }: {
 			<AlertDialog open={showExitAlert} onOpenChange={setShowExitAlert}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Exit Project</AlertDialogTitle>
+						<AlertDialogTitle>{t("Exit Project")}</AlertDialogTitle>
 						<AlertDialogDescription>
 							Are you sure you want to leave this project? You will lose access to all project resources and conversations.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
 						<AlertDialogAction onClick={exitProject} className="text-destructive-foreground bg-destructive hover:bg-destructive/90">
-							Exit Project
+							{t("Exit Project")}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

@@ -19,7 +19,7 @@ interface SessionStatusResponse {
 }
 
 function SubscribedPageContent() {
-	const { t } = useI18n();
+    const { t } = useI18n();
     const searchParams = useSearchParams()
     const router = useRouter()
     const sessionId = searchParams.get('session_id')
@@ -126,7 +126,7 @@ function SubscribedPageContent() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
                 <LoadingIndicator />
-                <p className="mt-4 text-muted-foreground">Verifying your subscription...</p>
+                <p className="mt-4 text-muted-foreground">{t("Verifying your subscription...")}</p>
             </div>
         )
     }
@@ -268,22 +268,22 @@ function SubscribedPageContent() {
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-blue-500/10 text-blue-500 mb-3">
                             <Upload className="h-6 w-6" />
                         </div>
-                        <p className="text-sm font-medium">More Papers</p>
-                        <p className="text-xs text-muted-foreground">Enjoy higher upload limits</p>
+                        <p className="text-sm font-medium">{t("More Papers")}</p>
+                        <p className="text-xs text-muted-foreground">{t("Enjoy higher upload limits")}</p>
                     </div>
                     <div className="text-center">
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary mb-3">
                             <MessageSquare className="h-6 w-6" />
                         </div>
-                        <p className="text-sm font-medium">Upgraded Chat</p>
-                        <p className="text-xs text-muted-foreground">Ask anything, anytime</p>
+                        <p className="text-sm font-medium">{t("Upgraded Chat")}</p>
+                        <p className="text-xs text-muted-foreground">{t("Ask anything, anytime")}</p>
                     </div>
                     <div className="text-center">
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-green-500/10 text-green-500 mb-3">
                             <Sparkles className="h-6 w-6" />
                         </div>
                         <p className="text-sm font-medium">{t("Intelligent Artifacts")}</p>
-                        <p className="text-xs text-muted-foreground">Collect insights & audio summaries</p>
+                        <p className="text-xs text-muted-foreground">{t("Collect insights & audio summaries")}</p>
                     </div>
                 </div>
 
@@ -313,8 +313,8 @@ function SubscribedPageContent() {
                         <Gift className="h-5 w-5" />
                     </div>
                     <div className="text-left flex-1 min-w-0">
-                        <p className="text-sm font-semibold leading-tight">Loving it? Share with a friend</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">Give $6, get $6 toward your subscription.</p>
+                        <p className="text-sm font-semibold leading-tight">{t("Loving it? Share with a friend")}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{t("Give $6, get $6 toward your subscription.")}</p>
                     </div>
                     <Button
                         variant="outline"

@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { OpenAlexPaper } from "@/lib/schema";
 import { ExternalLink, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ const makeSciHubUrl = (doi: string) => {
 }
 
 function SciHubLink({ doiLink, className }: { doiLink: string | undefined; className?: string }) {
+    const { t } = useI18n();
     if (!doiLink) return null;
     return (
         <Dialog>
@@ -25,7 +27,7 @@ function SciHubLink({ doiLink, className }: { doiLink: string | undefined; class
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Alternative PDF Access</DialogTitle>
+                    <DialogTitle>{t("Alternative PDF Access")}</DialogTitle>
                     <DialogDescription asChild>
                         <div className="space-y-3">
                             <p className="text-sm text-slate-700 dark:text-slate-300">
@@ -33,7 +35,7 @@ function SciHubLink({ doiLink, className }: { doiLink: string | undefined; class
                             </p>
                             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                                 <p className="text-xs text-amber-800 dark:text-amber-200">
-                                    <strong>Disclaimer:</strong> Sci-Hub operates independently and may not comply with all copyright laws. Users should verify the legal status of accessing content through third-party platforms in their jurisdiction. We recommend prioritizing official publisher channels and institutional access when available.
+                                    <strong>{t("Disclaimer:")}</strong> {t("Sci-Hub operates independently and may not comply with all copyright laws. Users should verify the legal status of accessing content through third-party platforms in their jurisdiction. We recommend prioritizing official publisher channels and institutional access when available.")}
                                 </p>
                             </div>
                             <div className="flex gap-2 pt-2">
@@ -53,7 +55,7 @@ function SciHubLink({ doiLink, className }: { doiLink: string | undefined; class
                                     </a>
                                 </Button>
                                 <DialogClose asChild>
-                                    <Button variant="secondary">Cancel</Button>
+                                    <Button variant="secondary">{t("Cancel")}</Button>
                                 </DialogClose>
                             </div>
                         </div>

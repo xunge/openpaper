@@ -1,5 +1,6 @@
 "use client"
 
+import { useI18n } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -29,6 +30,7 @@ import {
 } from "./utils";
 
 export function ZoteroIntegrationCard() {
+	const { t } = useI18n();
 	const { user } = useAuth();
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -397,8 +399,8 @@ export function ZoteroIntegrationCard() {
 										className="h-7 w-7"
 										onClick={handleZoteroSync}
 										disabled={zoteroSyncLoading || zoteroImportLoading || zoteroActionLoading}
-										title="Sync annotations"
-										aria-label="Sync annotations"
+										title={t("Sync annotations")}
+										aria-label={t("Sync annotations")}
 									>
 										<RefreshCw className={`h-4 w-4 ${zoteroSyncLoading ? "animate-spin" : ""}`} />
 									</Button>
@@ -411,14 +413,14 @@ export function ZoteroIntegrationCard() {
 					</div>
 
 				{zoteroLoading ? (
-					<p className="text-sm text-muted-foreground">Checking connection…</p>
+					<p className="text-sm text-muted-foreground">{t("Checking connection…")}</p>
 				) : zoteroStatus?.connected ? (
 				<div className="space-y-3">
 				<p className="text-sm text-muted-foreground">
 					Import journal articles, conference papers, and preprints from Zotero.{" "}
 					{hasAutoSync
 						? "New PDF annotations and new papers are synced automatically every 24 hours."
-						: <>Annotation sync is manual on the Basic plan. <a href="/pricing" className="underline underline-offset-2 hover:text-foreground transition-colors">Upgrade to Researcher</a> for automatic 24-hour sync.</>
+						: <>{t("Annotation sync is manual on the Basic plan.")} <a href="/pricing" className="underline underline-offset-2 hover:text-foreground transition-colors">{t("Upgrade to Researcher")}</a> {t("for automatic 24-hour sync.")}</>
 					}
 				</p>
 					{paperUploadsRemaining !== null && paperUploadsTotal !== null && paperUploadsUsed !== null && (
@@ -481,7 +483,7 @@ export function ZoteroIntegrationCard() {
 							</p>
 							<p className="text-sm text-muted-foreground">
 								It&apos;s a{" "}
-								<span className="font-medium text-foreground">one-way sync</span>:
+								<span className="font-medium text-foreground">{t("one-way sync")}</span>:
 								Open Paper only reads from Zotero to bring papers in — it never edits
 								or deletes anything in your Zotero library.
 							</p>

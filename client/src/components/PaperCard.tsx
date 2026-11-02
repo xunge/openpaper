@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Book, MoreVertical, Trash2, Unlink } from "lucide-react";
 import { toast } from "sonner";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { getStatusIcon, PaperStatusEnum } from "@/components/utils/PdfStatus";
+import { getStatusIcon, getStatusLabel, PaperStatusEnum } from "@/components/utils/PdfStatus";
+import { useI18n } from "@/lib/i18n";
 import Link from "next/link";
 import { formatFileSize } from "@/hooks/useSubscription";
 import { handleStatusChange } from "./utils/paperUtils";
@@ -45,6 +46,7 @@ const PaperCardWrapper = ({ is_owner, paper, children, projectId }: { is_owner: 
 }
 
 export default function PaperCard({ paper, handleDelete, setPaper, minimalist = false, projectId, onUnlink, is_owner = true }: PaperCardProps) {
+	const { t, lang } = useI18n();
 
 	const handleUnlink = async () => {
 		if (!projectId) return;
@@ -52,13 +54,13 @@ export default function PaperCard({ paper, handleDelete, setPaper, minimalist = 
 			await fetchFromApi(`/api/projects/papers/${projectId}/${paper.id}`, {
 				method: 'DELETE',
 			});
-			toast.success("Paper unlinked from project successfully!");
+			toast.success(t("Paper unlinked from project successfully!"));
 			if (onUnlink) {
 				onUnlink();
 			}
 		} catch (error) {
 			console.error("Failed to unlink paper from project", error);
-			toast.error("Failed to unlink paper from project.");
+			toast.error(t("Failed to unlink paper from project."));
 		}
 	};
 
@@ -78,22 +80,22 @@ export default function PaperCard({ paper, handleDelete, setPaper, minimalist = 
 												<Button size="sm" variant="outline" className="h-6 px-2 text-xs">
 													<span className="flex items-center gap-1">
 														{getStatusIcon(paper.status)}
-														{paper.status}
+														{getStatusLabel(paper.status, t)}
 													</span>
 												</Button>
 											</DropdownMenuTrigger>
 											<DropdownMenuContent align="end">
 												<DropdownMenuItem onClick={() => handleStatusChange(paper, PaperStatusEnum.TODO, setPaper)}>
 													{getStatusIcon("todo")}
-													Todo
+													{getStatusLabel(PaperStatusEnum.TODO, t)}
 												</DropdownMenuItem>
 												<DropdownMenuItem onClick={() => handleStatusChange(paper, PaperStatusEnum.READING, setPaper)}>
 													{getStatusIcon("reading")}
-													Reading
+													{getStatusLabel(PaperStatusEnum.READING, t)}
 												</DropdownMenuItem>
 												<DropdownMenuItem onClick={() => handleStatusChange(paper, PaperStatusEnum.COMPLETED, setPaper)}>
 													{getStatusIcon("completed")}
-													Completed
+													{getStatusLabel(PaperStatusEnum.COMPLETED, t)}
 												</DropdownMenuItem>
 											</DropdownMenuContent>
 										</DropdownMenu>
@@ -113,15 +115,16 @@ export default function PaperCard({ paper, handleDelete, setPaper, minimalist = 
 														</Button>
 													</AlertDialogTrigger>
 													<AlertDialogContent>
-														<AlertDialogTitle>Delete Paper</AlertDialogTitle>
+														<AlertDialogTitle>{t("Delete Paper")}</AlertDialogTitle>
 														<AlertDialogDescription>
-															Are you sure you want to delete {paper.title}?
-															This action cannot be undone.
+															{lang === "zh"
+																? `确定要删除《${paper.title}》吗？此操作不可撤销。`
+																: `Are you sure you want to delete ${paper.title}? This action cannot be undone.`}
 														</AlertDialogDescription>
 														<AlertDialogFooter>
-															<AlertDialogCancel>Cancel</AlertDialogCancel>
+															<AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
 															<AlertDialogAction onClick={() => handleDelete(paper.id)}>
-																Delete
+																{t("Delete")}
 															</AlertDialogAction>
 														</AlertDialogFooter>
 													</AlertDialogContent>
@@ -238,7 +241,7 @@ export default function PaperCard({ paper, handleDelete, setPaper, minimalist = 
 						<DropdownMenuContent align="end">
 							<DropdownMenuItem onClick={handleUnlink}>
 								<Unlink size={14} className="mr-2" />
-								Remove
+								{t("Remove")}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>

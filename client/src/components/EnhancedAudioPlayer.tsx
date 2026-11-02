@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useI18n } from '@/lib/i18n';
 import { Pause, Play, RotateCcw, Volume2 } from 'lucide-react';
 import { AudioOverview } from '@/lib/schema';
 import CustomCitationLink from '@/components/utils/CustomCitationLink';
@@ -80,6 +81,7 @@ const ReferencesSection = React.memo(function ReferencesSection({
     activeCitationKey,
     handleCitationClick,
 }: ReferencesSectionProps) {
+    const { t } = useI18n();
     const citationsForActions = useMemo(
         () => citations.map(c => ({ key: String(c.index), reference: c.text })),
         [citations]
@@ -97,7 +99,7 @@ const ReferencesSection = React.memo(function ReferencesSection({
     return (
         <div className="mt-4 pt-4 border-t border-gray-300 dark:border-gray-700" id="references-section">
             <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold mb-2">References</h4>
+                <h4 className="text-sm font-semibold mb-2">{t("References")}</h4>
                 <ChatMessageActions
                     message={transcript}
                     references={{ citations: citationsForActions }}
@@ -127,6 +129,7 @@ const ReferencesSection = React.memo(function ReferencesSection({
 });
 
 export function EnhancedAudioPlayer({ audioOverview, paper_title, setExplicitSearchTerm }: EnhancedAudioPlayerProps) {
+    const { t } = useI18n();
     const audioRef = useRef<HTMLAudioElement>(null);
     const progressRef = useRef<HTMLDivElement>(null);
 
@@ -320,7 +323,7 @@ export function EnhancedAudioPlayer({ audioOverview, paper_title, setExplicitSea
                     <button
                         onClick={skipBackward}
                         className="text-accent-foreground p-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-1"
-                        title="Skip back 10s"
+                        title={t("Skip back 10s")}
                     >
                         <RotateCcw className="w-4 h-4" />
                         <span className="text-xs font-medium">10s</span>
@@ -328,7 +331,7 @@ export function EnhancedAudioPlayer({ audioOverview, paper_title, setExplicitSea
                     <button
                         onClick={skipForward}
                         className="text-accent-foreground p-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-1"
-                        title="Skip forward 10s"
+                        title={t("Skip forward 10s")}
                     >
                         <RotateCcw className="w-4 h-4 scale-x-[-1]" />
                         <span className="text-xs font-medium">10s</span>

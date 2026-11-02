@@ -49,6 +49,7 @@ function SectionHeading({ label, count, children }: { label: string; count?: num
 }
 
 function PaperRow({ paper, onNavigate }: { paper: PaperItem; onNavigate?: () => void }) {
+    const { t } = useI18n();
     const { project, projectId, openPaper, openPaperIds, activePaperId, refetchPapers } = useProjectWorkspace();
     const isOpen = openPaperIds.includes(paper.id);
     const isActive = activePaperId === paper.id;
@@ -63,7 +64,7 @@ function PaperRow({ paper, onNavigate }: { paper: PaperItem; onNavigate?: () => 
             refetchPapers();
         } catch (error) {
             console.error("Failed to unlink paper from project", error);
-            toast.error("Failed to remove paper from project.");
+            toast.error(t("Failed to remove paper from project."));
         }
     };
 
@@ -102,7 +103,7 @@ function PaperRow({ paper, onNavigate }: { paper: PaperItem; onNavigate?: () => 
                         size="icon"
                         className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100"
                         onClick={(e) => e.stopPropagation()}
-                        aria-label="Paper actions"
+                        aria-label={t("Paper actions")}
                     >
                         <MoreHorizontal className="h-3.5 w-3.5" />
                     </Button>
@@ -132,7 +133,7 @@ function PaperRow({ paper, onNavigate }: { paper: PaperItem; onNavigate?: () => 
 // chats below. Every project route is reachable from here.
 export function ProjectRail({
 	onNavigate }: ProjectRailProps) {
-	const { t } = useI18n();
+    const { t } = useI18n();
     const pathname = usePathname();
     const params = useParams();
     const activeConversationId = params.conversationId as string | undefined;
@@ -184,7 +185,7 @@ export function ProjectRail({
                     <div className="relative shrink-0 px-3 pb-1.5">
                         <Search className="absolute left-5 top-1/2 -translate-y-[60%] h-3.5 w-3.5 text-muted-foreground" aria-hidden />
                         <Input
-                            placeholder="Search papers..."
+                            placeholder={t("Search papers...")}
                             value={paperSearchQuery}
                             onChange={(e) => setPaperSearchQuery(e.target.value)}
                             className="h-7 pl-7 text-xs"

@@ -241,7 +241,7 @@ function PapersPageContent() {
                     </div>
                     <div className="flex items-center gap-x-2">
                         <Button asChild size="sm" variant="outline">
-                            <Link href="/pricing">View plans</Link>
+                            <Link href="/pricing">{t("View plans")}</Link>
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => setShowAlert(false)} className="self-start">
                             Dismiss
@@ -384,7 +384,7 @@ function PapersPageContent() {
             <AlertDialog open={isProjectLimitDialogOpen} onOpenChange={setProjectLimitDialogOpen}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>You&apos;re on a roll!</AlertDialogTitle>
+                        <AlertDialogTitle>{t("You're on a roll!")}</AlertDialogTitle>
                         <AlertDialogDescription>
                             You&apos;ve created a lot of great projects. To create more, please upgrade your plan.
                         </AlertDialogDescription>
@@ -421,9 +421,9 @@ function PapersPageContent() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
                         <Link href="/pricing">
-                            <AlertDialogAction>Upgrade</AlertDialogAction>
+                            <AlertDialogAction>{t("Upgrade")}</AlertDialogAction>
                         </Link>
                     </AlertDialogFooter>
                 </AlertDialogContent>

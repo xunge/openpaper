@@ -105,7 +105,7 @@ export function SharePaperButton() {
                 <div>
                     {paperData.is_public ? (
                         <div className="space-y-3">
-                            <p className="text-sm text-muted-foreground">This paper is currently public. Anyone with the link can view it.</p>
+                            <p className="text-sm text-muted-foreground">{t("This paper is currently public. Anyone with the link can view it.")}</p>
                             <div className="flex items-center space-x-2">
                                 <Input
                                     readOnly

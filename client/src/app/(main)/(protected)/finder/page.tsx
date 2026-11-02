@@ -33,6 +33,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FinderIntro } from "./FinderIntro";
+import { useI18n } from "@/lib/i18n";
 import PaperPreviewPanel from "./PaperPreviewPanel";
 import PaperResultCard from "./PaperResultCard";
 import { getOpenAlexTypeAheadAuthors, getOpenAlexTypeAheadInstitutions, OpenAlexTypeAheadAuthor, OpenAlexTypeAheadInstitution } from "./utils";
@@ -44,6 +45,7 @@ interface SearchPaperRequest {
 }
 
 function FinderPageContent() {
+    const { t } = useI18n();
     const searchParams = useSearchParams();
 
     const [query, setQuery] = useState("");
@@ -64,10 +66,10 @@ function FinderPageContent() {
 
     const sortLabel =
         sort === "cited_by_count:desc"
-            ? "Most cited"
+            ? t("Most cited")
             : sort === "publication_date:desc"
-                ? "Newest"
-                : "Sort";
+                ? t("Newest")
+                : t("Sort");
 
 
     // Check for mobile viewport
@@ -351,21 +353,22 @@ function FinderPageContent() {
     return (
         <div className="w-full px-4 py-6 space-y-6 overflow-x-hidden">
             <Alert className="max-w-2xl">
-                <AlertTitle>This feature will be deprecated</AlertTitle>
+                <AlertTitle>{t("This feature will be deprecated")}</AlertTitle>
                 <AlertDescription className="space-y-2">
                     <p>
                         Please try the new{" "}
+                        {t("Please try the new")}{" "}
                         <Link href="/discover" className="underline font-medium">
-                            Discover
+                            {t("Discover")}
                         </Link>
-                        {" "}feature for finding research papers.
+                        {" "}{t("feature for finding research papers.")}
                     </p>
                     <a
                         href="mailto:saba@openpaper.ai"
                         className="inline-flex items-center gap-1.5 text-sm font-medium hover:underline"
                     >
                         <Mail className="h-3.5 w-3.5" />
-                        Share feedback
+                        {t("Share feedback")}
                     </a>
                 </AlertDescription>
             </Alert>
@@ -375,7 +378,7 @@ function FinderPageContent() {
                     <div className="relative flex-1 max-w-2xl">
                         <Input
                             ref={inputRef}
-                            placeholder="Search by topic, title, keywords..."
+                            placeholder={t("Search by topic, title, keywords...")}
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleSearch(1)}
@@ -387,7 +390,7 @@ function FinderPageContent() {
                         <PopoverTrigger asChild>
                             <Button variant="outline" className="flex items-center gap-2" ref={filterButtonRef} >
                                 <Filter className="h-4 w-4" />
-                                Filters
+                                {t("Filters")}
                                 {hasActiveFilters && (
                                     <Badge variant="secondary" className="ml-1 px-1 py-0 text-xs flex items-center gap-1">
                                         {filterCount}
@@ -398,7 +401,7 @@ function FinderPageContent() {
                         </PopoverTrigger>
                         <PopoverContent className="w-96 max-w-[calc(100vw-2rem)] p-4" align={isMobile ? "center" : "end"} sideOffset={isMobile ? 8 : 4}>
                             <div className="space-y-4">
-                                <h3 className="font-medium text-sm">Search Filters</h3>
+                                <h3 className="font-medium text-sm">{t("Search Filters")}</h3>
 
                                 {/* Open Access Toggle */}
                                 <div className="flex items-center gap-2">
@@ -408,20 +411,20 @@ function FinderPageContent() {
                                         onCheckedChange={setOnlyOpenAccess}
                                     />
                                     <Label htmlFor="filter-open-access" className="text-sm">
-                                        Open Access Only
+                                        {t("Open Access Only")}
                                     </Label>
                                 </div>
 
                                 {/* Author/Institution Search */}
                                 <div className="space-y-2">
                                     <Label htmlFor="filter-search" className="text-sm font-medium">
-                                        Authors & Institutions
+                                        {t("Authors & Institutions")}
                                     </Label>
                                     <div className="relative">
                                         <Input
                                             id="filter-search"
                                             ref={filterInputRef}
-                                            placeholder="Search authors or institutions..."
+                                            placeholder={t("Search authors or institutions...")}
                                             value={filterQuery}
                                             onChange={(e) => setFilterQuery(e.target.value)}
                                         />
@@ -433,7 +436,7 @@ function FinderPageContent() {
                                                     <div className="p-3">
                                                         <div className="flex items-center gap-2">
                                                             <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                                                            <span className="text-sm text-muted-foreground">Loading...</span>
+                                                            <span className="text-sm text-muted-foreground">{t("Loading...")}</span>
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -499,7 +502,7 @@ function FinderPageContent() {
                         <PopoverTrigger asChild>
                             <Button variant="outline" className="flex items-center gap-2">
                                 <ArrowDownNarrowWide className="h-4 w-4" />
-                                Sort
+                                {t("Sort")}
                                 {sort && (
                                     <Badge variant="secondary" className="ml-1 px-1 py-0 text-xs flex items-center gap-1">
                                         1
@@ -519,11 +522,11 @@ function FinderPageContent() {
                                     }}
                                 >
                                     {
-                                        sortLabel == 'Most cited' ? (
+                                        sort === "cited_by_count:desc" ? (
                                             <CheckIcon className="h-4 w-4 mb-1 text-primary" />
                                         ) : null
                                     }
-                                    Most cited
+                                    {t("Most cited")}
                                 </button>
 
                                 <button
@@ -533,18 +536,18 @@ function FinderPageContent() {
                                     }}
                                 >
                                     {
-                                        sortLabel == 'Newest' ? (
+                                        sort === "publication_date:desc" ? (
                                             <CheckIcon className="h-4 w-4 mb-1 text-primary" />
                                         ) : null
                                     }
-                                    Newest
+                                    {t("Newest")}
                                 </button>
                             </div>
                         </PopoverContent>
                     </Popover>
 
                     <Button onClick={() => handleSearch(1)} disabled={loading}>
-                        Search
+                        {t("Search")}
                     </Button>
                 </div>
 
@@ -569,7 +572,7 @@ function FinderPageContent() {
                                 }}
                                 className="h-6 px-3 text-xs"
                             >
-                                Clear all
+                                {t("Clear all")}
                             </Button>
                         </div>
 
@@ -703,7 +706,7 @@ function FinderPageContent() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-destructive">
-                                Something went wrong
+                                {t("Something went wrong")}
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -711,7 +714,7 @@ function FinderPageContent() {
                         </CardContent>
                         <CardFooter className="flex justify-end items-center gap-2">
                             <Button asChild variant="outline" size="sm">
-                                <Link href="https://github.com/khoj-ai/openpaper/issues">Report Issue</Link>
+                                <Link href="https://github.com/khoj-ai/openpaper/issues">{t("Report Issue")}</Link>
                             </Button>
                             <Button
                                 onClick={() => setError(null)}
@@ -778,8 +781,9 @@ function FinderPageContent() {
 }
 
 export default function FinderPage() {
+    const { t } = useI18n();
     return (
-        <Suspense fallback={<div className="w-full px-4 py-6">Loading...</div>}>
+        <Suspense fallback={<div className="w-full px-4 py-6">{t("Loading...")}</div>}>
             <FinderPageContent />
         </Suspense>
     )

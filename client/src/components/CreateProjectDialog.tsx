@@ -39,7 +39,7 @@ export function CreateProjectDialog({ open, onOpenChange, onSubmit }: CreateProj
                 </DialogHeader>
                 <div className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="title">Title</Label>
+                        <Label htmlFor="title">{t("Title")}</Label>
                         <Input
                             id="title"
                             value={title}

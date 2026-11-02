@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Search, ArrowLeft, ArrowRight, ChevronUp, ChevronDown, ChevronRight, SquareLibrary, ExternalLink, Loader2, User, History } from "lucide-react";
 import { fetchFromApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 import { OpenAlexPaper, OpenAlexMatchResponse, OpenAlexResponse } from "@/lib/schema";
 import { CitationGraphSkeleton } from "./CitationGraphSkeleton";
 
@@ -25,6 +26,7 @@ interface NavigationEntry {
 }
 
 function CitationGraphContent() {
+    const { t } = useI18n();
     const searchParams = useSearchParams();
 
     const [doiInput, setDoiInput] = useState("");
@@ -257,7 +259,7 @@ function CitationGraphContent() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                         <div className="flex items-center gap-2 text-primary">
                             <SquareLibrary className="h-5 w-5" />
-                            <span className="text-lg font-semibold">Citation Graph</span>
+                            <span className="text-lg font-semibold">{t("Citation Graph")}</span>
                         </div>
 
                         {/* Search Form */}
@@ -269,7 +271,7 @@ function CitationGraphContent() {
                                         type="text"
                                         value={doiInput}
                                         onChange={(e) => setDoiInput(e.target.value)}
-                                        placeholder="Enter DOI (e.g., 10.1145/3442188.3445922)"
+                                        placeholder={t("Enter DOI (e.g., 10.1145/3442188.3445922)")}
                                         className="pl-9"
                                     />
                                 </div>
@@ -363,9 +365,9 @@ function CitationGraphContent() {
                         <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
                             <SquareLibrary className="h-8 w-8 text-primary" />
                         </div>
-                        <h2 className="text-xl font-semibold mb-2">Explore Citation Graphs</h2>
+                        <h2 className="text-xl font-semibold mb-2">{t("Explore Citation Graphs")}</h2>
                         <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                            Enter a DOI to explore a paper&apos;s citations and references. Click on any paper to navigate through the citation graph, or click an author to see their works.
+                            {t("Enter a DOI to explore a paper's citations and references. Click on any paper to navigate through the citation graph, or click an author to see their works.")}
                         </p>
                         <Button
                             onClick={() => {
@@ -393,7 +395,7 @@ function CitationGraphContent() {
                                         {currentAuthor.name}
                                     </h1>
                                     <p className="text-sm text-muted-foreground">
-                                        {authorData.meta.count.toLocaleString()} works found
+                                        {authorData.meta.count.toLocaleString()} {t("works found")}
                                     </p>
                                 </div>
                             </div>
@@ -599,6 +601,7 @@ function CitationGraphContent() {
 }
 
 export default function CitationGraphPage() {
+    const { t } = useI18n();
     return (
         <Suspense fallback={<div className="w-full px-4 py-6">Loading...</div>}>
             <CitationGraphContent />

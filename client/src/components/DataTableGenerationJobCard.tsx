@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Clock, Loader2, CheckCircle, XCircle, AlertCircle, Table, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { DataTableJob, DataTableJobStatusResponse, JobStatus } from "@/lib/schema";
 import { formatDateTime } from "./utils/paperUtils";
+import { useI18n } from "@/lib/i18n";
 import { fetchFromApi } from "@/lib/api";
 import Link from "next/link";
 
@@ -29,18 +30,18 @@ const getStatusIcon = (status: JobStatus) => {
     }
 };
 
-const getStatusText = (status: JobStatus) => {
+const getStatusText = (status: JobStatus, t: (s: string) => string) => {
     switch (status) {
         case JobStatus.PENDING:
-            return 'Queued';
+            return t("Queued");
         case JobStatus.RUNNING:
-            return 'Generating...';
+            return t("Generating...");
         case JobStatus.COMPLETED:
-            return 'Completed';
+            return t("Completed");
         case JobStatus.FAILED:
-            return 'Failed';
+            return t("Failed");
         case JobStatus.CANCELLED:
-            return 'Cancelled';
+            return t("Cancelled");
         default: {
             // Defensive fallback for an unexpected status string from the backend.
             // The union is exhaustive, so `status` narrows to `never` here.
@@ -78,6 +79,7 @@ const getStatusColor = (status: JobStatus) => {
 };
 
 export default function DataTableGenerationJobCard({ job, projectId }: DataTableGenerationJobCardProps) {
+    const { t } = useI18n();
     const [isExpanded, setIsExpanded] = useState(false);
     const [liveData, setLiveData] = useState<DataTableJobStatusResponse | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -151,7 +153,7 @@ export default function DataTableGenerationJobCard({ job, projectId }: DataTable
                                         fetchLiveData();
                                     }}
                                     className="p-1 hover:bg-muted rounded"
-                                    title="Refresh status"
+                                    title={t("Refresh status")}
                                 >
                                     <RefreshCw className={`w-4 h-4 text-muted-foreground ${isLoading ? 'animate-spin' : ''}`} />
                                 </button>
@@ -165,7 +167,7 @@ export default function DataTableGenerationJobCard({ job, projectId }: DataTable
                     </div>
                     {currentStatus !== JobStatus.COMPLETED && (
                         <p className={`text-xs font-medium mb-1 ${getStatusColor(currentStatus)}`}>
-                            {getStatusText(currentStatus)}
+                            {getStatusText(currentStatus, t)}
                         </p>
                     )}
                     {job.created_at && (
@@ -195,7 +197,7 @@ export default function DataTableGenerationJobCard({ job, projectId }: DataTable
                                 <>
                                     <p className="text-xs">
                                         <span className={`font-medium ${getStatusColor(liveData.status)}`}>
-                                            {getStatusText(liveData.status)}
+                                            {getStatusText(liveData.status, t)}
                                         </span>
                                         {liveData.completed_at && (
                                             <span className="text-muted-foreground">

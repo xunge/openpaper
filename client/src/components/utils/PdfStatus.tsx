@@ -23,3 +23,14 @@ export const getStatusIcon = (status: PaperStatus) => {
     }
     return null;
 };
+
+/** Chinese labels are deliberately two characters each: 待读 / 在读 / 已读. */
+export const getStatusLabel = (
+    status: PaperStatus | string,
+    t: (text: string) => string,
+): string => {
+    if (status === PaperStatusEnum.TODO) return t("Todo");
+    if (status === PaperStatusEnum.READING) return t("Reading");
+    if (status === PaperStatusEnum.COMPLETED) return t("Completed");
+    return status;
+};

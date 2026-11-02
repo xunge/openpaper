@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from './ui/input';
 import { PaperProjectCard } from './PaperProjectCard';
+import { useI18n } from '@/lib/i18n';
 
 interface PaperProjectsProps {
     id: string;
@@ -36,6 +37,7 @@ interface PaperProjectsProps {
 }
 
 export function PaperProjects({ id, view = 'full' }: PaperProjectsProps) {
+    const { t } = useI18n();
     const [projects, setProjects] = useState<Project[]>([]);
     const { projects: allProjects, isLoading: isLoadingAllProjects } = useProjects(true);
     const [isLoadingProjects, setIsLoadingProjects] = useState(false);
@@ -138,15 +140,15 @@ export function PaperProjects({ id, view = 'full' }: PaperProjectsProps) {
                     <AlertDialog open={isProjectLimitDialogOpen} onOpenChange={setProjectLimitDialogOpen}>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>You&apos;re on a roll!</AlertDialogTitle>
+                                <AlertDialogTitle>{t("You're on a roll!")}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    You&apos;ve created a lot of great projects. To create more, please upgrade your plan.
+                                    {t("You've created a lot of great projects. To create more, please upgrade your plan.")}
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
                                 <Link href="/pricing">
-                                    <AlertDialogAction>Upgrade</AlertDialogAction>
+                                    <AlertDialogAction>{t("Upgrade")}</AlertDialogAction>
                                 </Link>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -164,8 +166,8 @@ export function PaperProjects({ id, view = 'full' }: PaperProjectsProps) {
                 </div>
             ) : projects.length > 0 ? (
                 <>
-                    <h3 className="text-lg font-semibold">Projects</h3>
-                    {view === 'full' && <p className="text-sm text-muted-foreground">This paper is a member of the following projects.</p>}
+                    <h3 className="text-lg font-semibold">{t("Projects")}</h3>
+                    {view === 'full' && <p className="text-sm text-muted-foreground">{t("This paper is a member of the following projects.")}</p>}
                     <div className="space-y-2">
                         {projects.map(project => (
                             <PaperProjectCard
@@ -180,9 +182,9 @@ export function PaperProjects({ id, view = 'full' }: PaperProjectsProps) {
                 <>
                     {view === 'full' && (
                         <div className="text-left">
-                            <p className="text-sm text-muted-foreground">Projects help you organize your research. Group papers together to analyze them as a collection.
+                            <p className="text-sm text-muted-foreground">{t("Projects help you organize your research. Group papers together to analyze them as a collection.")}
                             </p>
-                            <Link href="/projects" className="block underline">View all projects{" "} <ArrowRight className='inline w-4 h-4' /></Link>
+                            <Link href="/projects" className="block underline">{t("View all projects")}{" "} <ArrowRight className='inline w-4 h-4' /></Link>
                             <Button
                                 onClick={() => {
                                     if (isProjectAtLimit(subscription)) {
@@ -193,7 +195,7 @@ export function PaperProjects({ id, view = 'full' }: PaperProjectsProps) {
                                 }}
                                 className="mt-4 w-full"
                             >
-                                Create a Project with this Paper
+                                {t("Create a Project with this Paper")}
                             </Button>
                         </div>
                     )}
@@ -201,7 +203,7 @@ export function PaperProjects({ id, view = 'full' }: PaperProjectsProps) {
             )}
             {view === 'full' && (projectsToAdd.length > 0 || isLoadingAllProjects) && (
                 <div className="pt-4 mt-4 border-t">
-                    <h3 className="text-lg font-semibold mb-2">Add to Projects</h3>
+                    <h3 className="text-lg font-semibold mb-2">{t("Add to Projects")}</h3>
                     {(isLoadingProjects || isLoadingAllProjects) ? (
                         <div className="flex items-center justify-center py-4">
                             <Loader className="animate-spin mr-2 h-4 w-4" />
@@ -209,7 +211,7 @@ export function PaperProjects({ id, view = 'full' }: PaperProjectsProps) {
                     ) : (
                         <div className="space-y-2">
                             <Input
-                                placeholder="Search projects..."
+                                placeholder={t("Search projects...")}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="mb-2"
@@ -238,7 +240,7 @@ export function PaperProjects({ id, view = 'full' }: PaperProjectsProps) {
                                 ))}
                             </div>
                             {filteredProjectsToAdd.length === 0 && (
-                                <p className="text-sm text-muted-foreground text-center">No projects found.</p>
+                                <p className="text-sm text-muted-foreground text-center">{t("No projects found.")}</p>
                             )}
                         </div>
                     )}

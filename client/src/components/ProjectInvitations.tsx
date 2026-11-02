@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +25,7 @@ interface ProjectInvitationsProps {
 }
 
 export function ProjectInvitations({ onInvitationAccepted, defaultOpen = false }: ProjectInvitationsProps) {
+	const { t } = useI18n();
 	const [open, setOpen] = useState(defaultOpen);
 	const [invitations, setInvitations] = useState<ProjectInvitation[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +46,7 @@ export function ProjectInvitations({ onInvitationAccepted, defaultOpen = false }
 		} catch (error) {
 			console.error('Failed to fetch invitations:', error);
 			if (user) {
-				toast.error('Failed to load invitations');
+				toast.error(t("Failed to load invitations"));
 			}
 			setInvitations([]);
 		} finally {
@@ -58,7 +60,7 @@ export function ProjectInvitations({ onInvitationAccepted, defaultOpen = false }
 
 	const handleAccept = async (invitationId: string) => {
 		if (atProjectLimit) {
-			toast.error("You&apos;ve reached your project limit. Upgrade your plan to accept more project invitations.");
+			toast.error(t("You've reached your project limit. Upgrade your plan to accept more project invitations."));
 			return;
 		}
 
@@ -147,10 +149,10 @@ export function ProjectInvitations({ onInvitationAccepted, defaultOpen = false }
 			<Dialog open={open} onOpenChange={setOpen}>
 				<DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
 					<DialogHeader>
-						<DialogTitle>Project Invitations</DialogTitle>
+						<DialogTitle>{t("Project Invitations")}</DialogTitle>
 						<DialogDescription>
 							{atProjectLimit
-								? <>You&apos;ve reached your project limit. <Link href="/pricing" className="text-blue-600 hover:text-blue-700 underline">Upgrade your plan</Link> to accept more project invitations.</>
+								? <>{t("You've reached your project limit.")} <Link href="/pricing" className="text-blue-600 hover:text-blue-700 underline">{t("Upgrade your plan")}</Link> {t("to accept more project invitations.")}</>
 								: pendingCount > 0
 									? `You have ${pendingCount} pending invitation${pendingCount === 1 ? '' : 's'}`
 									: "You have no pending invitations"}
@@ -165,7 +167,7 @@ export function ProjectInvitations({ onInvitationAccepted, defaultOpen = false }
 							) : invitations.length === 0 ? (
 							<div className="text-center py-8 text-muted-foreground">
 								<Mail className="h-12 w-12 mx-auto mb-3 opacity-50" />
-								<p>No invitations at this time</p>
+								<p>{t("No invitations at this time")}</p>
 							</div>
 						) : (
 							invitations.map((invitation) => {

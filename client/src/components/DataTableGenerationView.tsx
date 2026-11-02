@@ -15,6 +15,7 @@ import { PaperItem, DataTableResult, Citation } from "@/lib/schema";
 import ReferencePaperCards from "@/components/ReferencePaperCards";
 import { ProjectPaperPreview } from "@/components/ProjectPaperPreview";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 
 interface DataTableGenerationViewProps {
     dataTableResult: DataTableResult;
@@ -70,6 +71,7 @@ export default function DataTableGenerationView({
     onCitationClick,
     projectId,
 }: DataTableGenerationViewProps) {
+    const { t } = useI18n();
     const [highlightedPaper, setHighlightedPaper] = useState<string | null>(null);
     const { darkMode } = useIsDarkMode();
 
@@ -278,7 +280,7 @@ export default function DataTableGenerationView({
                                                     {paper.title}
                                                 </PaperLinkWrapper>
                                             ) : (
-                                                <span className="text-muted-foreground">Unknown Paper</span>
+                                                <span className="text-muted-foreground">{t("Unknown Paper")}</span>
                                             )}
                                         </td>
                                         {columns.map((columnName) => {
@@ -373,7 +375,7 @@ export default function DataTableGenerationView({
                 <Dialog open={codeDialogOpen} onOpenChange={setCodeDialogOpen}>
                     <DialogContent className="sm:max-w-[min(64rem,95vw)] max-h-[85vh] overflow-y-auto">
                         <DialogHeader>
-                            <DialogTitle>How the computed columns were calculated</DialogTitle>
+                            <DialogTitle>{t("How the computed columns were calculated")}</DialogTitle>
                             <DialogDescription>
                                 This script ran in a sandbox against the extracted table values —
                                 only the columns listed as inputs. Its output filled the computed columns.

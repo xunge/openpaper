@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, Gift, Loader2, Mail, Twitter } from "lucide-react";
 import { toast } from "sonner";
@@ -41,6 +42,7 @@ export function ReferralDialog({
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }) {
+    const { t } = useI18n();
     const [info, setInfo] = useState<ReferralInfo | null>(null);
     const [loading, setLoading] = useState(false);
     const [copiedField, setCopiedField] = useState<"url" | "code" | null>(null);
@@ -123,7 +125,7 @@ export function ReferralDialog({
                                     size="icon"
                                     variant="outline"
                                     onClick={() => copy(info.share_url, "url")}
-                                    aria-label="Copy share link"
+                                    aria-label={t("Copy share link")}
                                 >
                                     {copiedField === "url" ? (
                                         <Check className="h-4 w-4" />
@@ -148,7 +150,7 @@ export function ReferralDialog({
                                     size="icon"
                                     variant="outline"
                                     onClick={() => copy(info.code, "code")}
-                                    aria-label="Copy code"
+                                    aria-label={t("Copy code")}
                                 >
                                     {copiedField === "code" ? (
                                         <Check className="h-4 w-4" />
@@ -176,15 +178,15 @@ export function ReferralDialog({
 
                         <div className="rounded-lg border bg-muted/30 p-3 space-y-2 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-muted-foreground">Friends upgraded</span>
+                                <span className="text-muted-foreground">{t("Friends upgraded")}</span>
                                 <span className="font-medium">{summary?.total_converted ?? 0}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-muted-foreground">Pending credit</span>
+                                <span className="text-muted-foreground">{t("Pending credit")}</span>
                                 <span className="font-medium">{formatDollars(pendingCents)}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-muted-foreground">Available credit</span>
+                                <span className="text-muted-foreground">{t("Available credit")}</span>
                                 <span className="font-medium">{formatDollars(availableCents)}</span>
                             </div>
                         </div>

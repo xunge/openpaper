@@ -7,6 +7,7 @@ import remarkMath from 'remark-math';
 import Markdown, { Components } from 'react-markdown';
 import { PluggableList } from 'unified';
 import { Copy, Check, Download } from 'lucide-react';
+import { useI18n } from '@/lib/i18n';
 import { cellText, preFormatTextForRendering } from '@/lib/markdownPreFormat';
 
 function TableCell({ children, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
@@ -103,6 +104,7 @@ function tableDataToCsv(tableElement: HTMLTableElement): string {
 
 // Copyable table wrapper component
 export function CopyableTable({ children, className, ...props }: React.TableHTMLAttributes<HTMLTableElement> & { children?: React.ReactNode }) {
+    const { t } = useI18n();
     const tableRef = useRef<HTMLTableElement>(null);
     const [copied, setCopied] = useState(false);
 
@@ -142,29 +144,29 @@ export function CopyableTable({ children, className, ...props }: React.TableHTML
                 <button
                     onClick={handleCopy}
                     className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                    title="Copy to clipboard"
+                    title={t("Copy to clipboard")}
                     type="button"
                 >
                     {copied ? (
                         <>
                             <Check className="h-3.5 w-3.5 text-green-500" />
-                            <span className="text-green-500">Copied</span>
+                            <span className="text-green-500">{t("Copied")}</span>
                         </>
                     ) : (
                         <>
                             <Copy className="h-3.5 w-3.5" />
-                            <span>Copy</span>
+                            <span>{t("Copy")}</span>
                         </>
                     )}
                 </button>
                 <button
                     onClick={handleExportCsv}
                     className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
-                    title="Export as CSV"
+                    title={t("Export as CSV")}
                     type="button"
                 >
                     <Download className="h-3.5 w-3.5" />
-                    <span>Export CSV</span>
+                    <span>{t("Export CSV")}</span>
                 </button>
             </div>
             {/* Table */}

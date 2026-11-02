@@ -1,5 +1,6 @@
 'use client';
 
+import { useI18n } from "@/lib/i18n";
 import {
     EmbeddedCheckoutProvider,
     EmbeddedCheckout
@@ -28,6 +29,7 @@ interface CheckoutSheetProps {
 }
 
 export default function CheckoutSheet({ open, onOpenChange, interval, planName, annualSavings, isResubscription = false }: CheckoutSheetProps) {
+    const { t } = useI18n();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -94,7 +96,7 @@ export default function CheckoutSheet({ open, onOpenChange, interval, planName, 
                     {isLoading && (
                         <div className="text-center py-8">
                             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
-                            <p className="mt-2 text-sm text-muted-foreground">Setting up your checkout...</p>
+                            <p className="mt-2 text-sm text-muted-foreground">{t("Setting up your checkout...")}</p>
                         </div>
                     )}
 

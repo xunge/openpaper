@@ -70,8 +70,8 @@ export function ChartExportButtons({ artifact, view, log, display = "full", comp
                             variant="ghost"
                             size="icon"
                             className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                            title="Export chart"
-                            aria-label="Export chart"
+                            title={t("Export chart")}
+                            aria-label={t("Export chart")}
                         >
                             {copied ? <Check className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
                         </Button>
@@ -80,7 +80,7 @@ export function ChartExportButtons({ artifact, view, log, display = "full", comp
                             variant="outline"
                             size="sm"
                             className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
-                            aria-label="Export chart"
+                            aria-label={t("Export chart")}
                         >
                             {copied ? <Check className="h-3.5 w-3.5" /> : null}
                             {copied ? "Copied" : "Export"}

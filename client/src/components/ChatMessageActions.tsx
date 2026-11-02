@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
 import removeMd from "remove-markdown";
 import { Button } from "./ui/button";
@@ -19,6 +20,7 @@ interface ChatMessageActionsProps {
 }
 
 export function ChatMessageActions({ message, references }: ChatMessageActionsProps) {
+	const { t } = useI18n();
 	const [hasCopied, setHasCopied] = useState(false);
 
 	const onCopy = (text: string) => {
@@ -56,7 +58,7 @@ export function ChatMessageActions({ message, references }: ChatMessageActionsPr
 					variant="ghost"
 					size="icon"
 					className="h-6 w-6 text-muted-foreground hover:text-foreground"
-					title="Copy"
+					title={t("Copy")}
 				>
 					{hasCopied ? (
 						<Check className="h-3 w-3 text-green-500" />

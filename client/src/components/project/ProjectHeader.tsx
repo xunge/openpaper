@@ -70,13 +70,13 @@ export function ProjectHeader() {
             {/* Mobile: papers + chats rail lives behind a toggle */}
             <Sheet open={isMobileRailOpen} onOpenChange={setIsMobileRailOpen}>
                 <SheetTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 md:hidden" aria-label="Open project navigation">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 md:hidden" aria-label={t("Open project navigation")}>
                         <PanelLeftOpen className="h-4 w-4" />
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-72 p-0">
                     <SheetHeader className="sr-only">
-                        <SheetTitle>Project navigation</SheetTitle>
+                        <SheetTitle>{t("Project navigation")}</SheetTitle>
                     </SheetHeader>
                     <ProjectRail onNavigate={() => setIsMobileRailOpen(false)} />
                 </SheetContent>

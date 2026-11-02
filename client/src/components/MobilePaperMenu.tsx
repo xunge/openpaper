@@ -15,8 +15,10 @@ import { CitePaperButton } from '@/components/CitePaperButton';
 import { CitationGraphButton } from '@/components/CitationGraphButton';
 import { ManageProjectsButton } from '@/components/ManageProjectsButton';
 import { ImportPaperButton } from '@/components/ImportPaperButton';
+import { useI18n } from "@/lib/i18n";
 
 export function MobilePaperMenu() {
+    const { t } = useI18n();
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -25,12 +27,12 @@ export function MobilePaperMenu() {
                 <SheetTrigger asChild>
                     <Button variant="ghost" size="icon">
                         <MenuIcon className="h-5 w-5" />
-                        <span className="sr-only">Open menu</span>
+                        <span className="sr-only">{t("Open menu")}</span>
                     </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-80">
                     <SheetHeader>
-                        <SheetTitle>Paper Actions</SheetTitle>
+                        <SheetTitle>{t("Paper Actions")}</SheetTitle>
                     </SheetHeader>
                     <div className="m-0">
                         {/* Mobile-styled buttons that take full width and are left-aligned */}

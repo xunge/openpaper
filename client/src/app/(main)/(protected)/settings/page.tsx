@@ -69,10 +69,10 @@ function SettingsContent() {
 
 	return (
 		<div className="max-w-2xl p-6 space-y-6">
-			<h1 className="text-2xl font-bold">Settings</h1>
+			<h1 className="text-2xl font-bold">{t("Settings")}</h1>
 
 			<div className="space-y-1">
-				<h2 className="text-lg font-medium">Profile</h2>
+				<h2 className="text-lg font-medium">{t("Profile")}</h2>
 				<p className="text-sm text-muted-foreground">{t("Manage your account details.")}</p>
 			</div>
 			<form onSubmit={handleSave} className="space-y-4">
@@ -87,7 +87,7 @@ function SettingsContent() {
 					/>
 				</div>
 				<div className="space-y-2">
-					<Label htmlFor="email">Email</Label>
+					<Label htmlFor="email">{t("Email")}</Label>
 					<Input
 						id="email"
 						value={user.email}
@@ -98,7 +98,7 @@ function SettingsContent() {
 				</div>
 				<Button type="submit" disabled={isSaving || !name.trim()}>
 					{isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-					Save
+					{t("Save")}
 				</Button>
 			</form>
 

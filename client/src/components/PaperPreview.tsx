@@ -7,7 +7,7 @@ import { X, ExternalLink, Highlighter, Plus, FileText, Download, Pencil } from "
 import Link from "next/link";
 import { toast } from "sonner";
 import { handleStatusChange, truncateText } from "@/components/utils/paperUtils";
-import { getStatusIcon, PaperStatusEnum } from "@/components/utils/PdfStatus";
+import { getStatusIcon, getStatusLabel, PaperStatusEnum } from "@/components/utils/PdfStatus";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PaperProjects } from "./PaperProjects";
 import { TagSelector } from "./TagSelector";
@@ -42,6 +42,7 @@ function EditableField({
     className?: string;
     placeholder?: string;
 }) {
+    const { t } = useI18n();
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(value);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -98,7 +99,7 @@ function EditableField({
                     rows={1}
                 />
                 <span className="text-xs text-muted-foreground mt-1 block">
-                    ↵ Enter to save · Esc to cancel
+                    {t("Enter to save · Esc to cancel")}
                 </span>
             </div>
         );
@@ -109,7 +110,7 @@ function EditableField({
             className={`group/edit cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 inline-flex items-center gap-1 ${className}`}
             onClick={() => setEditing(true)}
         >
-            <span>{value || <span className="text-muted-foreground italic">{placeholder || "Click to add"}</span>}</span>
+            <span>{value || <span className="text-muted-foreground italic">{placeholder || t("Click to add")}</span>}</span>
             <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover/edit:opacity-100 transition-opacity flex-shrink-0" />
         </span>
     );
@@ -124,6 +125,7 @@ function EditableListField({
     onSave: (values: string[]) => void;
     placeholder?: string;
 }) {
+    const { t } = useI18n();
     const [editing, setEditing] = useState(false);
     const [draft, setDraft] = useState(values.join(", "));
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -178,11 +180,11 @@ function EditableListField({
                     onBlur={cancel}
                     onKeyDown={handleKeyDown}
                     className="text-sm resize-none overflow-hidden"
-                    placeholder={placeholder || "Comma-separated values"}
+                    placeholder={placeholder || t("Comma-separated values")}
                     rows={1}
                 />
                 <span className="text-xs text-muted-foreground mt-1 block">
-                    ↵ Enter to save · Esc to cancel
+                    {t("Enter to save · Esc to cancel")}
                 </span>
             </div>
         );
@@ -193,7 +195,7 @@ function EditableListField({
             className="group/edit cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1 inline-flex items-center gap-1"
             onClick={() => setEditing(true)}
         >
-            <span>{values.length > 0 ? values.join(", ") : <span className="text-muted-foreground italic">{placeholder || "Click to add"}</span>}</span>
+            <span>{values.length > 0 ? values.join(", ") : <span className="text-muted-foreground italic">{placeholder || t("Click to add")}</span>}</span>
             <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover/edit:opacity-100 transition-opacity flex-shrink-0" />
         </span>
     );
@@ -231,7 +233,7 @@ export function PaperPreview(
             }
         } catch (error) {
             console.error("Failed to update paper", error);
-            toast.error("Failed to update paper.");
+            toast.error(t("Failed to update paper."));
         }
     };
 
@@ -247,7 +249,7 @@ export function PaperPreview(
             setPaper(paper.id, updatedPaper);
         } catch (error) {
             console.error("Failed to remove tag", error);
-            toast.error("Failed to remove tag.");
+            toast.error(t("Failed to remove tag."));
         }
     };
 
@@ -282,7 +284,7 @@ export function PaperPreview(
                         <Link href={`/paper/${paper.id}`} passHref>
                             <Button size="sm" variant="outline" className="h-8 px-3 text-xs">
                                 <FileText className="h-3.5 w-3.5 mr-1.5" />
-                                Open
+                                {t("Open")}
                             </Button>
                         </Link>
                         {loadedPaper?.file_url && (
@@ -300,22 +302,22 @@ export function PaperPreview(
                                     <Button size="sm" variant="outline" className="h-8 px-3 text-xs capitalize">
                                         <span className="flex items-center gap-2">
                                             {getStatusIcon(paper.status)}
-                                            {paper.status}
+                                            {getStatusLabel(paper.status, t)}
                                         </span>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={() => handleStatusChange(paper, PaperStatusEnum.TODO, setPaper)}>
                                         {getStatusIcon(PaperStatusEnum.TODO)}
-                                        Todo
+                                        {getStatusLabel(PaperStatusEnum.TODO, t)}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleStatusChange(paper, PaperStatusEnum.READING, setPaper)}>
                                         {getStatusIcon(PaperStatusEnum.READING)}
-                                        Reading
+                                        {getStatusLabel(PaperStatusEnum.READING, t)}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleStatusChange(paper, PaperStatusEnum.COMPLETED, setPaper)}>
                                         {getStatusIcon(PaperStatusEnum.COMPLETED)}
-                                        Completed
+                                        {getStatusLabel(PaperStatusEnum.COMPLETED, t)}
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -346,27 +348,27 @@ export function PaperPreview(
                         <table className="w-full">
                             <tbody className="divide-y divide-border">
                                 <tr>
-                                    <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">Title</td>
+                                    <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">{t("Title")}</td>
                                     <td className="px-3 py-2">
                                         <EditableField
                                             value={paper.title || ""}
                                             onSave={(value) => updateField({ title: value })}
-                                            placeholder="Add title"
+                                            placeholder={t("Add title")}
                                         />
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">Authors</td>
+                                    <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">{t("Authors")}</td>
                                     <td className="px-3 py-2">
                                         <EditableListField
                                             values={paper.authors || []}
                                             onSave={(values) => updateField({ authors: values })}
-                                            placeholder="Add authors"
+                                            placeholder={t("Add authors")}
                                         />
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">Published</td>
+                                    <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">{t("Published")}</td>
                                     <td className="px-3 py-2">
                                         <EditableField
                                             value={paper.publish_date ? new Date(paper.publish_date).toLocaleDateString() : ""}
@@ -375,10 +377,10 @@ export function PaperPreview(
                                                 if (!isNaN(parsed.getTime())) {
                                                     updateField({ publish_date: parsed.toISOString() });
                                                 } else {
-                                                    toast.error("Invalid date format");
+                                                    toast.error(t("Invalid date format"));
                                                 }
                                             }}
-                                            placeholder="Add publish date"
+                                            placeholder={t("Add publish date")}
                                         />
                                     </td>
                                 </tr>
@@ -396,43 +398,43 @@ export function PaperPreview(
                                 )}
                                 {loadedPaper && (
                                     <tr>
-                                        <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">DOI</td>
+                                        <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">{t("DOI")}</td>
                                         <td className="px-3 py-2">
                                             <EditableField
                                                 value={loadedPaper.doi || ""}
                                                 onSave={(value) => updateField({ doi: value })}
-                                                placeholder="Add DOI"
+                                                placeholder={t("Add DOI")}
                                             />
                                         </td>
                                     </tr>
                                 )}
                                 {loadedPaper && (
                                     <tr>
-                                        <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">Journal</td>
+                                        <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">{t("Journal")}</td>
                                         <td className="px-3 py-2">
                                             <EditableField
                                                 value={loadedPaper.journal || ""}
                                                 onSave={(value) => updateField({ journal: value })}
-                                                placeholder="Add journal"
+                                                placeholder={t("Add journal")}
                                             />
                                         </td>
                                     </tr>
                                 )}
                                 {loadedPaper && (
                                     <tr>
-                                        <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">Publisher</td>
+                                        <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">{t("Publisher")}</td>
                                         <td className="px-3 py-2">
                                             <EditableField
                                                 value={loadedPaper.publisher || ""}
                                                 onSave={(value) => updateField({ publisher: value })}
-                                                placeholder="Add publisher"
+                                                placeholder={t("Add publisher")}
                                             />
                                         </td>
                                     </tr>
                                 )}
                                 {loadedPaper?.zotero_synced && (
                                     <tr>
-                                        <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">Source</td>
+                                        <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">{t("Source")}</td>
                                         <td className="px-3 py-2">
                                             <span className="inline-flex items-center px-2 py-1 bg-red-100 text-red-800 rounded-sm dark:bg-red-900 dark:text-red-200 text-xs">
                                                 Zotero
@@ -441,12 +443,12 @@ export function PaperPreview(
                                     </tr>
                                 )}
                                 <tr>
-                                    <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">Institutions</td>
+                                    <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">{t("Institutions")}</td>
                                     <td className="px-3 py-2">
                                         <EditableListField
                                             values={paper.institutions || []}
                                             onSave={(values) => updateField({ institutions: values })}
-                                            placeholder="Add institutions"
+                                            placeholder={t("Add institutions")}
                                         />
                                     </td>
                                 </tr>
@@ -495,7 +497,7 @@ export function PaperPreview(
                 {/* Tags Section */}
                 <div className="border-t border-border pt-4 mt-4 space-y-2">
                     <div className="flex items-center justify-between mb-1">
-                        <h4 className="font-semibold text-sm">Tags</h4>
+                        <h4 className="font-semibold text-sm">{t("Tags")}</h4>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="h-7 text-xs"><Plus className="h-2.5 w-2.5" /></Button>

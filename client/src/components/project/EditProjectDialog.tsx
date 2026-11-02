@@ -18,6 +18,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useProjectWorkspace } from "@/components/project/ProjectWorkspaceProvider";
+import { useI18n } from "@/lib/i18n";
 
 interface EditProjectDialogProps {
     open: boolean;
@@ -27,6 +28,7 @@ interface EditProjectDialogProps {
 // Edit the project's title + description. Lives in the workspace header so
 // it's reachable from every project route.
 export function EditProjectDialog({ open, onOpenChange }: EditProjectDialogProps) {
+    const { t } = useI18n();
     const { project, refetchProject } = useProjectWorkspace();
     const [currentTitle, setCurrentTitle] = useState("");
     const [currentDescription, setCurrentDescription] = useState("");
@@ -67,15 +69,15 @@ export function EditProjectDialog({ open, onOpenChange }: EditProjectDialogProps
         <AlertDialog open={open} onOpenChange={onOpenChange}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Edit Project</AlertDialogTitle>
+                    <AlertDialogTitle>{t("Edit Project")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Update the title and description for your project.
+                        {t("Update the title and description for your project.")}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="title" className="text-right">
-                            Title
+                            {t("Title")}
                         </Label>
                         <Input
                             id="title"
@@ -86,7 +88,7 @@ export function EditProjectDialog({ open, onOpenChange }: EditProjectDialogProps
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="description" className="text-right">
-                            Description
+                            {t("Description")}
                         </Label>
                         <Textarea
                             id="description"
@@ -97,8 +99,8 @@ export function EditProjectDialog({ open, onOpenChange }: EditProjectDialogProps
                     </div>
                 </div>
                 <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleUpdateProject}>Save</AlertDialogAction>
+                    <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleUpdateProject}>{t("Save")}</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -107,14 +109,15 @@ export function EditProjectDialog({ open, onOpenChange }: EditProjectDialogProps
 
 // Convenience: dialog + its trigger state, rendered as a hover-revealed pencil.
 export function EditProjectButton({ className }: { className?: string }) {
+    const { t } = useI18n();
     const [open, setOpen] = useState(false);
     return (
         <>
             <button
                 onClick={() => setOpen(true)}
                 className={className}
-                aria-label="Edit project title and description"
-                title="Edit project"
+                aria-label={t("Edit project title and description")}
+                title={t("Edit project")}
             >
                 <Pencil className="h-3 w-3" />
             </button>

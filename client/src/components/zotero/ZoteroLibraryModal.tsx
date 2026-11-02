@@ -1,5 +1,6 @@
 "use client"
 
+import { useI18n } from "@/lib/i18n";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -66,6 +67,7 @@ export function ZoteroLibraryModal({
 	onSelectionChange: (keys: Set<string>) => void;
 	onImport: (keys: string[]) => void;
 }) {
+	const { t } = useI18n();
 	const [sortBy, setSortBy] = useState<SortBy>("dateModified");
 	const [filterTypes, setFilterTypes] = useState<Set<string>>(
 		new Set(["journalArticle", "conferencePaper", "preprint"])
@@ -187,11 +189,11 @@ export function ZoteroLibraryModal({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-3xl">
 				<DialogHeader>
-					<DialogTitle>Select papers to import</DialogTitle>
+					<DialogTitle>{t("Select papers to import")}</DialogTitle>
 				</DialogHeader>
 
 				{loading ? (
-					<div className="space-y-2" aria-busy="true" aria-label="Loading library">
+					<div className="space-y-2" aria-busy="true" aria-label={t("Loading library")}>
 						{/* Mirror the loaded layout: count line, search, toolbar, list. */}
 						<Skeleton className="h-4 w-48" />
 						<Skeleton className="h-8 w-full" />
@@ -219,7 +221,7 @@ export function ZoteroLibraryModal({
 					</div>
 				) : items.length === 0 ? (
 					<div className="text-sm text-muted-foreground py-6 text-center space-y-2">
-						<p>No importable papers found in your Zotero library.</p>
+						<p>{t("No importable papers found in your Zotero library.")}</p>
 						<p>
 							If your papers are in the Zotero desktop app, remember to sync your local library with your web library.
 						</p>
@@ -235,7 +237,7 @@ export function ZoteroLibraryModal({
 						<div className="relative">
 							<Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
 							<Input
-								placeholder="Search by title or author…"
+								placeholder={t("Search by title or author…")}
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
 								className="pl-7 h-8 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"

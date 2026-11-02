@@ -1,4 +1,5 @@
 import { fetchFromApi } from '@/lib/api';
+import { useI18n } from '@/lib/i18n';
 import { PaperImage } from '@/lib/schema';
 import { Loader } from 'lucide-react';
 import React from 'react';
@@ -10,6 +11,7 @@ interface PaperImageViewProps {
 }
 
 export default function PaperImageView({ paperId }: PaperImageViewProps) {
+    const { t } = useI18n();
     const [loadingImages, setLoadingImages] = useState(true);
     const [paperImages, setPaperImages] = useState<PaperImage[]>([]);
 
@@ -33,7 +35,7 @@ export default function PaperImageView({ paperId }: PaperImageViewProps) {
     }, [paperId]);
 
     if (paperImages.length === 0 && !loadingImages) {
-        return <div>No images found.</div>;
+        return <div>{t("No images found.")}</div>;
     }
 
     return (
@@ -41,11 +43,11 @@ export default function PaperImageView({ paperId }: PaperImageViewProps) {
             {
                 paperImages.length > 0 && (
                     <div className="my-6">
-                        <h3 className="text-lg font-semibold mb-4">Figures and Images (Beta)</h3>
+                        <h3 className="text-lg font-semibold mb-4">{t("Figures and Images (Beta)")}</h3>
                         {loadingImages ? (
                             <div className="flex items-center justify-center py-8">
                                 <Loader className="animate-spin h-6 w-6 text-gray-500" />
-                                <span className="ml-2 text-gray-500">Loading images...</span>
+                                <span className="ml-2 text-gray-500">{t("Loading images...")}</span>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

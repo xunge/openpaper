@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -12,6 +13,7 @@ import { useProjectWorkspace } from "@/components/project/ProjectWorkspaceProvid
 // Center-pane view of an audio overview's transcript — same paradigm as data
 // tables: artifacts render in the middle, citations open in the reader panel.
 export default function ProjectAudioOverviewPage() {
+    const { t } = useI18n();
     const params = useParams();
     const router = useRouter();
     const audioId = params.audioId as string;
@@ -55,7 +57,7 @@ export default function ProjectAudioOverviewPage() {
             <div className="flex flex-1 items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-                    <p className="text-muted-foreground">Loading audio overview...</p>
+                    <p className="text-muted-foreground">{t("Loading audio overview...")}</p>
                 </div>
             </div>
         );

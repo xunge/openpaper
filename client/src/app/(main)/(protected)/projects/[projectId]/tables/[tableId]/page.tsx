@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DataTableResult } from "@/lib/schema";
@@ -10,6 +11,7 @@ import { fetchFromApi } from "@/lib/api";
 import { useProjectWorkspace } from "@/components/project/ProjectWorkspaceProvider";
 
 export default function DataTablePage() {
+    const { t } = useI18n();
     const params = useParams();
     const router = useRouter();
     const tableId = params.tableId as string;
@@ -61,7 +63,7 @@ export default function DataTablePage() {
             <div className="flex flex-1 items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                    <p className="text-muted-foreground">Loading data table...</p>
+                    <p className="text-muted-foreground">{t("Loading data table...")}</p>
                 </div>
             </div>
         );

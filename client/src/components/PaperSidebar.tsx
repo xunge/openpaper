@@ -13,7 +13,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import React from 'react';
 
 /** Primary panels where the toolbar sits higher (less gap under the top bar). */
-const COMPACT_TOP_OFFSET_TOOLS = new Set(['Chat', 'Annotations', 'Audio']);
+const COMPACT_TOP_OFFSET_TOOLS = new Set(['Chat', 'Annotations', 'Audio', 'Bilingual']);
 
 interface PaperSidebarProps {
     rightSideFunction: string;

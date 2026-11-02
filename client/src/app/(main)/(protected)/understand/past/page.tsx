@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import { fetchFromApi } from "@/lib/api";
 import { Conversation } from "@/lib/schema";
@@ -9,6 +10,7 @@ import { Plus } from "lucide-react";
 import ConversationHistory from "@/components/ConversationHistory";
 
 export default function PastConversationsPage() {
+    const { t } = useI18n();
 	const [conversations, setConversations] = useState<Conversation[]>([]);
 
 	useEffect(() => {
@@ -40,7 +42,7 @@ export default function PastConversationsPage() {
 		<div className="p-4 md:p-6 lg:w-2/3 mx-auto">
 			<div className="flex justify-between items-start mb-6">
 				<div>
-					<h1 className="text-3xl font-bold">Past Conversations</h1>
+					<h1 className="text-3xl font-bold">{t("Past Conversations")}</h1>
 					<p className="text-muted-foreground mt-1">
 						Browse and manage your previous conversations.
 					</p>

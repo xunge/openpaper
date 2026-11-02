@@ -376,7 +376,7 @@ export const ConversationView = ({
 								)}
 								References ({msg.references.citations.length})
 								{msg.references.citations.length > 15 && (
-									<span className="text-amber-600 dark:text-amber-400 ml-1">• summarized</span>
+									<span className="text-amber-600 dark:text-amber-400 ml-1">• {t("summarized")}</span>
 								)}
 							</button>
 							{msg.role === "assistant" && (

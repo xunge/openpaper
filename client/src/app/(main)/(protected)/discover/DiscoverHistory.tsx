@@ -58,7 +58,7 @@ export default function DiscoverHistory({ searches, onSelect, maxVisible = 5 }: 
                             href="/discover/history"
                             className="flex items-center justify-between w-full px-2 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-sm transition-colors"
                         >
-                            <span>View all searches</span>
+                            <span>{t("View all searches")}</span>
                             <ChevronRight className="h-3.5 w-3.5" />
                         </Link>
                     )}

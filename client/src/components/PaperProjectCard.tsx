@@ -14,6 +14,7 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { formatDate } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 export function PaperProjectCard({
 	project,
@@ -22,6 +23,7 @@ export function PaperProjectCard({
 	project: Project;
 	onUnlink?: () => void;
 }) {
+	const { t } = useI18n();
 	const [showUnlinkAlert, setShowUnlinkAlert] = useState(false);
 	const updatedAt = project.updated_at ? formatDate(project.updated_at) : null;
 
@@ -30,14 +32,14 @@ export function PaperProjectCard({
 			<AlertDialog open={showUnlinkAlert} onOpenChange={setShowUnlinkAlert}>
 				<AlertDialogContent>
 					<AlertDialogHeader>
-						<AlertDialogTitle>Are you sure you want to unlink this paper?</AlertDialogTitle>
+						<AlertDialogTitle>{t("Are you sure you want to unlink this paper?")}</AlertDialogTitle>
 						<AlertDialogDescription>
-							This action will remove this paper from the project. You can add it back later.
+							{t("This action will remove this paper from the project. You can add it back later.")}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
-						<AlertDialogCancel>Cancel</AlertDialogCancel>
-						<AlertDialogAction onClick={onUnlink}>Unlink</AlertDialogAction>
+						<AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+						<AlertDialogAction onClick={onUnlink}>{t("Unlink")}</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>

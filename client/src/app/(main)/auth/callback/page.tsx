@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { OPOnboarding } from "@/components/OPOnboarding";
 import { fetchFromApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
 
 const REFERRAL_STORAGE_KEY = "op_ref";
 const REFERRAL_MANUAL_FLAG_KEY = "op_ref_via_manual";
@@ -30,6 +31,7 @@ async function attemptReferralAttribution(via_link: boolean) {
 }
 
 function CallbackContent() {
+    const { t } = useI18n();
 
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -70,9 +72,9 @@ function CallbackContent() {
 					<div className="mx-auto mb-4 rounded-full bg-red-100 p-3 text-red-600">
 						<Info className="h-6 w-6" />
 					</div>
-					<h2 className="text-xl font-medium">Authentication Failed</h2>
+					<h2 className="text-xl font-medium">{t("Authentication Failed")}</h2>
 					<p className="text-muted-foreground">{error}</p>
-					<p className="mt-4 text-sm text-muted-foreground">Redirecting to login page...</p>
+					<p className="mt-4 text-sm text-muted-foreground">{t("Redirecting to login page...")}</p>
 				</div>
 			</div>
 		);
@@ -83,9 +85,9 @@ function CallbackContent() {
 			<div className="flex flex-col items-center justify-start min-h-[calc(100vh-64px)] p-4 md:pt-16">
 				<div className="container mx-auto flex flex-col items-center justify-start">
 					<div className="w-full md:max-w-1/2">
-						<h2 className="text-2xl font-bold text-center mb-4">Welcome to Open Paper</h2>
-						<p className="text-muted-foreground mb-8 text-left">We want to make it 10x easier for you to read over large sets of documents, without sacrificing quality.</p>
-						<p className="text-muted-foreground mb-8 text-left">A couple of questions below will help us craft a better experience for you.</p>
+						<h2 className="text-2xl font-bold text-center mb-4">{t("Welcome to Open Paper")}</h2>
+						<p className="text-muted-foreground mb-8 text-left">{t("We want to make it 10x easier for you to read over large sets of documents, without sacrificing quality.")}</p>
+						<p className="text-muted-foreground mb-8 text-left">{t("A couple of questions below will help us craft a better experience for you.")}</p>
 						<OPOnboarding />
 					</div>
 				</div>
@@ -99,8 +101,8 @@ function CallbackContent() {
 				<div className="h-full flex flex-col items-center justify-center py-8 space-y-6">
 					<Loader2 className="h-12 w-12 animate-spin text-primary" />
 				</div>
-				<h2 className="text-xl font-medium">Completing sign in...</h2>
-				<p className="text-muted-foreground">Please wait while we finish authenticating your account.</p>
+				<h2 className="text-xl font-medium">{t("Completing sign in...")}</h2>
+				<p className="text-muted-foreground">{t("Please wait while we finish authenticating your account.")}</p>
 			</div>
 		</div>
 	);

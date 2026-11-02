@@ -121,7 +121,7 @@ export default function ProjectPage() {
     }
 
     if (!project) {
-        return <div className="p-4">Project not found.</div>;
+        return <div className="p-4">{t("Project not found.")}</div>;
     }
 
     const isEmpty = papers.length === 0 && conversations.length === 0;
@@ -223,7 +223,7 @@ export default function ProjectPage() {
                         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted p-3">
                             <MessageCircle className="h-6 w-6 text-muted-foreground" />
                         </div>
-                        <h3 className="mb-1 text-sm font-semibold">Ready to Start Conversations</h3>
+                        <h3 className="mb-1 text-sm font-semibold">{t("Ready to Start Conversations")}</h3>
                         <p className="text-sm text-muted-foreground">{t("Add papers to your project to begin discussing and analyzing them.")}</p>
                         <Button variant="outline" size="sm" className="mt-3" onClick={() => openAddPapers()}>
                             {t("Add papers")}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
 import { Conversation } from "@/lib/schema";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ export default function ConversationHistory({
   hrefGenerator,
   compact = false,
 }: ConversationHistoryProps) {
+  const { t } = useI18n();
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredConversations = conversations.filter((conversation) =>
@@ -38,7 +40,7 @@ export default function ConversationHistory({
     <div>
       <div className="mb-4">
         <Input
-          placeholder="Search conversations..."
+          placeholder={t("Search conversations...")}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"

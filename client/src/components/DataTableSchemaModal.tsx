@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n";
 import { useMemo, useState } from "react";
 import { X, Plus, Table, Loader2, Sparkles, Info, List, ListPlus, Calculator } from "lucide-react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -55,6 +56,7 @@ export default function DataTableSchemaModal({
     isCreating = false,
     atLimit = false
 }: DataTableSchemaModalProps) {
+    const { t } = useI18n();
     const [mode, setMode] = useState<SchemaMode>('prompt');
     const [prompt, setPrompt] = useState('');
     const [isProposing, setIsProposing] = useState(false);
@@ -196,19 +198,19 @@ export default function DataTableSchemaModal({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Create Data Table</DialogTitle>
+                    <DialogTitle>{t("Create Data Table")}</DialogTitle>
                     <DialogDescription>
                         {mode === 'manual'
-                            ? 'Define the fields for your data table. We will extract the corresponding information from each paper in your project.'
-                            : 'Describe what you want to compare or extract across your papers, and we’ll suggest the fields for your table.'}
+                            ? t("Define the fields for your data table. We will extract the corresponding information from each paper in your project.")
+                            : t("Describe what you want to compare or extract across your papers, and we’ll suggest the fields for your table.")}
                     </DialogDescription>
                 </DialogHeader>
 
                 {atLimit ? (
                     <div className="mt-4 text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/30 rounded-md">
-                        <p className="text-sm text-yellow-800 dark:text-yellow-200">You&apos;ve used all your data tables for this week.</p>
+                        <p className="text-sm text-yellow-800 dark:text-yellow-200">{t("You've used all your data tables for this week.")}</p>
                         <Link href="/pricing" passHref>
-                            <Button variant="link" className="p-0 h-auto text-sm">Upgrade your plan to create more.</Button>
+                            <Button variant="link" className="p-0 h-auto text-sm">{t("Upgrade your plan to create more.")}</Button>
                         </Link>
                     </div>
                 ) : (
@@ -218,7 +220,7 @@ export default function DataTableSchemaModal({
                                 <div className="space-y-2">
                                     <Textarea
                                         id="schema-prompt"
-                                        placeholder="e.g., Compare the methods, sample sizes, and key findings across these papers..."
+                                        placeholder={t("e.g., Compare the methods, sample sizes, and key findings across these papers...")}
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
                                         rows={3}
@@ -238,8 +240,8 @@ export default function DataTableSchemaModal({
                                             <Sparkles className="mr-2 h-4 w-4" />
                                         )}
                                         {isProposing
-                                            ? 'Suggesting fields...'
-                                            : mode === 'augmented' ? 'Regenerate' : 'Propose Fields'}
+                                            ? t("Suggesting fields...")
+                                            : mode === 'augmented' ? t("Regenerate") : t("Propose Fields")}
                                     </Button>
                                 </div>
                             )}
@@ -251,7 +253,7 @@ export default function DataTableSchemaModal({
                                             <span className="w-full border-t" />
                                         </div>
                                         <div className="relative flex justify-center">
-                                            <span className="bg-background px-2 text-xs uppercase text-muted-foreground">or</span>
+                                            <span className="bg-background px-2 text-xs uppercase text-muted-foreground">{t("or")}</span>
                                         </div>
                                     </div>
                                     <Button
@@ -317,7 +319,7 @@ export default function DataTableSchemaModal({
                                                         </Label>
                                                         <Input
                                                             id={`label-${field.id}`}
-                                                            placeholder="e.g., Author, Year, Sample Size, Key Finding..."
+                                                            placeholder={t("e.g., Author, Year, Sample Size, Key Finding...")}
                                                             value={field.label}
                                                             onChange={(e) => updateField(field.id, e.target.value)}
                                                             disabled={isProposing}
@@ -359,12 +361,12 @@ export default function DataTableSchemaModal({
                                         className="w-full"
                                     >
                                         <Plus className="mr-2 h-4 w-4" />
-                                        Add Field
+                                        {t("Add Field")}
                                     </Button>
 
                                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-md p-3">
                                         <p className="text-xs text-blue-800 dark:text-blue-200">
-                                            <strong>Tip:</strong> Be specific with field labels for better results. For example, use &quot;Sample Size (n)&quot; instead of just &quot;Size&quot;.
+                                            <strong>{t("Tip:")}</strong> {t("Be specific with field labels for better results. For example, use \"Sample Size (n)\" instead of just \"Size\".")}
                                         </p>
                                     </div>
                                 </>
@@ -374,7 +376,7 @@ export default function DataTableSchemaModal({
                         <div className="flex justify-end gap-2 mt-6">
                             <DialogClose asChild>
                                 <Button variant="secondary" disabled={isCreating}>
-                                    Cancel
+                                    {t("Cancel")}
                                 </Button>
                             </DialogClose>
                             {showFields && (
@@ -387,7 +389,7 @@ export default function DataTableSchemaModal({
                                     ) : (
                                         <Table className="mr-2 h-4 w-4" />
                                     )}
-                                    {isCreating ? 'Creating...' : 'Generate Table'}
+                                    {isCreating ? t("Creating...") : t("Generate Table")}
                                 </Button>
                             )}
                         </div>

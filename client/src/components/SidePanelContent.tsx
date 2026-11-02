@@ -439,7 +439,7 @@ export function SidePanelContent({
 
         const CHAT_CREDIT_TOAST_KEY = "chat_credit_limit_toast_shown";
         if (isChatCreditAtLimit(subscription) && !sessionStorage.getItem(CHAT_CREDIT_TOAST_KEY)) {
-            toast.error("Nice! You've used your chat credits for the week. Upgrade your plan to continue chatting.", {
+            toast.error(t("Nice! You've used your chat credits for the week. Upgrade your plan to continue chatting."), {
                 duration: 5000,
                 action: {
                     label: 'Upgrade',
@@ -776,7 +776,7 @@ export function SidePanelContent({
                         msg.references && msg.references.citations && msg.references.citations.length > 0 && (
                             <div>
                                 <div className="mt-0 pt-0 border-t border-gray-300 dark:border-gray-700 flex justify-between items-center" id="references-section">
-                                    <h4 className="text-sm font-semibold">References</h4>
+                                    <h4 className="text-sm font-semibold">{t("References")}</h4>
                                     {msg.role === 'assistant' && (
                                         <ChatMessageActions message={msg.content} references={msg.references} />
                                     )}
@@ -847,10 +847,10 @@ export function SidePanelContent({
                         {
                             rightSideFunction === 'Share' && paperData && (
                                 <div className={`flex flex-col ${heightClass} p-4 space-y-4`}>
-                                    <h3 className="text-lg font-semibold">Share Paper</h3>
+                                    <h3 className="text-lg font-semibold">{t("Share Paper")}</h3>
                                     {paperData.is_public ? (
                                         <div className="space-y-3">
-                                            <p className="text-sm text-muted-foreground">This paper is currently public. Anyone with the link can view it.</p>
+                                            <p className="text-sm text-muted-foreground">{t("This paper is currently public. Anyone with the link can view it.")}</p>
                                             <div className="flex items-center space-x-2">
                                                 <Input
                                                     readOnly
@@ -862,10 +862,10 @@ export function SidePanelContent({
                                                     size="sm"
                                                     onClick={async () => {
                                                         await navigator.clipboard.writeText(`${window.location.origin}/paper/share/${paperData.share_id}`);
-                                                        toast.success("Link copied!");
+                                                        toast.success(t("Link copied!"));
                                                     }}
                                                 >
-                                                    Copy Link
+                                                    {t("Copy Link")}
                                                 </Button>
                                             </div>
                                             <Button
@@ -875,19 +875,19 @@ export function SidePanelContent({
                                                 className="w-fit"
                                             >
                                                 {isSharing ? <Loader className="animate-spin mr-2 h-4 w-4" /> : null}
-                                                <LockIcon /> Make Private
+                                                <LockIcon /> {t("Make Private")}
                                             </Button>
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
-                                            <p className="text-sm text-muted-foreground">Make this paper public to share it with others via a unique link. All of your <b>annotations and chats</b> will be visible to anyone with the link.</p>
+                                            <p className="text-sm text-muted-foreground">{t("Make this paper public to share it with others via a unique link. All of your")} <b>{t("annotations and chats")}</b> {t("will be visible to anyone with the link.")}</p>
                                             <Button
                                                 onClick={handleShare}
                                                 disabled={isSharing}
                                                 className="w-fit"
                                             >
                                                 {isSharing ? <Loader className="animate-spin mr-2 h-4 w-4" /> : null}
-                                                <Share2Icon /> Share
+                                                <Share2Icon /> {t("Share")}
                                             </Button>
                                         </div>
                                     )}
@@ -906,7 +906,7 @@ export function SidePanelContent({
                                         {
                                             paperData.summary_citations && paperData.summary_citations.length > 0 && (
                                                 <div className="mt-0 pt-0 border-t border-gray-300 dark:border-gray-700" id="references-section">
-                                                    <h4 className="text-sm font-semibold mb-2">References</h4>
+                                                    <h4 className="text-sm font-semibold mb-2">{t("References")}</h4>
                                                     <ul className="list-none p-0">
                                                         {paperData.summary_citations.map((citation, index) => (
                                                             <div
@@ -978,7 +978,7 @@ export function SidePanelContent({
                                         {hasMoreMessages && messages.length > 0 && !isFetchingHistory && (
                                             <div className="text-center py-2">
                                                 {isLoadingMoreMessages ? (
-                                                    <div className="text-sm text-gray-500">Loading messages...</div>
+                                                    <div className="text-sm text-gray-500">{t("Loading messages...")}</div>
                                                 ) : (
                                                     <button
                                                         className="text-sm text-blue-500 hover:text-blue-700"
@@ -1006,7 +1006,7 @@ export function SidePanelContent({
                                         {errorState && !isStreaming && (
                                             <div className="relative group prose dark:prose-invert p-2 !max-w-full rounded-lg w-full text-primary dark:text-primary-foreground">
                                                 <div className="text-red-500">
-                                                    <p>An error occurred while processing your request.</p>
+                                                    <p>{t("An error occurred while processing your request.")}</p>
                                                     <Button
                                                         variant="outline"
                                                         className="mt-2"
@@ -1066,7 +1066,7 @@ export function SidePanelContent({
                                                             className="mt-0 pt-0 border-t border-gray-300 dark:border-gray-700 flex justify-between items-center"
                                                             id="references-section"
                                                         >
-                                                            <h4 className="text-sm font-semibold">References</h4>
+                                                            <h4 className="text-sm font-semibold">{t("References")}</h4>
                                                             <ChatMessageActions
                                                                 message={streamingChunks.join('')}
                                                                 references={streamingReferences}

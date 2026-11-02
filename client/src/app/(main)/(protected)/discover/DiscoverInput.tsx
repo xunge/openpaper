@@ -82,7 +82,7 @@ export default function DiscoverInput({
     onYearFilterChange,
     atSearchLimit = false,
 }: DiscoverInputProps) {
-	const { t } = useI18n();
+	const { t, lang } = useI18n();
     const textareaRef = useRef<HTMLTextAreaElement>(null)
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -99,27 +99,31 @@ export default function DiscoverInput({
     const selectedWebSources = selectedSources.filter(s => s !== "openalex")
     const selectedCount = selectedWebSources.length
 
-    const sourcesLabel = selectedCount === 0
-        ? "All sources"
-        : selectedCount === 1
-            ? webSources.find(s => s.key === selectedWebSources[0])?.label || "1 source"
-            : `${selectedCount} sources`
+    const sourcesLabel = lang === "zh"
+        ? selectedCount === 0
+            ? t("All sources")
+            : `${selectedCount} 个来源`
+        : selectedCount === 0
+            ? "All sources"
+            : selectedCount === 1
+                ? webSources.find(s => s.key === selectedWebSources[0])?.label || "1 source"
+                : `${selectedCount} sources`
 
-    const currentModeLabel = MODE_OPTIONS.find(o => o.value === mode)?.label || "Scholarly"
-    const currentSortLabel = SORT_OPTIONS.find(o => o.value === sort)?.label || "Relevance"
-    const currentYearFilterLabel = YEAR_FILTER_OPTIONS.find(o => o.value === yearFilter)?.label || "All time"
+    const currentModeLabel = t(MODE_OPTIONS.find(o => o.value === mode)?.label || "Scholarly")
+    const currentSortLabel = t(SORT_OPTIONS.find(o => o.value === sort)?.label || "Relevance")
+    const currentYearFilterLabel = t(YEAR_FILTER_OPTIONS.find(o => o.value === yearFilter)?.label || "All time")
 
     return (
         <div className="w-full max-w-2xl mx-auto space-y-4">
             <h1 className="text-2xl font-semibold text-center">{t("Discover Research")}</h1>
             <p className="text-sm text-muted-foreground text-center">
-                Enter a research question and we&apos;ll find relevant papers across the web.
+                {t("Enter a research question and we'll find relevant papers across the web.")}
             </p>
             <div className="relative">
                 <Textarea
                     ref={textareaRef}
                     autoFocus
-                    placeholder={PLACEHOLDERS[mode]}
+                    placeholder={t(PLACEHOLDERS[mode])}
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -162,8 +166,8 @@ export default function DiscoverInput({
                                                 mode === option.value ? "opacity-100" : "opacity-0"
                                             )} />
                                             <div className="flex-1 min-w-0">
-                                                <div className="font-medium">{option.label}</div>
-                                                <div className="text-xs text-muted-foreground">{option.description}</div>
+                                                <div className="font-medium">{t(option.label)}</div>
+                                                <div className="text-xs text-muted-foreground">{t(option.description)}</div>
                                             </div>
                                         </button>
                                     ))}
@@ -206,7 +210,7 @@ export default function DiscoverInput({
                                                         "h-3.5 w-3.5",
                                                         sort === option.value ? "opacity-100" : "opacity-0"
                                                     )} />
-                                                    {option.label}
+                                                    {t(option.label)}
                                                 </button>
                                             ))}
                                         </div>
@@ -300,7 +304,7 @@ export default function DiscoverInput({
                                                 "h-3.5 w-3.5",
                                                 yearFilter === option.value ? "opacity-100" : "opacity-0"
                                             )} />
-                                            {option.label}
+                                            {t(option.label)}
                                         </button>
                                     ))}
                                 </div>
@@ -315,7 +319,7 @@ export default function DiscoverInput({
                             size="sm"
                             className="gap-2"
                         >
-                            <a href="/pricing">Upgrade</a>
+                            <a href="/pricing">{t("Upgrade")}</a>
                         </Button>
                     ) : (
                         <Button
@@ -331,7 +335,7 @@ export default function DiscoverInput({
 
             {atSearchLimit && (
                 <p className="text-sm text-muted-foreground text-center">
-                    You&apos;ve reached your weekly search limit. Limits reset every Monday.
+                    {t("You've reached your weekly search limit. Limits reset every Monday.")}
                 </p>
             )}
         </div>

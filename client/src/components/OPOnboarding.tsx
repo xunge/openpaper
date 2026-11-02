@@ -39,6 +39,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { fetchFromApi } from "@/lib/api";
 import { ShimmerButton } from "./magicui/shimmer-button";
 import { useAuth } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 
 // Airtable-style color palette
 const colorPalettes = {
@@ -164,6 +165,7 @@ const formSchema = z.object({
 });
 
 export function OPOnboarding() {
+	const { t } = useI18n();
 	const router = useRouter();
 	const [isLoading, setIsLoading] = React.useState(false);
 	const { user } = useAuth();
@@ -233,7 +235,7 @@ export function OPOnboarding() {
 					name="name"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Name</FormLabel>
+							<FormLabel>{t("Name")}</FormLabel>
 							<FormControl>
 								<Input placeholder="Richard Feynman" {...field} />
 							</FormControl>
@@ -246,7 +248,7 @@ export function OPOnboarding() {
 					name="email"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Work or University Email</FormLabel>
+							<FormLabel>{t("Work or University Email")}</FormLabel>
 							<FormControl>
 								<Input placeholder="feynman@mit.edu" {...field} />
 							</FormControl>
@@ -259,7 +261,7 @@ export function OPOnboarding() {
 					name="company"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Company or Institution</FormLabel>
+							<FormLabel>{t("Company or Institution")}</FormLabel>
 							<FormControl>
 								<Input placeholder="Los Alamos National Laboratory" {...field} />
 							</FormControl>
@@ -272,9 +274,9 @@ export function OPOnboarding() {
 					name="researchFields"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>Primary field of research</FormLabel>
+							<FormLabel>{t("Primary field of research")}</FormLabel>
 							<FormDescription>
-								Which of the following best describes your main area of research? You can select multiple.
+								{t("Which of the following best describes your main area of research? You can select multiple.")}
 							</FormDescription>
 							<Popover>
 								<PopoverTrigger asChild>
@@ -322,9 +324,9 @@ export function OPOnboarding() {
 								</PopoverTrigger>
 								<PopoverContent className="w-full p-0">
 									<Command>
-										<CommandInput placeholder="Search fields..." />
+										<CommandInput placeholder={t("Search fields...")} />
 										<CommandList>
-											<CommandEmpty>No results found.</CommandEmpty>
+											<CommandEmpty>{t("No results found.")}</CommandEmpty>
 											<CommandGroup>
 												{researchFields.map((option) => (
 													<CommandItem
@@ -350,7 +352,7 @@ export function OPOnboarding() {
 															"w-3 h-3 rounded-full mr-2 border",
 															option.color
 														)} />
-														{option.label}
+														{t(option.label)}
 													</CommandItem>
 												))}
 											</CommandGroup>
@@ -368,9 +370,9 @@ export function OPOnboarding() {
 						name="researchFieldsOther"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>If other, please specify</FormLabel>
+								<FormLabel>{t("If other, please specify")}</FormLabel>
 								<FormControl>
-									<Input placeholder="Your field of research" {...field} />
+									<Input placeholder={t("Your field of research")} {...field} />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -382,9 +384,9 @@ export function OPOnboarding() {
 					name="jobTitles"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>What is your job title?</FormLabel>
+							<FormLabel>{t("What is your job title?")}</FormLabel>
 							<FormDescription>
-								Which of the following best describes your job title? You can select multiple.
+								{t("Which of the following best describes your job title? You can select multiple.")}
 							</FormDescription>
 							<Popover>
 								<PopoverTrigger asChild>
@@ -432,9 +434,9 @@ export function OPOnboarding() {
 								</PopoverTrigger>
 								<PopoverContent className="w-full p-0">
 									<Command>
-										<CommandInput placeholder="Search job titles..." />
+										<CommandInput placeholder={t("Search job titles...")} />
 										<CommandList>
-											<CommandEmpty>No results found.</CommandEmpty>
+											<CommandEmpty>{t("No results found.")}</CommandEmpty>
 											<CommandGroup>
 												{jobTitles.map((option) => (
 													<CommandItem
@@ -460,7 +462,7 @@ export function OPOnboarding() {
 															"w-3 h-3 rounded-full mr-2 border",
 															option.color
 														)} />
-														{option.label}
+														{t(option.label)}
 													</CommandItem>
 												))}
 											</CommandGroup>
@@ -478,9 +480,9 @@ export function OPOnboarding() {
 						name="jobTitlesOther"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>If other, please specify</FormLabel>
+								<FormLabel>{t("If other, please specify")}</FormLabel>
 								<FormControl>
-									<Input placeholder="Your job title" {...field} />
+									<Input placeholder={t("Your job title")} {...field} />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -492,7 +494,7 @@ export function OPOnboarding() {
 					name="readingFrequency"
 					render={({ field }) => (
 						<FormItem className="space-y-3">
-							<FormLabel>How many papers do you read in a typical week?</FormLabel>
+							<FormLabel>{t("How many papers do you read in a typical week?")}</FormLabel>
 							<FormControl>
 								<RadioGroup
 									onValueChange={field.onChange}
@@ -505,7 +507,7 @@ export function OPOnboarding() {
 												<RadioGroupItem value={option} />
 											</FormControl>
 											<FormLabel className="font-normal">
-												{option}
+												{t(option)}
 											</FormLabel>
 										</FormItem>
 									))}
@@ -520,11 +522,11 @@ export function OPOnboarding() {
 					name="referralSource"
 					render={({ field }) => (
 						<FormItem>
-							<FormLabel>How did you hear about Open Paper?</FormLabel>
+							<FormLabel>{t("How did you hear about Open Paper?")}</FormLabel>
 							<Select onValueChange={field.onChange} defaultValue={field.value}>
 								<FormControl>
 									<SelectTrigger>
-										<SelectValue placeholder="Select a source" />
+										<SelectValue placeholder={t("Select a source")} />
 									</SelectTrigger>
 								</FormControl>
 								<SelectContent>
@@ -535,7 +537,7 @@ export function OPOnboarding() {
 													"w-3 h-3 rounded-full mr-2 border",
 													option.color
 												)} />
-												{option.label}
+												{t(option.label)}
 											</div>
 										</SelectItem>
 									))}
@@ -551,9 +553,9 @@ export function OPOnboarding() {
 						name="referralSourceOther"
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel>If other, please specify</FormLabel>
+								<FormLabel>{t("If other, please specify")}</FormLabel>
 								<FormControl>
-									<Input placeholder="Your source" {...field} />
+									<Input placeholder={t("Your source")} {...field} />
 								</FormControl>
 								<FormMessage />
 							</FormItem>
@@ -561,7 +563,7 @@ export function OPOnboarding() {
 					/>
 				)}
 				<ShimmerButton type="submit" disabled={isLoading} className="text-white dark:text-white float-right py-2">
-					{isLoading ? "Booting up..." : "Ready"}
+					{isLoading ? t("Booting up...") : t("Ready")}
 				</ShimmerButton>
 			</form>
 		</Form>
