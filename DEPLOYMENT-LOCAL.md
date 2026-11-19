@@ -91,6 +91,8 @@ DELETE 会 revoke 对应的 Celery 任务。
 | 完整 Markdown | `...&format=zip` | `content.md` + `assets/` 下全部被引用图片 |
 | Word | `...&format=docx` | Pandoc 从同一份最终 Markdown 转 DOCX |
 
+下载文件名统一为 `年份-论文名.ext`，年份取 `Paper.publish_date`，缺失时回退到 `created_at`。
+
 - 来源是 `paper_documents.pages[].blocks[]` 的 `zh_md`/`en_md` 与 `image_key`，
   与阅读器展示一致；**不会**重新调用 MinerU，也**不会**使用 `markdown.md` 或
   MinerU 原始 DOCX。ZIP 里的 `content.md` 也是重新生成的，不是 S3 上的
@@ -141,9 +143,10 @@ MinerU 作为文档级解析接入，OCR、翻译、跨页合并、逐页回调�
 
 | 项 | 说明 |
 | --- | --- |
-| File Parse | `http://127.0.0.1:8003`，`POST /v1/file_parse`，200 直接返回 ZIP，202 用 `request_id` 轮询 |
-| Tasks API | `http://127.0.0.1:8000`，`POST /v1/tasks` → PUT 上传 → 轮询 → `result_url` |
-| 模式 | `MINERU_API_MODE=auto`（优先 8003，不可达时切 8000）/ `file_parse` / `tasks` |
+| 网关 API | `http://127.0.0.1:18000`，空闲 600s 停 `mineru-api`，按需唤醒 |
+| 网关 File Parse | `http://127.0.0.1:18003`，`POST /v1/file_parse`，200 直接返回 ZIP，202 用 `request_id` 轮询 |
+| 后端直连 | `127.0.0.1:8003` / `127.0.0.1:8000`，仅调试用，不经过网关 |
+| 模式 | `MINERU_API_MODE=auto`（优先 18003，不可达时切 18000）/ `file_parse` / `tasks` |
 | 选择 | OCR 只使用 MinerU 4.1，没有模型选择入口 |
 | 产物 | `papers/{paper_id}/ocr/{document_id}/content.md`、`source/*`、`assets/*.png` |
 
@@ -154,7 +157,14 @@ MinerU 作为文档级解析接入，OCR、翻译、跨页合并、逐页回调�
 
 Docker 中 MinerU 在宿主机，不在 compose 里；compose 已给 `server`、`jobs-worker`
 加 `host.docker.internal:host-gateway`，并把 `MINERU_FILE_PARSE_URL` 指向
-`http://host.docker.internal:8003`。宿主机直接跑 jobs 时默认 `127.0.0.1` 即可。
+网关 `http://host.docker.internal:18003`（Tasks API 为 18000）。宿主机直接跑 jobs
+时默认 `127.0.0.1:18003` / `127.0.0.1:18000`。
+
+空闲网关代码在 `docker/mineru-gateway/`：记录真实解析请求，`MINERU_IDLE_SECONDS`
+（默认 600）内没有请求时通过 Docker socket 停止 `mineru-api`，下一次 `/v1/file_parse`
+或 `/v1/tasks` 自动启动、等待健康并做一页 warmup（冷启动约 40–60 秒）。健康检查与 `/openapi.json` 不唤醒模型，因此
+OpenPaper 的 `ocrAvailable` 轮询不会阻止冷却。网关需要挂载
+`/var/run/docker.sock`，只应在本机使用。
 
 特殊内容规则：
 
@@ -174,8 +184,8 @@ Docker 中 MinerU 在宿主机，不在 compose 里；compose 已给 `server`、
 相关环境变量（worker 侧）：
 
 ```bash
-MINERU_FILE_PARSE_URL=http://127.0.0.1:8003
-MINERU_TASKS_API_URL=http://127.0.0.1:8000
+MINERU_FILE_PARSE_URL=http://127.0.0.1:18003
+MINERU_TASKS_API_URL=http://127.0.0.1:18000
 MINERU_API_MODE=auto
 MINERU_TIER=standard
 MINERU_OCR_MODE=auto
@@ -586,7 +596,7 @@ docker compose -f docker-compose.dev.yml down -v             # 停止并清空�
 
 - `server/.env` — LLM、S3、Celery、域名
 - `jobs/.env` — 同上的 worker 侧，另有 `CELERY_RESULT_BACKEND`
-- `client/.env.local` — `NEXT_PUBLIC_API_URL`
+- `client/.env.local` — `NEXT_PUBLIC_API_URL`（留空则走同源 `/api` 代理）
 
 切换模型改 `DEEPSEEK_DEFAULT_MODEL` / `DEEPSEEK_FAST_MODEL`（可选
 `deepseek-v4-pro`、`deepseek-flash`），然后 `docker compose ... up -d server

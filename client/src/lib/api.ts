@@ -10,6 +10,10 @@ function resolveApiBase(): string {
         return process.env.NEXT_PUBLIC_API_URL;
     }
     if (typeof window !== 'undefined') {
+        // Talk to the API directly instead of through the Next rewrite. The
+        // proxy inherits FastAPI's 307 Location with the internal host
+        // (`server:8000`), which the browser cannot resolve. Ports do not
+        // affect SameSite, so cookies still work on the page hostname.
         return `${window.location.protocol}//${window.location.hostname}:${process.env.NEXT_PUBLIC_API_PORT ?? '8100'}`;
     }
     // Server-side render: inside the compose network the service name resolves.

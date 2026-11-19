@@ -56,7 +56,9 @@ for pair in \
   "RABBITMQ_PORT:5673" \
   "REDIS_PORT:6380" \
   "MINERU_API_PORT:8000" \
-  "MINERU_FILE_PARSE_PORT:8003"; do
+  "MINERU_FILE_PARSE_PORT:8003" \
+  "MINERU_GATEWAY_API_PORT:18000" \
+  "MINERU_GATEWAY_FILE_PARSE_PORT:18003"; do
   name="${pair%%:*}"
   default="${pair##*:}"
   value="${!name:-$default}"

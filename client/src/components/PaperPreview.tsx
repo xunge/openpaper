@@ -410,12 +410,12 @@ export function PaperPreview(
                                 )}
                                 {loadedPaper && (
                                     <tr>
-                                        <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">{t("Journal")}</td>
+                                        <td className="px-3 py-2 text-muted-foreground font-medium text-right whitespace-nowrap align-top w-24">{t("Venue")}</td>
                                         <td className="px-3 py-2">
                                             <EditableField
                                                 value={loadedPaper.journal || ""}
                                                 onSave={(value) => updateField({ journal: value })}
-                                                placeholder={t("Add journal")}
+                                                placeholder={t("Add venue")}
                                             />
                                         </td>
                                     </tr>

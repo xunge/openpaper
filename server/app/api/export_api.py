@@ -15,6 +15,7 @@ from app.helpers.paper_export import (
     collect_assets,
     content_disposition,
     get_or_build_docx,
+    paper_year,
 )
 from app.schemas.user import CurrentUser
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -75,6 +76,7 @@ def export_paper(
         raise HTTPException(404, "This paper has no completed OCR document to export")
 
     title = str(paper.title or f"paper-{paper_id[:8]}")
+    year = paper_year(paper)
     try:
         if fmt == "docx":
             markdown, assets = build_markdown(document, lang, image_attrs=True)
@@ -90,7 +92,7 @@ def export_paper(
         raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
     headers = {
-        "Content-Disposition": content_disposition(title, _EXT[fmt]),
+        "Content-Disposition": content_disposition(title, _EXT[fmt], year),
         "Cache-Control": "private, no-store",
         "X-Content-Type-Options": "nosniff",
     }

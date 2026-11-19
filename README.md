@@ -30,6 +30,7 @@
 | 导出 | 新增 Markdown、完整 ZIP、Word 下载；Word 由 Pandoc 3.9 转换，使用 `templates/academic-reference.docx` |
 | 存储 | 支持 MinIO / 任意 S3 兼容存储；`S3_ENDPOINT_URL` / `S3_PUBLIC_URL` |
 | 认证 | 新增本地邮箱密码登录、注册、`set_password` CLI；保留 session cookie；支持 `UNLIMITED_USAGE` |
+| 文献元数据 | 文献库新增会议/期刊列与筛选；缺失 venue 时由 DeepSeek 联网检索标题/作者，不使用 PDF 元数据或首页规则 |
 | UI | 应用内主要页面汉化；双语面板改为 Word 默认下载；修复状态标签、Open/Tags/详情字段、工具栏跳动等 |
 | 构建 | server/jobs/client Docker 构建支持国内 PyPI/NPM 镜像参数；server 镜像内置 Pandoc |
 
@@ -82,7 +83,7 @@ client/src/components/bilingual/BilingualPanel.tsx
 ```text
 Browser
   │
-  ├── Next.js client :80        （同一主机，API 走 server:8000）
+  ├── Next.js client :80        （浏览器直连 FastAPI :8100；容器内 server:8000）
   │
   ├── FastAPI server :8100      （上传、阅读、导出、鉴权、webhook）
   │       │
@@ -98,11 +99,13 @@ Browser
 
 MinerU（宿主机，GPU）
   ├── mineru-api :8000          （vLLM + MinerU 模型）
-  ├── mineru-fileparse :8003    （文件解析 API，供 OpenPaper 使用）
+  ├── mineru-fileparse :8003    （文件解析 API）
+  ├── mineru-gateway :18000/18003（空闲 600s 自动停 API，按需唤醒）
   └── mineru-webui :7860        （可选调试）
 ```
 
-OpenPaper 容器通过 `host.docker.internal:8003/8000` 访问宿主机 MinerU。
+OpenPaper 容器通过 `host.docker.internal:18003/18000` 访问 **MinerU gateway**；
+gateway 在内部转发到 `mineru-fileparse:8003` / `mineru-api:8000`。
 
 ---
 
@@ -394,7 +397,8 @@ nvidia-smi
 
 ### 6.4 启动 file-parse 服务
 
-OpenPaper 优先使用 8003 的 `file_parse`；8000 Tasks API 作为兜底。
+OpenPaper 通过 gateway 的 18003 使用 `file_parse`；18000 的 Tasks API 作为兜底。
+gateway 会把真实请求转发给 8003/8000 的 MinerU 后端。
 
 ```bash
 docker run -d \
@@ -432,7 +436,45 @@ unzip -l /tmp/mineru-result.zip | head
 
 如果返回 202，表示异步任务；OpenPaper 的 `mineru_client.py` 会自动轮询。
 
-### 6.5 可选 WebUI
+### 6.5 启动空闲网关（释放显存）
+
+MinerU `api-server` 没有 vLLM sleep 接口，因此网关在 **600 秒无真实解析请求**后通过
+Docker API 停止 `mineru-api` 容器，释放显存；下一次真实请求会自动 `docker start`，
+等待 `/v1/health`，再用一页 PDF 做 warmup 等 vLLM 引擎真正初始化，然后转发。
+`mineru-fileparse` 不占 GPU，保持运行。
+
+```bash
+cd /opt/openpaper
+docker build -t openpaper/mineru-gateway:latest docker/mineru-gateway
+
+docker run -d \
+  --name mineru-gateway \
+  --restart unless-stopped \
+  --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e MINERU_API_CONTAINER=mineru-api \
+  -e MINERU_GATEWAY_API_PORT=18000 \
+  -e MINERU_GATEWAY_FILE_PARSE_PORT=18003 \
+  -e MINERU_IDLE_SECONDS=600 \
+  -e MINERU_WARMUP=1 \
+  openpaper/mineru-gateway:latest
+```
+
+验证：
+
+```bash
+curl -s http://127.0.0.1:18000/v1/health
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:18003/docs
+```
+
+`/v1/health` 是网关自身的状态，不会唤醒模型；健康检查、`/openapi.json` 也不会重置
+空闲计时。真实 `/v1/file_parse` 或 `/v1/tasks` 会唤醒 API。
+
+> 注意：网关需要 Docker socket，权限等同于宿主机 root；只在本机部署，不要暴露到公网。
+> 模型被停止后第一次解析会有约 40–60 秒冷启动时间（含一页 warmup）；后续请求正常。
+> 可把 `MINERU_IDLE_SECONDS` 改为其它秒数（默认 600）。
+
+### 6.6 可选 WebUI
 
 ```bash
 docker run -d \
@@ -446,7 +488,7 @@ docker run -d \
 
 访问 `http://SERVER_IP:7860` 仅用于调试，不要暴露到公网。
 
-### 6.6 让 OpenPaper 访问 MinerU
+### 6.7 让 OpenPaper 访问 MinerU
 
 OpenPaper 的 compose 已经给 `server` 和 `jobs-worker` 配了：
 
@@ -458,8 +500,8 @@ extra_hosts:
 所以容器内使用：
 
 ```text
-MINERU_FILE_PARSE_URL=http://host.docker.internal:8003
-MINERU_TASKS_API_URL=http://host.docker.internal:8000
+MINERU_FILE_PARSE_URL=http://host.docker.internal:18003
+MINERU_TASKS_API_URL=http://host.docker.internal:18000
 ```
 
 不要写成 `127.0.0.1`，容器里的 127.0.0.1 是容器自己。
@@ -469,10 +511,10 @@ MINERU_TASKS_API_URL=http://host.docker.internal:8000
 ```bash
 cd /opt/openpaper
 docker compose -f docker-compose.dev.yml exec -T server \
-  python -c "import urllib.request; print(urllib.request.urlopen('http://host.docker.internal:8003/docs').status)"
+  python -c "import urllib.request; print(urllib.request.urlopen('http://host.docker.internal:18003/docs').status)"
 ```
 
-> 安全：8000/8003/7860 只应对 OpenPaper 所在主机开放，不能直接暴露公网。云安全组只放行 80/443；本机防火墙限制 8000/8003 来源。
+> 安全：18000/18003/8000/8003/7860 只应对 OpenPaper 所在主机开放，不能直接暴露公网。云安全组只放行 80/443；本机防火墙限制这些端口来源。
 
 ---
 
@@ -552,8 +594,8 @@ MAX_UPLOAD_SIZE_MB=200
 ALLOW_LOCAL_REGISTRATION=true
 
 # OCR / 双语
-MINERU_FILE_PARSE_URL=http://host.docker.internal:8003
-MINERU_TASKS_API_URL=http://host.docker.internal:8000
+MINERU_FILE_PARSE_URL=http://host.docker.internal:18003
+MINERU_TASKS_API_URL=http://host.docker.internal:18000
 MINERU_API_MODE=auto
 MINERU_TIER=standard
 MINERU_OCR_MODE=auto
@@ -607,8 +649,8 @@ CELERY_RESULT_BACKEND=redis://redis:6379/0
 WEBHOOK_BASE_URL=http://server:8000
 JOBS_INTERNAL_SECRET=${JOBS_SECRET}
 
-MINERU_FILE_PARSE_URL=http://host.docker.internal:8003
-MINERU_TASKS_API_URL=http://host.docker.internal:8000
+MINERU_FILE_PARSE_URL=http://host.docker.internal:18003
+MINERU_TASKS_API_URL=http://host.docker.internal:18000
 MINERU_API_MODE=auto
 MINERU_TIER=standard
 MINERU_OCR_MODE=auto
@@ -634,15 +676,17 @@ EOF
 printf 'NEXT_PUBLIC_API_URL=\n' > client/.env.local
 ```
 
-这样浏览器会访问 `http://SERVER_IP:8100/api`；需要确保 8100 可从浏览器访问。
+空值表示浏览器直接访问当前页面主机的 `:8100`（`NEXT_PUBLIC_API_PORT` 可覆盖）。
+需要保证 8100 对浏览器可达；后端 CORS 已显式暴露 `Content-Disposition`，下载文件名可读取。
 
-如果使用反向代理、希望走同源 `/api`：
+如果使用独立 API 域名：
 
 ```bash
-printf 'NEXT_PUBLIC_API_URL=https://your.domain\n' > client/.env.local
+printf 'NEXT_PUBLIC_API_URL=https://api.your.domain\n' > client/.env.local
 ```
 
-并在 compose 中把 `NEXT_PUBLIC_API_URL` 改成同一值；Next 的 `API_INTERNAL_URL=http://server:8000` 会把 `/api` 代理到后端。
+同时确保该域名的 CORS 允许 `CLIENT_DOMAIN`，并显式暴露 `Content-Disposition`。
+不要走 Next 的 `/api` rewrite：FastAPI 的 307 Location 会带出内部主机 `server:8000`。
 
 ### 7.5 启动基础服务并创建 MinIO bucket
 
@@ -856,7 +900,7 @@ TTS_MAX_CHUNK_CHARS=800
    - `UVICORN_RELOAD: "False"`
    - 移除 `server`、`client` 的源码 bind mount
    - client 改用 `client/Dockerfile` 的 production 构建
-   - `client/Dockerfile` 当前写死了上游 `NEXT_PUBLIC_API_URL=https://api.openpaper.ai`，构建前需改成自己的域名/同源 `/api`
+   - `client/Dockerfile` 当前写死了上游 `NEXT_PUBLIC_API_URL=https://api.openpaper.ai`，构建前需改成自己的 API 域名，或显式设置 `NEXT_PUBLIC_API_PORT` 走直连
 3. 只暴露 80/443；Postgres、RabbitMQ、Redis、MinIO、MinerU 端口不直接对公网开放。
 4. 使用 Nginx/Caddy 终止 TLS。
 5. 设置 `CLIENT_DOMAIN=https://your.domain`、`S3_PUBLIC_URL=https://files.your.domain/openpaper`。
@@ -908,7 +952,7 @@ docker run --rm --gpus all nvidia/cuda:12.4.0-base-ubuntu22.04 nvidia-smi
 
 ```bash
 docker compose -f docker-compose.dev.yml exec -T server \
-  python -c "import urllib.request; print(urllib.request.urlopen('http://host.docker.internal:8003/docs').status)"
+  python -c "import urllib.request; print(urllib.request.urlopen('http://host.docker.internal:18003/docs').status)"
 ```
 
 - Linux 需要 Docker 20.10+ 的 `host-gateway`。
@@ -936,7 +980,7 @@ docker compose -f docker-compose.dev.yml logs -f server
 ```
 
 - 检查 worker 是否监听 `bilingual` 队列。
-- 检查 MinerU 8003/8000。
+- 检查 MinerU gateway 18003/18000，以及后端 8003/8000。
 - `BILINGUAL_STALE_SECONDS` 默认 420 秒；卡死文档会标记失败并允许重试。
 
 ### Word 下载 503
@@ -972,12 +1016,42 @@ openpaper/
 
 ---
 
-## 13. 测试与已知限制
+## 13. 会议/期刊元数据
+
+文献库的“会议/期刊”列复用 `Paper.journal`。新上传论文在后台调用 DeepSeek Web Search：
+
+```text
+标题 + 作者
+→ DeepSeek（deepseek_web_search / deepseek_read_url）
+→ {"venue": "...", "year": 2024}
+```
+
+不再从 PDF 元数据或首页文本推断 venue。已有值、人工修改、Zotero 值不会被覆盖。
+DeepSeek 失败不影响上传，只保留空值。
+
+配置：
+
+```env
+DEEPSEEK_VENUE_ENABLED=true
+DEEPSEEK_VENUE_MODEL=deepseek-flash
+DEEPSEEK_VENUE_TIMEOUT=120
+```
+
+存量论文回填：
+
+```bash
+docker compose -f docker-compose.dev.yml exec -T server \
+  python -m app.scripts.backfill_venue --limit 50 --sleep 2
+```
+
+先 `--dry-run` 可只查看候选，不调用 API。
+
+## 14. 测试与已知限制
 
 已验证：
 
 - jobs 测试：59 个通过
-- server 测试：323 个，5 个既有额度断言失败（`UNLIMITED_USAGE=true`）
+- server 测试：332 个，5 个既有额度断言失败（`UNLIMITED_USAGE=true`）
 - 前端 `tsc`：仅既有 `AudioOverview.tsx` 两个 `nova` 类型错误
 - 真实 MinerU 文档：OCR、跨页/跨栏合并、列表、表格/算法/代码/Figure 图片、Markdown/ZIP/Word 导出均已跑通
 
@@ -993,7 +1067,7 @@ openpaper/
 
 ---
 
-## 14. 上游与许可证
+## 15. 上游与许可证
 
 - 上游：https://github.com/khoj-ai/openpaper
 - 本仓库保留上游 AGPL-3.0 许可证；二次分发/部署请遵守 AGPL。

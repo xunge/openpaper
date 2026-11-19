@@ -44,6 +44,7 @@ from app.helpers.email import (
     send_referral_credit_available_email,
 )
 from app.helpers.metadata_columns import fill_metadata_cells
+from app.helpers.deepseek_venue import VenueLookupError, lookup_venue
 from app.helpers.metadata_hydration import hydrate_paper_metadata
 from app.helpers.s3 import s3_service
 from app.helpers.subscription_limits import can_user_auto_sync_zotero
@@ -235,6 +236,67 @@ def handle_failed_upload(
         )
 
 
+def _resolve_venue_with_deepseek(
+    *, db: Session, paper, user: CurrentUser
+) -> None:
+    """Fill an empty venue from DeepSeek web search; never overwrite a value."""
+    if not paper or (paper.journal or "").strip():
+        return
+    try:
+        result = lookup_venue(
+            title=paper.title,
+            authors=list(paper.authors or []),
+            doi=str(paper.doi) if paper.doi else None,
+        )
+    except VenueLookupError as exc:
+        logger.warning("DeepSeek venue lookup skipped for paper %s: %s", paper.id, exc)
+        return
+    except Exception:
+        logger.exception("Unexpected DeepSeek venue lookup failure for %s", paper.id)
+        return
+
+    if not result.venue:
+        logger.info("DeepSeek found no venue for paper %s", paper.id)
+        return
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    provenance = dict(paper.field_provenance or {})
+    provenance["journal"] = {
+        "source": "deepseek_web_search",
+        "model": result.model,
+        "confidence": None,
+        "filled_at": now_iso,
+    }
+    updates = {"journal": result.venue, "field_provenance": provenance}
+    # A venue year is useful when the PDF/DOI path left no date at all. Do not
+    # fabricate month/day precision; store the year-only date and mark it.
+    if result.year and not paper.publish_date:
+        updates["publish_date"] = datetime(
+            result.year, 1, 1, tzinfo=timezone.utc
+        ).isoformat()
+        provenance["publish_date"] = {
+            "source": "deepseek_web_search",
+            "model": result.model,
+            "precision": "year",
+            "filled_at": now_iso,
+        }
+
+    try:
+        paper_crud.update(
+            db=db, db_obj=paper, obj_in=PaperUpdate(**updates), user=user
+        )
+        db.commit()
+        logger.info(
+            "DeepSeek resolved venue for paper %s: %r (%s)",
+            paper.id,
+            result.venue,
+            result.year,
+        )
+    except Exception:
+        db.rollback()
+        logger.exception("Could not save DeepSeek venue for paper %s", paper.id)
+
+
 def post_process_paper(
     *,
     paper_id: uuid.UUID,
@@ -267,6 +329,17 @@ def post_process_paper(
             )
 
         try:
+            paper = paper_crud.get(db=db, id=paper_id, user=job_user)
+            if paper:
+                _resolve_venue_with_deepseek(db=db, paper=paper, user=job_user)
+        except Exception as e:
+            db.rollback()
+            logger.error(
+                f"Error resolving venue for paper {paper_id}: {str(e)}",
+                exc_info=True,
+            )
+
+        try:
             paper_crud.index_paper_passages(
                 db,
                 paper_id=paper_id,
@@ -285,7 +358,12 @@ def post_process_paper(
             paper = paper_crud.get(db=db, id=paper_id, user=job_user)
             if paper:
                 paper = hydrate_paper_metadata(
-                    db=db, paper=paper, user=job_user, force=True, agentic=True
+                    db=db,
+                    paper=paper,
+                    user=job_user,
+                    force=True,
+                    agentic=False,
+                    include_venue=False,
                 )
                 doi = str(paper.doi) if paper.doi else None
         except Exception as e:

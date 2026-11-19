@@ -15,6 +15,7 @@ from app.helpers.paper_export import (
     content_disposition,
     convert_docx,
     docx_cache_key,
+    paper_year,
 )
 
 # 1x1 red PNG
@@ -190,10 +191,21 @@ class TestCacheAndHeaders(unittest.TestCase):
         self.assertNotEqual(first, docx_cache_key(doc, "zh", markdown, assets))
 
     def test_chinese_content_disposition(self):
-        header = content_disposition("中文 论文", ".docx")
+        header = content_disposition("中文 论文", ".docx", year="2026")
         self.assertIn("filename*=UTF-8''", header)
-        self.assertIn("%E4%B8%AD%E6%96%87", header)
+        self.assertIn("2026-%E4%B8%AD%E6%96%87", header)
         self.assertIn(".docx", header)
+
+    def test_year_uses_publish_date_then_created_at(self):
+        published = SimpleNamespace(publish_date="2024-05-01", created_at=None)
+        uploaded = SimpleNamespace(publish_date=None, created_at="2023-11-02")
+        self.assertEqual(paper_year(published), "2024")
+        self.assertEqual(paper_year(uploaded), "2023")
+
+    def test_export_filename_is_year_title(self):
+        header = content_disposition("Paper Name", ".md", year="2024")
+        self.assertIn('filename="2024-Paper_Name.md"', header)
+        self.assertIn("filename*=UTF-8''2024-Paper%20Name.md", header)
 
     def test_missing_image_is_explicit(self):
         document = make_document(lang_images=False)

@@ -355,9 +355,29 @@ def get_or_build_docx(
     return data
 
 
-def content_disposition(title: str, extension: str) -> str:
-    base = re.sub(r'[\r\n"\\/:*?<>|]+', " ", title or "").strip() or "paper"
-    base = base[:120]
+def paper_year(paper: Any) -> str:
+    """Publication year, falling back to the upload year."""
+    for attribute in ("publish_date", "created_at"):
+        value = getattr(paper, attribute, None)
+        if not value:
+            continue
+        year = getattr(value, "year", None)
+        if year:
+            return str(year)
+        match = re.search(r"(?<!\d)((?:19|20)\d{2})(?!\d)", str(value))
+        if match:
+            return match.group(1)
+    return "unknown"
+
+
+def content_disposition(
+    title: str, extension: str, year: str | None = None
+) -> str:
+    clean_title = (
+        re.sub(r'[\r\n"\\/:*?<>|]+', " ", title or "").strip() or "paper"
+    )
+    base = f"{year}-{clean_title}" if year else clean_title
+    base = base[:140]
     ascii_name = re.sub(r"[^A-Za-z0-9._-]+", "_", base).strip("._") or "paper"
     quoted = quote(f"{base}{extension}", safe="")
     return (

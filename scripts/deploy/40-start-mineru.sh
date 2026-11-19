@@ -9,6 +9,10 @@ image="${MINERU_IMAGE:-mineru:4}"
 gpu_id="${MINERU_GPU_ID:-0}"
 api_port="${MINERU_API_PORT:-8000}"
 fileparse_port="${MINERU_FILE_PARSE_PORT:-8003}"
+gateway_api_port="${MINERU_GATEWAY_API_PORT:-18000}"
+gateway_fileparse_port="${MINERU_GATEWAY_FILE_PARSE_PORT:-18003}"
+gateway_image="${MINERU_GATEWAY_IMAGE:-openpaper/mineru-gateway:latest}"
+idle_seconds="${MINERU_IDLE_SECONDS:-600}"
 tier="${MINERU_TIER:-standard}"
 base_dir="${MINERU_DIR:-/opt/mineru}"
 api_name="mineru-api"
@@ -100,6 +104,28 @@ if ! wait_http "http://127.0.0.1:${fileparse_port}/docs" 180 5; then
   die "mineru-fileparse did not become ready"
 fi
 
+if ! docker image inspect "$gateway_image" >/dev/null 2>&1 || [[ "$force" == "1" ]]; then
+  log "building MinerU idle gateway image"
+  run docker build -t "$gateway_image" "$ROOT_DIR/docker/mineru-gateway"
+fi
+
+start_existing_or_create "mineru-gateway" \
+  --network host \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e "MINERU_API_CONTAINER=${api_name}" \
+  -e "MINERU_GATEWAY_API_PORT=${gateway_api_port}" \
+  -e "MINERU_GATEWAY_FILE_PARSE_PORT=${gateway_fileparse_port}" \
+  -e "MINERU_API_UPSTREAM_PORT=8000" \
+  -e "MINERU_FILE_PARSE_UPSTREAM_PORT=8003" \
+  -e "MINERU_IDLE_SECONDS=${idle_seconds}" \
+  -e "MINERU_WARMUP=${MINERU_WARMUP:-1}" \
+  "$gateway_image"
+
+if ! wait_http "http://127.0.0.1:${gateway_api_port}/v1/health" 120 5; then
+  docker logs --tail 100 mineru-gateway >&2 || true
+  die "mineru gateway did not become healthy"
+fi
+
 if [[ "${MINERU_WEBUI:-0}" == "1" ]]; then
   start_existing_or_create "$webui_name" \
     --network mineru \
@@ -108,5 +134,6 @@ if [[ "${MINERU_WEBUI:-0}" == "1" ]]; then
     webui --server-name 0.0.0.0 --server-port 7860 --api-url http://mineru-api:8000
 fi
 
-ok "MinerU ready: API :$api_port, file-parse :$fileparse_port"
-log "OpenPaper must use host.docker.internal:${fileparse_port} and :${api_port}"
+ok "MinerU ready: backend API :$api_port, file-parse :$fileparse_port"
+ok "idle gateway: API :$gateway_api_port, file-parse :$gateway_fileparse_port (idle ${idle_seconds}s)"
+log "OpenPaper must use host.docker.internal:${gateway_fileparse_port} and :${gateway_api_port}"

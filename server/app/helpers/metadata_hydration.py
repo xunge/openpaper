@@ -1,7 +1,9 @@
 """Shared paper metadata hydration.
 
-Resolves a paper's DOI and enriches journal/publisher/publish_date from external
-APIs (CrossRef / OpenAlex via paper_search). This is the single seam used by:
+Resolves a paper's DOI and enriches publisher/publish_date from external APIs
+(CrossRef / OpenAlex via paper_search). Venue (`journal`) is handled separately by
+the DeepSeek web lookup for new uploads, unless `include_venue=True` is explicit.
+This is the single seam used by:
 
 - GET /paper (lazy, on read)
 - post_process_paper (background, after upload)
@@ -46,6 +48,7 @@ def hydrate_paper_metadata(
     force: bool = False,
     agentic: bool = False,
     agentic_steps: Optional[list[Any]] = None,
+    include_venue: bool = False,
 ) -> Paper:
     """Resolve DOI + enrich journal/publisher/publish_date for a paper.
 
@@ -58,6 +61,9 @@ def hydrate_paper_metadata(
     extraction fallback (confidence-gated, null-only write-back with
     field_provenance). This is expensive — only enable on background/off-hot
     paths (e.g. post-upload, backfill scripts), never on synchronous reads.
+
+    `include_venue=False` leaves `journal` untouched. New uploads use that flag
+    because their venue is resolved exclusively by the DeepSeek web lookup.
     """
     if not force and not _is_metadata_cache_stale(paper):
         return paper
@@ -75,7 +81,7 @@ def hydrate_paper_metadata(
                 if updated:
                     paper = updated
 
-        if paper.doi and not paper.journal and not paper.publisher:
+        if paper.doi and (not paper.journal or not paper.publisher):
             enriched = get_enriched_data(str(paper.doi))
             if enriched:
                 publish_datetime = (
@@ -83,22 +89,24 @@ def hydrate_paper_metadata(
                     if enriched.publication_date
                     else paper.publish_date
                 )
+                updates = {
+                    "publisher": enriched.publisher,
+                    "publish_date": (
+                        publish_datetime.isoformat() if publish_datetime else None
+                    ),
+                }
+                if include_venue and not paper.journal:
+                    updates["journal"] = enriched.journal
                 updated = paper_crud.update(
                     db=db,
                     db_obj=paper,
-                    obj_in=PaperUpdate(
-                        journal=enriched.journal,
-                        publisher=enriched.publisher,
-                        publish_date=(
-                            publish_datetime.isoformat() if publish_datetime else None
-                        ),
-                    ),
+                    obj_in=PaperUpdate(**updates),
                     user=user,
                 )
                 if updated:
                     paper = updated
 
-        if agentic and bibliographic_gaps(fields_from_paper(paper)):
+        if agentic and include_venue and bibliographic_gaps(fields_from_paper(paper)):
             paper, _, _ = get_recovery_agent().recover_metadata(
                 db=db, paper=paper, user=user, steps=agentic_steps
             )

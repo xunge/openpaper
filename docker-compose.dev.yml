@@ -29,8 +29,8 @@ x-jobs-service: &jobs-service
     LANGFUSE_TRACING_ENVIRONMENT: local-docker
     # MinerU runs on the host, not in this compose file. Inside a container
     # 127.0.0.1 is the worker itself, so reach the host gateway explicitly.
-    MINERU_FILE_PARSE_URL: http://host.docker.internal:8003
-    MINERU_TASKS_API_URL: http://host.docker.internal:8000
+    MINERU_FILE_PARSE_URL: http://host.docker.internal:18003
+    MINERU_TASKS_API_URL: http://host.docker.internal:18000
     MINERU_API_MODE: auto
     MINERU_TIER: standard
     MINERU_OCR_MODE: auto
@@ -278,8 +278,8 @@ services:
       LANGFUSE_TRACING_ENVIRONMENT: local-docker
       # The server probes MinerU for availability too, so it needs the same
       # host-gateway address as the worker (MinerU itself is not in compose).
-      MINERU_FILE_PARSE_URL: http://host.docker.internal:8003
-      MINERU_TASKS_API_URL: http://host.docker.internal:8000
+      MINERU_FILE_PARSE_URL: http://host.docker.internal:18003
+      MINERU_TASKS_API_URL: http://host.docker.internal:18000
       DEBUG: "True"
       # Autoreload. server/ is bind-mounted, so edits are live in the container
       # immediately — but the uvicorn process keeps whatever it imported at

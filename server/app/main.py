@@ -125,7 +125,16 @@ app.add_middleware(
     allow_origin_regex=_origin_regex(client_domain),
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
-    expose_headers=["*"],
+    # A wildcard expose list is not treated as a wildcard for credentialed
+    # requests, so the download filename must be named explicitly.
+    expose_headers=[
+        "Content-Disposition",
+        "Content-Length",
+        "Content-Type",
+        "Content-Range",
+        "Accept-Ranges",
+        "ETag",
+    ],
     allow_credentials=True,  # This is required for cookies
     max_age=600,  # Cache preflight requests for 10 minutes
 )

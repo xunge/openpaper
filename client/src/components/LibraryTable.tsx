@@ -24,7 +24,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { ArrowUpDown, CheckCheck, Trash2, X, ChevronDown, Tag } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PaperPreview } from "./PaperPreview";
-import { PaperFiltering, Filter, Sort, NO_TAGS_FILTER_VALUE } from "@/components/PaperFiltering";
+import { PaperFiltering, Filter, Sort, NO_TAGS_FILTER_VALUE, NO_VENUE_FILTER_VALUE } from "@/components/PaperFiltering";
 import { Badge } from "@/components/ui/badge";
 import { TagSelector } from "./TagSelector";
 import { toast } from "sonner";
@@ -93,6 +93,7 @@ export function LibraryTable({
 					paper.title?.toLowerCase().includes(term) ||
 					paper.authors?.join(', ').toLowerCase().includes(term) ||
 					paper.institutions?.join(', ').toLowerCase().includes(term) ||
+					paper.journal?.toLowerCase().includes(term) ||
 					paper.tags?.map(t => t.name).join(', ').toLowerCase().includes(term)
 				);
 			});
@@ -112,6 +113,12 @@ export function LibraryTable({
 					}
 					if (filter.type === 'status') {
 						return paper.status === filter.value;
+					}
+					if (filter.type === 'venue') {
+						if (filter.value === NO_VENUE_FILTER_VALUE) {
+							return !paper.journal?.trim();
+						}
+						return paper.journal === filter.value;
 					}
 					return true;
 				});
@@ -276,7 +283,7 @@ export function LibraryTable({
 		);
 	}
 
-	const numCols = 6 + (selectable ? 1 : 0);
+	const numCols = 7 + (selectable ? 1 : 0);
 	const allAvailableSelected = availablePapers.length > 0 && selectedPapers.size === availablePapers.length;
 
 
@@ -285,7 +292,7 @@ export function LibraryTable({
 			<div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
 				<div className="flex flex-col md:flex-row items-start md:items-center gap-4 w-full">
 					<Input
-						placeholder={t("Filter papers by title, authors, organizations, or tags...")}
+						placeholder={t("Filter papers by title, authors, organizations, venue, or tags...")}
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
 						className="w-full md:max-w-xl border-none dark:border-none focus-visible:ring-1 focus-visible:ring-blue-400/30 text-primary"
@@ -395,7 +402,7 @@ export function LibraryTable({
 			<div className="flex flex-wrap gap-2 mb-4">
 				{filters.map(filter => (
 					<Badge key={`${filter.type}-${filter.value}`} variant="secondary" className="flex items-center gap-1">
-						{t(filter.type)}: {filter.value === NO_TAGS_FILTER_VALUE ? t('No tags') : filter.value}
+						{t(filter.type)}: {filter.value === NO_TAGS_FILTER_VALUE ? t('No tags') : filter.value === NO_VENUE_FILTER_VALUE ? t('No venue') : filter.value}
 						<Button
 							variant="ghost"
 							size="sm"
@@ -457,6 +464,16 @@ export function LibraryTable({
 											className="h-auto p-0 font-semibold hover:bg-transparent"
 										>
 											{t("Organizations")}
+										</Button>
+									</TableHead>
+									<TableHead className="min-w-[12rem]">
+										<Button
+											variant="ghost"
+											onClick={() => requestSort('journal')}
+											className="h-auto p-0 font-semibold hover:bg-transparent hover:text-primary"
+										>
+											{t("Venue")}
+											<ArrowUpDown className="ml-1 h-4 w-4" />
 										</Button>
 									</TableHead>
 									<TableHead className="min-w-[10rem]">
@@ -545,6 +562,14 @@ export function LibraryTable({
 											<TableCell className="py-4 pr-4 whitespace-normal">
 												<div className="text-sm text-muted-foreground leading-relaxed break-words hyphens-auto line-clamp-2">
 													{paper.institutions?.length ? paper.institutions.join(", ") : 'No organizations'}
+												</div>
+											</TableCell>
+											<TableCell className="py-4 pr-4 whitespace-normal">
+												<div
+													className="text-sm text-muted-foreground leading-relaxed break-words hyphens-auto line-clamp-2"
+													title={paper.journal || undefined}
+												>
+													{paper.journal?.trim() || '—'}
 												</div>
 											</TableCell>
 											<TableCell className="py-4 pr-4">

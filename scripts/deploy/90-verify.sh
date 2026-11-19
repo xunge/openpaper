@@ -22,13 +22,17 @@ client_port="${CLIENT_PORT:-80}"
 minio_port="${MINIO_PORT:-9000}"
 mineru_api_port="${MINERU_API_PORT:-8000}"
 mineru_fileparse_port="${MINERU_FILE_PARSE_PORT:-8003}"
+mineru_gateway_api="${MINERU_GATEWAY_API_PORT:-18000}"
+mineru_gateway_fileparse="${MINERU_GATEWAY_FILE_PARSE_PORT:-18003}"
 
 check_http "OpenPaper API" "http://127.0.0.1:${server_port}/docs"
 check_http "Jobs API" "http://127.0.0.1:${jobs_port}/health"
 check_http "Next.js client" "http://127.0.0.1:${client_port}/"
 check_http "MinIO" "http://127.0.0.1:${minio_port}/minio/health/live"
-check_http "MinerU API" "http://127.0.0.1:${mineru_api_port}/v1/health"
-check_http "MinerU file-parse" "http://127.0.0.1:${mineru_fileparse_port}/docs"
+# The API may be intentionally sleeping; the gateway health endpoint is always up.
+check_http "MinerU gateway API" "http://127.0.0.1:${mineru_gateway_api}/v1/health"
+check_http "MinerU gateway file-parse" "http://127.0.0.1:${mineru_gateway_fileparse}/docs"
+check_http "MinerU file-parse backend" "http://127.0.0.1:${mineru_fileparse_port}/docs"
 
 log "containers"
 docker ps --filter name=mineru- --format 'table {{.Names}}\t{{.Status}}' || true

@@ -27,11 +27,12 @@ import { PaperItem } from "@/lib/schema";
 import { PaperStatusEnum } from "@/components/utils/PdfStatus";
 
 export type Filter = {
-    type: "author" | "status" | "tag"
+    type: "author" | "status" | "tag" | "venue"
     value: string
 }
 
 export const NO_TAGS_FILTER_VALUE = "__NO_TAGS__";
+export const NO_VENUE_FILTER_VALUE = "__NO_VENUE__";
 
 export type Sort = {
     type: "publish_date"
@@ -52,6 +53,14 @@ export function PaperFiltering({
     const { t } = useI18n();
     const authors = Array.from(new Set(papers.flatMap(p => p.authors || [])))
     const tags = Array.from(new Set(papers.flatMap(p => p.tags?.map(tag => tag.name) || [])))
+    const venues = Array.from(
+        new Map(
+            papers
+                .map(p => p.journal?.trim())
+                .filter((venue): venue is string => Boolean(venue))
+                .map(venue => [venue.toLowerCase(), venue]),
+        ).values(),
+    ).sort((a, b) => a.localeCompare(b))
 
     const handleSelectFilter = (filter: Filter) => {
         const newFilters = filters.some(f => f.type === filter.type && f.value === filter.value)
@@ -124,6 +133,41 @@ export function PaperFiltering({
                                                 >
                                                     {isFilterActive({ type: "author", value: author }) && <Check className="mr-2 h-4 w-4" />}
                                                     {author}
+                                                </CommandItem>
+                                            ))}
+                                        </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                            </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                        <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>{t("Venue")}</DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent className="p-0">
+                                <Command>
+                                    <CommandInput
+                                        placeholder={t("Filter venue...")}
+                                        autoFocus={true}
+                                        className="h-9"
+                                    />
+                                    <CommandList>
+                                        <CommandEmpty>{t("No venue found.")}</CommandEmpty>
+                                        <CommandGroup>
+                                            <CommandItem
+                                                value="No venue"
+                                                onSelect={() => handleSelectFilter({ type: "venue", value: NO_VENUE_FILTER_VALUE })}
+                                                className="text-muted-foreground"
+                                            >
+                                                {isFilterActive({ type: "venue", value: NO_VENUE_FILTER_VALUE }) && <Check className="mr-2 h-4 w-4" />}
+                                                {t("No venue")}
+                                            </CommandItem>
+                                            {venues.map(venue => (
+                                                <CommandItem
+                                                    key={venue}
+                                                    value={venue}
+                                                    onSelect={() => handleSelectFilter({ type: "venue", value: venue })}
+                                                >
+                                                    {isFilterActive({ type: "venue", value: venue }) && <Check className="mr-2 h-4 w-4" />}
+                                                    {venue}
                                                 </CommandItem>
                                             ))}
                                         </CommandGroup>

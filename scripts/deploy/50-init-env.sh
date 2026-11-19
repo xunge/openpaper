@@ -40,11 +40,14 @@ s3_bucket="${S3_BUCKET_NAME:-openpaper}"
 s3_public="$(normalize_url "${S3_PUBLIC_URL:-${s3_endpoint}/${s3_bucket}}")"
 server_port="${SERVER_PORT:-8100}"
 jobs_port="${JOBS_PORT:-8101}"
-mineru_fileparse="${MINERU_FILE_PARSE_URL:-http://host.docker.internal:8003}"
-mineru_tasks="${MINERU_TASKS_API_URL:-http://host.docker.internal:8000}"
+mineru_fileparse="${MINERU_FILE_PARSE_URL:-http://host.docker.internal:${MINERU_GATEWAY_FILE_PARSE_PORT:-18003}}"
+mineru_tasks="${MINERU_TASKS_API_URL:-http://host.docker.internal:${MINERU_GATEWAY_API_PORT:-18000}}"
 deepseek_base="${DEEPSEEK_BASE_URL:-https://api.deepseek.com/v1}"
 deepseek_model="${DEEPSEEK_DEFAULT_MODEL:-deepseek-chat}"
 deepseek_fast="${DEEPSEEK_FAST_MODEL:-$deepseek_model}"
+venue_model="${DEEPSEEK_VENUE_MODEL:-$deepseek_fast}"
+venue_enabled="${DEEPSEEK_VENUE_ENABLED:-true}"
+venue_timeout="${DEEPSEEK_VENUE_TIMEOUT:-120}"
 postgres_password="${POSTGRES_PASSWORD:-postgres}"
 
 if [[ "$s3_endpoint" == *"minio:9000"* ]]; then
@@ -77,6 +80,9 @@ DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
 DEEPSEEK_BASE_URL=${deepseek_base}
 DEEPSEEK_DEFAULT_MODEL=${deepseek_model}
 DEEPSEEK_FAST_MODEL=${deepseek_fast}
+DEEPSEEK_VENUE_ENABLED=${venue_enabled}
+DEEPSEEK_VENUE_MODEL=${venue_model}
+DEEPSEEK_VENUE_TIMEOUT=${venue_timeout}
 
 AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-minioadmin}
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-minioadmin}
@@ -124,6 +130,9 @@ DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
 DEEPSEEK_BASE_URL=${deepseek_base}
 DEEPSEEK_DEFAULT_MODEL=${deepseek_model}
 DEEPSEEK_FAST_MODEL=${deepseek_fast}
+DEEPSEEK_VENUE_ENABLED=${venue_enabled}
+DEEPSEEK_VENUE_MODEL=${venue_model}
+DEEPSEEK_VENUE_TIMEOUT=${venue_timeout}
 
 AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-minioadmin}
 AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-minioadmin}
